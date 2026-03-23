@@ -267,7 +267,7 @@ export function syncGameConfig() {
     const stmt = db.prepare(`INSERT INTO games (name, current_version) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET current_version = excluded.current_version`);
     const tx = db.transaction(() => {
         for (const [name, config] of Object.entries(GAME_CONFIG)) {
-            stmt.run(name, config.current_version);
+            stmt.run(name, config.current.version);
         }
     });
 

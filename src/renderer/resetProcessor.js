@@ -21,7 +21,7 @@ const ZZZ_ENDGAME_ANCHORS = Object.fromEntries(
 );
 
 const PATCH_START = Object.fromEntries(
-  Object.entries(GAME_CONFIG).map(([k, v]) => [k, new Date(v.version_start)])
+  Object.entries(GAME_CONFIG).map(([k, v]) => [k, new Date(v.current.version_start)])
 )
 
 const RESET_CONFIG = {
@@ -132,7 +132,7 @@ function getStygianOnslaughtResetWindow(lastDailyReset) {
 
   const patchStart = PATCH_START['Genshin Impact'];
   patchStart.setUTCHours(lastReset.getUTCHours())
-  const duration = GAME_CONFIG['Genshin Impact']?.version_duration;
+  const duration = GAME_CONFIG['Genshin Impact']?.current.version_duration;
 
   // Starts a week after the patch starts
   const stygianStart = new Date(patchStart);
@@ -151,14 +151,14 @@ function getStygianOnslaughtResetWindow(lastDailyReset) {
 function getAnomalyArbitrationResetWindow() {
   const config = GAME_CONFIG['Honkai: Star Rail']
 
-  const resetHour = config.maintenance_start + config.maintenance_estimation;
+  const resetHour = (config.maintenance_start + config.maintenance_estimation) % 24;
   const patchStart = PATCH_START['Honkai: Star Rail'];
 
   const anomalyStart = new Date(patchStart);
   anomalyStart.setUTCHours(resetHour);
 
   const anomalyEnd = new Date(patchStart);
-  anomalyEnd.setUTCDate(anomalyEnd.getUTCDate() + config.version_duration - 1);
+  anomalyEnd.setUTCDate(anomalyEnd.getUTCDate() + config.current.version_duration - 1);
   anomalyEnd.setUTCHours(config.maintenance_start);
 
   return { last: anomalyStart, next: anomalyEnd }
@@ -194,7 +194,7 @@ function getZZZEndgameResetWindow(lastDailyReset, mode) {
 function getZZZSeasonalResetWindow(lastDailyReset, mode, intervalDays) {
   // Seasonals start when servers open and end on daily reset
   const config = GAME_CONFIG['Zenless Zone Zero'];
-  const resetHour = config.maintenance_start + config.maintenance_estimation;
+  const resetHour = (config.maintenance_start + config.maintenance_estimation) % 24;
 
   const current = new Date(lastDailyReset);
   current.setUTCHours(resetHour);

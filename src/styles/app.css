@@ -106,6 +106,68 @@ html, body {
     gap: 4px;
 }
 
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.view-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 5px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Sora', sans-serif;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.18s ease;
+}
+
+.view-btn:hover {
+    color: var(--text);
+    background: var(--panel-hover);
+    border-color: var(--border-hover);
+}
+
+.view-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--border-selected);
+    color: var(--accent);
+}
+
+.app-bar-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-right: 8px;
+    margin-right: 6px;
+    border-right: 1px solid var(--border);
+    line-height: 1;
+    align-self: center;
+}
+
+.theme-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px 3px 3px 10px;
+}
+
 .theme-btn {
     display: flex;
     align-items: center;

@@ -7,7 +7,7 @@ A desktop task manager built for people who play multiple gacha games at once. T
 ---
 
 ## Project Status
-- **Current Version:** `v0.6.7` (Alpha)
+- **Current Version:** `v0.7.0` (Alpha)
 - **Status:** Active Development. Core logic is functional; game-specific task lists and event tracking are currently being populated.
 
 ## Preview
@@ -37,7 +37,6 @@ https://github.com/user-attachments/assets/b4fb7ae1-ec34-4e7b-9095-e7a8d2724ef7
 - **Smart Cleanup:** Removing the last account for a game automatically cleans up your sidebar.
 
 ## Roadmap
-- [ ] **Schedule Calendar:** A visual timeline of gacha events, releases, drip marketings and trailers.
 - [ ] **Hoyolab Integration:** Track your stamina in real time.
 - [ ] **Expanded Library:** Support for additional games and themes.
 

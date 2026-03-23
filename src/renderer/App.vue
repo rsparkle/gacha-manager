@@ -4,17 +4,34 @@
         <AppSettings :accountsPerGame="accountsPerGame" />
         <ConfirmDialogue />
         <div class="app-bar">
-            <span class="app-bar-logo">Theme</span>
+            <div class="view-toggle" v-if="currentView !== 'setup'">
+                <button v-if="hideSetup" class="view-btn" :class="{ active: currentView === 'tasks' }" @click="currentView = 'tasks'">
+                    <span>Tasks</span>
+                </button>
+                <button v-else class="view-btn" :class="{ active: currentView === 'setup' }" @click="currentView = 'setup'">
+                    <span>Setup</span>
+                </button>
+                <button class="view-btn" :class="{ active: currentView === 'schedule' }"
+                    @click="currentView = 'schedule'">
+                    <span>Schedule</span>
+                </button>
+            </div>
+            <div v-else class="app-bar-logo">Setup</div>
+
             <div class="app-bar-right">
-                <button class="theme-btn" :class="{ active: settings.theme === '' }" @click="settings.theme = ''; saveSettings(true)">
-                    <span class="theme-swatch emerald"></span>
-                    <span>Default</span>
-                </button>
-                <button class="theme-btn" :class="{ active: settings.theme === 'sparkle' }"
-                    @click="settings.theme = 'sparkle'; saveSettings(true)">
-                    <span class="theme-swatch crimson"></span>
-                    <span>Sparkle</span>
-                </button>
+                <div class="theme-group">
+                    <span class="app-bar-label">Theme</span>
+                    <button class="theme-btn" :class="{ active: settings.theme === '' }"
+                        @click="settings.theme = ''; saveSettings(true)">
+                        <span class="theme-swatch emerald"></span>
+                        <span>Default</span>
+                    </button>
+                    <button class="theme-btn" :class="{ active: settings.theme === 'sparkle' }"
+                        @click="settings.theme = 'sparkle'; saveSettings(true)">
+                        <span class="theme-swatch crimson"></span>
+                        <span>Sparkle</span>
+                    </button>
+                </div>
                 <button class="settings-btn" @click="showSettings = !showSettings">
                     <span>⚙</span>
                     <span>Settings</span>
@@ -25,7 +42,7 @@
         <TasksView v-else-if="currentView === 'tasks'" :accountsPerGame="accountsPerGame"
             @refreshAccount="updateAccountTaskData" @refresh="loadData" />
         <ScheduleView v-else-if="currentView === 'schedule'" />
-        <AppFooter /> 
+        <AppFooter />
     </div>
 </template>
 
@@ -48,7 +65,8 @@ const { setTheme } = useNotification()
 const { settings, showSettings, saveSettings } = useSettings()
 
 const accountsPerGame = ref([])
-const currentView = ref(null);
+const hideSetup = ref(false)
+const currentView = ref(null)
 let taskTimer = null
 
 const loadData = async () => {
@@ -83,7 +101,8 @@ watch(() => settings.value.theme, (val) => setTheme(val), { immediate: true });
 onMounted(async () => {
     await loadData()
 
-    currentView.value = accountsPerGame.value.length === 0 ? 'setup' : 'tasks'
+    hideSetup.value = accountsPerGame.value.length > 0
+    currentView.value = hideSetup.value ? 'tasks' : 'setup'
     scheduleUpdate()
 })
 

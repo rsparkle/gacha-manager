@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.0] - 2026-03-23
+### Added
+- Calendar Page
+
 ## [0.6.7] - 2026-03-13
 ### Added
 - Page footer
