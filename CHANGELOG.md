@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.7.1] - 2026-03-23
+## [0.7.2] - 2026-03-25
+### Updated
+- Updated schedule for March 25
+
+## [0.7.1] - 2026-03-25
 ### Added
 - Added more games
 

@@ -24,17 +24,17 @@ export const GAME_CONFIG = {
     },
     "Honkai: Star Rail": {
         current: {
-            version: 4.0,
-            version_start: "2026-02-13",
-            version_duration: 40,
-            characters: ['Yao Guang', 'Sparxie'],
+            version: 4.1,
+            version_start: "2026-03-25",
+            version_duration: 28,
+            characters: ['Ashveil', null],
             version_duration_confirmation: true,
         },
         next: {
-            version: 4.1,
+            version: 4.2,
             future_livestream_version: 4.2,
-            version_duration: 28,
-            characters: ['Ashveil', null],
+            version_duration: 42,
+            characters: ['Silver Wolf LV.999', "Evanescia"],
             version_duration_confirmation: true,
         },
         maintenance_start: [22,0],
@@ -56,17 +56,17 @@ export const GAME_CONFIG = {
     },
     "Zenless Zone Zero": {
         current: {
-            version: 2.6,
-            version_start: "2026-02-06",
-            version_duration: 46,
-            characters: ['Sunna', 'Aria'],
+            version: 2.7,
+            version_start: "2026-03-24",
+            version_duration: 43,
+            characters: ['Nangong Yu', 'Cissia'],
             version_duration_confirmation: true,
         },
         next: {
-            version: 2.7,
+            version: 2.8,
             future_livestream_version: 2.8,
             version_duration: 42,
-            characters: ['Nangong Yu', 'Cissia'],
+            characters: ['Promeia', null],
             version_duration_confirmation: false,
         },
         maintenance_start: [22,0],
@@ -77,7 +77,7 @@ export const GAME_CONFIG = {
         endgame_anchors: {
             "Shiyu Defense": "2026-02-20T00:00:00Z",
             "Deadly Assault": "2026-02-13T00:00:00Z",
-            "Battle Trial": "2025-07-16T00:00:00Z",
+            "Battle Trial": "2026-03-24T00:00:00Z",
             "Threshold Simulation": "2026-02-06T00:00:00Z"
         },
         process: "ZenlessZoneZero.exe",

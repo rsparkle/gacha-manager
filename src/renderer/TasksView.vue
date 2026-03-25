@@ -466,8 +466,6 @@ const getGameImageSrc = (game) => {
         ? `${slug}_default`
         : `${slug}_${Number(game.game_version).toFixed(1)}`;
     
-    console.log(failedImages)
-    console.log(filename)
 
     return new URL(`../assets/games/${filename}.webp`, import.meta.url).href;
 };
