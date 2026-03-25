@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.1] - 2026-03-23
+### Added
+- Added more games
+
 ## [0.7.0] - 2026-03-23
 ### Added
 - Calendar Page

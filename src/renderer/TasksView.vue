@@ -89,10 +89,9 @@
                     <div class="account-tab-add" @click="insertAccount">+</div>
                 </div>
 
-                <img :src="getGameImageSrc(selectedGame)" style="display: none;" :key="selectedGame.id" />
-
                 <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }"
                     @error="handleImageError(game)">
+                    <img :src="getGameImageSrc(selectedGame)" style="display: none;" :key="selectedGame.id"  @error="handleImageError(selectedGame)"/>
                     <div class="task-card" v-for="(tasks, task_type) in selectedAccount.tasks" :key="task_type">
                         <div class="task-card-header">
                             <p class="task-card-title">{{ task_type }}</p>
@@ -466,6 +465,9 @@ const getGameImageSrc = (game) => {
     const filename = failedImages.value.has(game.id)
         ? `${slug}_default`
         : `${slug}_${Number(game.game_version).toFixed(1)}`;
+    
+    console.log(failedImages)
+    console.log(filename)
 
     return new URL(`../assets/games/${filename}.webp`, import.meta.url).href;
 };

@@ -101,8 +101,8 @@
                             </div>
                         </div>
 
-                        <div class="event-panel-unconfirmed" v-if="selectedEvent?.unconfirmed">
-                            Subject to change
+                        <div class="event-panel-unconfirmed" v-if="!selectedEvent?.confirmed">
+                            This date is not confirmed
                         </div>
 
                         <div class="event-panel-footer" v-if="selectedEvent && calculatedCountdown">

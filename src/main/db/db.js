@@ -118,6 +118,16 @@ export function seedDatabase() {
                     game: "Zenless Zone Zero"
                 },
                 {
+                    label: "Sanity, Outpost Management",
+                    type: "Daily",
+                    game: "Arknights Endfield"
+                },
+                {
+                    label: "Vital Energy, Daily Wishes, Starlit Moments, Star Collecting",
+                    type: "Daily",
+                    game: "Infinity Nikki"
+                },
+                {
                     label: "Weekly Bosses",
                     type: "Weekly",
                     game: "Genshin Impact"

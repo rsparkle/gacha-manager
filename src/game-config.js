@@ -14,9 +14,11 @@ export const GAME_CONFIG = {
             characters: ['Linnea', null],
             version_duration_confirmation: true,
         },
-        maintenance_start: 22, // Hour
-        maintenance_estimation: 5, // Hours
+        maintenance_start: [22, 0], // Hour, Min
+        maintenance_duration: [5, 0], // Hour, Min
         livestream_hour: [12, 0], // 05:00 in certain livestreams
+        livestream_prediction: true,
+        trailer_distance: 1,
         process: "GenshinImpact.exe",
         color: "#C8922A",
     },
@@ -35,9 +37,11 @@ export const GAME_CONFIG = {
             characters: ['Ashveil', null],
             version_duration_confirmation: true,
         },
-        maintenance_start: 22,
-        maintenance_estimation: 5,
+        maintenance_start: [22,0],
+        maintenance_duration: [5,0],
         livestream_hour: [11, 30],
+        livestream_prediction: true,
+        trailer_distance: 3,
         weekly_anchors: {
             "Currency Wars": "2026-02-16T00:00:00Z",
             "Divergent Universe": "2026-02-09T00:00:00Z"
@@ -65,9 +69,11 @@ export const GAME_CONFIG = {
             characters: ['Nangong Yu', 'Cissia'],
             version_duration_confirmation: false,
         },
-        maintenance_start: 22,
-        maintenance_estimation: 5,
+        maintenance_start: [22,0],
+        maintenance_duration: [5,0],
         livestream_hour: [11, 30],
+        livestream_prediction: true,
+        trailer_distance: 4,
         endgame_anchors: {
             "Shiyu Defense": "2026-02-20T00:00:00Z",
             "Deadly Assault": "2026-02-13T00:00:00Z",
@@ -76,5 +82,53 @@ export const GAME_CONFIG = {
         },
         process: "ZenlessZoneZero.exe",
         color: "#C9D400"
+    },
+    "Arknights Endfield": {
+        current: {
+            version: 1.1,
+            version_start: "2026-03-12",
+            version_duration: 34,
+            characters: ['Tangtang', 'Rossi'],
+            version_duration_confirmation: true,
+        },
+        next: {
+            version: 1.2,
+            future_livestream_version: 1.3,
+            version_duration: 42,
+            characters: [null, null],
+            version_duration_confirmation: false,
+        },
+        livestream_prediction: false,
+        maintenance_start: [22,0],
+        maintenance_duration: [6,0],
+        livestream_hour: [11, 30],
+        trailer_distance: 1,
+        process: "Endfield.exe",
+        color: "#3ABFB0",
+    },
+    "Infinity Nikki": {
+        current: {
+            version: 2.3,
+            version_start: "2026-03-03",
+            version_duration: 24,
+            characters: [null, null],
+            version_duration_confirmation: true,
+        },
+        next: {
+            version: 2.4,
+            future_livestream_version: 2.5,
+            version_duration: 28,
+            characters: [null, null],
+            version_duration_confirmation: false,
+        },
+        livestream_prediction: false,
+        maintenance_start: [19, 50],
+        maintenance_duration: [7, 10],
+        livestream_hour: [11, 30],
+        trailer_distance: 1,
+        second_phase_hour: 3,
+        second_phase_offset: 1,
+        process: "X6Game-Win64-Shipping.exe",
+        color: "#E8729A",
     }
 }

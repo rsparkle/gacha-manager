@@ -151,15 +151,18 @@ function getStygianOnslaughtResetWindow(lastDailyReset) {
 function getAnomalyArbitrationResetWindow() {
   const config = GAME_CONFIG['Honkai: Star Rail']
 
-  const resetHour = (config.maintenance_start + config.maintenance_estimation) % 24;
+  const totalMins = config.maintenance_start[1] + config.maintenance_duration[1];
+  const resetHour = (config.maintenance_start[0] + config.maintenance_duration[0] + Math.floor(totalMins / 60)) % 24;
+  const resetMin = totalMins % 60;
+
   const patchStart = PATCH_START['Honkai: Star Rail'];
 
   const anomalyStart = new Date(patchStart);
-  anomalyStart.setUTCHours(resetHour);
+  anomalyStart.setUTCHours(resetHour, resetMin, 0, 0);
 
   const anomalyEnd = new Date(patchStart);
   anomalyEnd.setUTCDate(anomalyEnd.getUTCDate() + config.current.version_duration - 1);
-  anomalyEnd.setUTCHours(config.maintenance_start);
+  anomalyEnd.setUTCHours(config.maintenance_start[0], config.maintenance_start[1], 0, 0);
 
   return { last: anomalyStart, next: anomalyEnd }
 }
@@ -194,10 +197,13 @@ function getZZZEndgameResetWindow(lastDailyReset, mode) {
 function getZZZSeasonalResetWindow(lastDailyReset, mode, intervalDays) {
   // Seasonals start when servers open and end on daily reset
   const config = GAME_CONFIG['Zenless Zone Zero'];
-  const resetHour = (config.maintenance_start + config.maintenance_estimation) % 24;
+
+  const totalMins = config.maintenance_start[1] + config.maintenance_duration[1];
+  const resetHour = (config.maintenance_start[0] + config.maintenance_duration[0] + Math.floor(totalMins / 60)) % 24;
+  const resetMin = totalMins % 60;
 
   const current = new Date(lastDailyReset);
-  current.setUTCHours(resetHour);
+  current.setUTCHours(resetHour, resetMin, 0, 0);
 
   const { last, next } = getIntervalResetWindow(
     ZZZ_ENDGAME_ANCHORS[mode],
