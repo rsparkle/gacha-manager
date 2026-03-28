@@ -78,12 +78,13 @@ const updateAccountTaskData = (game_id, account_id) => {
     const game = accountsPerGame.value.find(game => game.id === game_id)
     let acc = game.accounts.find(acc => acc.id === account_id)
     if (!acc) return
-    computeSingleAccountResetData(acc)
+    computeSingleAccountResetData(acc, game.name)
 }
 
 const onSetupDone = async () => {
     await loadData()
     currentView.value = 'tasks'
+    hideSetup.value = true
 }
 
 const scheduleUpdate = () => {

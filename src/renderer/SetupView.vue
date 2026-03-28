@@ -28,7 +28,7 @@
                     <div class="game-card-server" v-if="selectedGames[game.id]" @click.stop>
                         <p class="server-label">Server</p>
                         <div class="server-pills">
-                            <button class="server-pill" v-for="server in defaultServers" :key="server"
+                            <button class="server-pill" v-for="server in Object.values(GAME_CONFIG[game.name].servers)" :key="server"
                                 :class="{ active: selectedGames[game.id]?.server === server }"
                                 @click.stop="setServer(game, server)">
                                 {{ server }}
@@ -58,6 +58,7 @@ import '../styles/setup.css';
 import { ref, computed, onMounted } from 'vue';
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js';
+import { GAME_CONFIG } from '../game-config.js';
 const { createNotification } = useNotification()
 const { settings } = useSettings()
 
@@ -65,8 +66,6 @@ const emit = defineEmits(['done'])
 
 const gameList = ref([]);
 const selectedGames = ref({});
-
-const defaultServers = ['America', 'Europe', 'Asia', 'TW/HK/MO'];
 
 const hasSelection = computed(() =>
     Object.values(selectedGames.value).some(v => v !== null)
@@ -86,7 +85,7 @@ const toggleGame = (game) => {
     } else {
         selectedGames.value = {
             ...selectedGames.value,
-            [game.id]: { server: defaultServers[0] }
+            [game.id]: { server: Object.values(GAME_CONFIG[game.name].servers)[0] }
         };
     }
 };

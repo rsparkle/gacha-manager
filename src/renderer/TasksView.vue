@@ -135,6 +135,7 @@ import { ref, onMounted, onUnmounted, computed, watchEffect, watch, nextTick } f
 import { useNotification } from './composables/useNotification.js'
 import { useConfirm } from './composables/useConfirm.js'
 import { useSettings } from './composables/useSettings.js'
+import { GAME_CONFIG } from '../game-config.js';
 const { settings, saveSettings, toggleSetting } = useSettings()
 
 const { confirm } = useConfirm()
@@ -148,14 +149,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['refreshAccount', 'refresh'])
-
-// Mapping first digit of UID to regional servers
-const SERVER_UIDS = {
-    6: "America",
-    7: "Europe",
-    8: "Asia",
-    9: "TW/HK/MO"
-}
 
 const missingGames = ref([])
 const showGamePicker = ref(false)
@@ -368,8 +361,8 @@ const commitUidEdit = async (account_id) => {
         createNotification("error", "Your UID should have 9 digits!", 2000);
         return
     }
-    const firstDigit = newUid.toString()[0];
-    const server = SERVER_UIDS[firstDigit]
+    const firstDigit = parseInt(newUid.toString()[0]);
+    const server = Object.entries(GAME_CONFIG[selectedGame.value.name].servers).find(([_, s]) => s.uid_prefix === firstDigit)?.[0];
     const id = selectedAccount.value.id
 
     if (!server) {

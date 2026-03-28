@@ -29,7 +29,7 @@ export function initDB() {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 game_id INTEGER NOT NULL,
                 game_uid INTEGER NULL,
-                server TEXT NOT NULL CHECK(server IN ('America','Europe','Asia','TW/HK/MO')),
+                server TEXT NOT NULL,
                 label TEXT NULL,
                 FOREIGN KEY (game_id) REFERENCES games(id)
             )
@@ -70,7 +70,24 @@ export function runMigrations() {
     const current_version = db.pragma('user_version', { simple: true });
 
     const migrations = [
+        () => {
+            db.exec(`
+                CREATE TABLE IF NOT EXISTS accounts_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    game_id INTEGER NOT NULL,
+                    game_uid INTEGER NULL,
+                    server TEXT NOT NULL,
+                    label TEXT NULL,
+                    FOREIGN KEY (game_id) REFERENCES games(id)
+                );
 
+                INSERT INTO accounts_new SELECT * FROM accounts;
+
+                DROP TABLE accounts;
+
+                ALTER TABLE accounts_new RENAME TO accounts;
+            `);
+        }
     ]
 
     const pending = migrations.slice(current_version);
@@ -143,6 +160,16 @@ export function seedDatabase() {
                     game: "Zenless Zone Zero"
                 },
                 {
+                    label: "Weekly Realm, Starlit Pursuit, Merit Arena",
+                    type: "Weekly",
+                    game: "Infinity Nikki"
+                },
+                {
+                    label: "Weekly Routine",
+                    type: "Weekly",
+                    game: "Arknights Endfield"
+                },
+                {
                     label: "Divergent Universe",
                     type: "Weekly",
                     game: "Honkai: Star Rail"
@@ -211,7 +238,12 @@ export function seedDatabase() {
                     label: "Threshold Simulation",
                     type: "Seasonal",
                     game: "Zenless Zone Zero"
-                }
+                },
+                {
+                    label: "Mira Crown",
+                    type: "Endgame",
+                    game: "Infinity Nikki"
+                },
             ]
         }
     ];

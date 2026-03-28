@@ -1,13 +1,5 @@
 import { GAME_CONFIG } from '../game-config'
 
-// Standard daily reset times (UTC) for most gacha game servers
-const UTC_RESET_HOURS = {
-  "America": 9,
-  "Europe": 3,
-  "Asia": 20,
-  "TW/HK/MO": 20
-}
-
 const HSR_WEEKLY_ANCHORS = Object.fromEntries(
   Object.entries(GAME_CONFIG['Honkai: Star Rail'].weekly_anchors).map(([k, v]) => [k, new Date(v)])
 );
@@ -35,6 +27,12 @@ const RESET_CONFIG = {
     getHSRWeeklyResetWindow(lastDailyReset, "Currency Wars"),
 
   "Hollow Zero": (lastDailyReset) =>
+    getWeeklyResetWindow(lastDailyReset),
+
+  "Weekly Realm, Starlit Pursuit, Merit Arena": (lastDailyReset) =>
+    getWeeklyResetWindow(lastDailyReset),
+
+  "Weekly Routine": (lastDailyReset) =>
     getWeeklyResetWindow(lastDailyReset),
 
   "Spiral Abyss": (lastDailyReset) =>
@@ -69,6 +67,9 @@ const RESET_CONFIG = {
 
   "Threshold Simulation": (lastDailyReset) =>
     getZZZSeasonalResetWindow(lastDailyReset, 'Threshold Simulation', 126),
+
+  "Mira Crown": (lastDailyReset) =>
+    getBiMonthlyResetWindow(lastDailyReset),
 };
 
 function getLastDailyReset(now, serverResetHour) {
@@ -126,11 +127,28 @@ function getMidMonthResetWindow(lastDailyReset) {
   return { last: lastReset, next: nextReset };
 }
 
+function getBiMonthlyResetWindow(lastDailyReset) {
+  const lastReset = new Date(lastDailyReset);
+  const nextReset = new Date(lastReset);
+
+  if (lastReset.getUTCDate() < 16) {
+    lastReset.setUTCDate(1);
+    nextReset.setUTCDate(16);
+  }
+  else {
+    lastReset.setUTCDate(16);
+    nextReset.setUTCMonth(nextReset.getUTCMonth() + 1);
+    nextReset.setUTCDate(1);
+  }
+
+  return { last: lastReset, next: nextReset };
+}
+
 function getStygianOnslaughtResetWindow(lastDailyReset) {
   const lastReset = new Date(lastDailyReset);
   const now = new Date();
 
-  const patchStart = PATCH_START['Genshin Impact'];
+  const patchStart = new Date(PATCH_START['Genshin Impact']);
   patchStart.setUTCHours(lastReset.getUTCHours())
   const duration = GAME_CONFIG['Genshin Impact']?.current.version_duration;
 
@@ -155,7 +173,7 @@ function getAnomalyArbitrationResetWindow() {
   const resetHour = (config.maintenance_start[0] + config.maintenance_duration[0] + Math.floor(totalMins / 60)) % 24;
   const resetMin = totalMins % 60;
 
-  const patchStart = PATCH_START['Honkai: Star Rail'];
+  const patchStart = new Date(PATCH_START['Honkai: Star Rail']);
 
   const anomalyStart = new Date(patchStart);
   anomalyStart.setUTCHours(resetHour, resetMin, 0, 0);
@@ -234,17 +252,17 @@ function getIntervalResetWindow(anchor, current, intervalDays) {
 export function computeTaskResetData(gameGroups) {
   gameGroups.forEach(gameGroup => {
     gameGroup.accounts.forEach(account => {
-      computeSingleAccountResetData(account);
+      computeSingleAccountResetData(account, gameGroup.name);
     });
   });
 
   return gameGroups;
 }
 
-export function computeSingleAccountResetData(account) {
+export function computeSingleAccountResetData(account, game) {
   const now = new Date();
 
-  const resetHour = UTC_RESET_HOURS[account.server];
+  const resetHour = GAME_CONFIG[game].servers[account.server].daily_reset;
   const lastDailyReset = getLastDailyReset(now, resetHour);
   const nextDailyReset = new Date(lastDailyReset);
   nextDailyReset.setUTCDate(nextDailyReset.getUTCDate() + 1);

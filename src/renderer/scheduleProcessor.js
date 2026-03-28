@@ -1,12 +1,5 @@
 import { GAME_CONFIG } from "../game-config";
 
-// UTC hour at which 2nd phase banners go live (per server region)
-const SECOND_PHASE_UTC_HOURS = {
-    "America": 17,
-    "Europe": 11,
-    "Asia": 4
-};
-
 function formatVersion(v) {
     return Number(v).toFixed(1);
 }
@@ -52,8 +45,8 @@ function getTrailerDate(phaseDate, distance) {
 }
 
 // Computes the key phase dates for current and next patch
-function computePhaseDates(gameData, server) {
-    const secondPhaseUTCHour = gameData.second_phase_hour ?? SECOND_PHASE_UTC_HOURS[server];
+function computePhaseDates(gameData, game, server) {
+    const secondPhaseUTCHour = GAME_CONFIG[game].second_phase_hours[server];
 
     const currentOpen = new Date(gameData.current.version_start);
 
@@ -85,7 +78,7 @@ export function computeScheduleData(server) {
     const scheduleData = {};
 
     for (const [game, gameData] of Object.entries(GAME_CONFIG)) {
-        const { current, next } = computePhaseDates(gameData, server);
+        const { current, next } = computePhaseDates(gameData, game, server);
 
 
         const [char1, char2] = gameData.current.characters;
