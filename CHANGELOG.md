@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.4] - 2026-03-28
+### Fixed
+- Fixed server name and selection in setup
+
 ## [0.7.3] - 2026-03-28
 ### Added
 - Added more tasks

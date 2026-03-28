@@ -28,7 +28,7 @@
                     <div class="game-card-server" v-if="selectedGames[game.id]" @click.stop>
                         <p class="server-label">Server</p>
                         <div class="server-pills">
-                            <button class="server-pill" v-for="server in Object.values(GAME_CONFIG[game.name].servers)" :key="server"
+                            <button class="server-pill" v-for="server in Object.keys(GAME_CONFIG[game.name].servers)" :key="server"
                                 :class="{ active: selectedGames[game.id]?.server === server }"
                                 @click.stop="setServer(game, server)">
                                 {{ server }}
@@ -85,7 +85,7 @@ const toggleGame = (game) => {
     } else {
         selectedGames.value = {
             ...selectedGames.value,
-            [game.id]: { server: Object.values(GAME_CONFIG[game.name].servers)[0] }
+            [game.id]: { server: Object.keys(GAME_CONFIG[game.name].servers)[0] }
         };
     }
 };
