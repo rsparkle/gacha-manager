@@ -22,7 +22,7 @@
                     :style="{ '--gc': GAME_CONFIG[game]?.color }"
                     :class="{ 'game-badge--active': selectedGames.includes(game) }" @click="toggleSelectedGames(game)">
                     <img :src="getImageUrl(game)" :alt="game" class="game-badge-icon" />
-                    <span class="game-badge-name">{{ game }}</span>
+                    <span class="game-badge-name">{{ GAME_CONFIG[game].abbr }}</span>
                 </div>
             </div>
         </div>
@@ -126,7 +126,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { computeScheduleData } from './scheduleProcessor';
 import { GAME_CONFIG } from '../game-config';
 import { useSettings } from './composables/useSettings.js';
-const { settings } = useSettings()
+const { settings, saveSettings } = useSettings()
 
 const MS_IN_MIN = 60_000;
 const MS_IN_HOUR = 3_600_000;
@@ -137,8 +137,8 @@ const currentYear = ref(today.getFullYear());
 const currentMonth = ref(today.getMonth());
 const selectedDay = ref(null);
 const selectedEvent = ref(null);
-const servers = ['America', 'Europe', 'Asia']
-const selectedServer = ref('America')
+const servers = ['America', 'Europe', 'Asia'];
+const selectedServer = ref(settings.value?.server ?? 'America');
 
 const scheduleData = computed(() => computeScheduleData(selectedServer.value))
 const gameList = computed(() => Object.keys(scheduleData.value))
@@ -162,12 +162,16 @@ const getNoEventsSticker = () => {
     return new URL(`../assets/themes/${settings.value.theme}/no_events.webp`, import.meta.url).href;
 }
 
-watch(selectedServer, () => {
-    if (!selectedDay.value) return
-    const key = selectedDay.value.date.toDateString()
-    const freshEvents = eventsByDay.value[key] ?? []
-    selectedDay.value = { date: selectedDay.value.date, events: freshEvents }
-    selectedEvent.value = freshEvents[0] ?? null
+watch(selectedServer, (val) => {
+    if (selectedDay.value) {
+        const key = selectedDay.value.date.toDateString()
+        const freshEvents = eventsByDay.value[key] ?? []
+        selectedDay.value = { date: selectedDay.value.date, events: freshEvents }
+        selectedEvent.value = freshEvents[0] ?? null
+    }
+
+    settings.value.server = val;
+    saveSettings(true)
 })
 
 const nextMonth = () => {

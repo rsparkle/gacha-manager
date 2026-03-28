@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.5] - 2026-03-28
+### Updated
+- Updated schedule for March 28
+### Added
+- Persist schedule server selection
+### Fixed
+- Improve title list in schedule
+
 ## [0.7.4] - 2026-03-28
 ### Fixed
 - Fixed server name and selection in setup
@@ -7,7 +15,6 @@
 ## [0.7.3] - 2026-03-28
 ### Added
 - Added more tasks
-- Updated schedule for March 28
 ### Fixed
 - Fixed schedule inconsistencies for new titles
 
