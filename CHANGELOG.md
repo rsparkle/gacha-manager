@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.7.6] - 2026-03-31
+## [0.7.8] - 2026-03-31
+### Added
+- Reduced opacity for unconfirmed events
+
+## [0.7.7] - 2026-03-31
 ### Fixed
 - Skip falsy image paths in fallback chain
 

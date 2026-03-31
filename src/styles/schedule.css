@@ -328,12 +328,18 @@
     text-overflow: ellipsis;
     flex-shrink: 0;
     transition: background 0.12s ease, color 0.12s ease;
+    border: 1px solid transparent;
 }
 
 .event:hover {
     background: color-mix(in srgb, var(--gc) 45%, transparent);
     color: var(--text);
     cursor: default;
+}
+
+.event.unconfirmed {
+    opacity: 0.65;
+    border: 1px dashed color-mix(in srgb, var(--gc) 60%, transparent);
 }
 
 .event-panel-item--active {
