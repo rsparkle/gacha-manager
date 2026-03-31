@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.6] - 2026-03-31
+### Improved
+- Optimized asset loading by falling back to previous version images when newer ones are unavailable
+
 ## [0.7.5] - 2026-03-28
 ### Updated
 - Updated schedule for March 28

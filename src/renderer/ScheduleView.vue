@@ -79,7 +79,7 @@
 
                     <div v-else class="event-panel-content">
                         <div class="event-panel-hero">
-                            <img v-if="selectedEvent?.img" :src="selectedEvent.img" :key="selectedEvent.img"
+                            <img v-if="selectedEvent?.img" :src="eventSrc" :key="selectedEvent.img" @error="onError"
                                 class="event-panel-img" />
                             <div v-else class="event-panel-img-empty" />
                         </div>
@@ -126,6 +126,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { computeScheduleData } from './scheduleProcessor';
 import { GAME_CONFIG } from '../game-config';
 import { useSettings } from './composables/useSettings.js';
+import { useFallbackImg } from './composables/useFallbackImg.js';
 const { settings, saveSettings } = useSettings()
 
 const MS_IN_MIN = 60_000;
@@ -161,6 +162,11 @@ const canGoNext = computed(() => {
 const getNoEventsSticker = () => {
     return new URL(`../assets/themes/${settings.value.theme}/no_events.webp`, import.meta.url).href;
 }
+
+const { eventSrc, onError } = useFallbackImg(
+    computed(() => selectedEvent.value?.img),
+    computed(() => selectedEvent.value?.fallbackImgs)
+)
 
 watch(selectedServer, (val) => {
     if (selectedDay.value) {

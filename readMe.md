@@ -7,8 +7,8 @@ A desktop task manager built for people who play multiple gacha games at once. T
 ---
 
 ## Project Status
-- **Current Version:** `v0.7.5` (Alpha)
-- **Status:** Active Development. Core logic is functional; game-specific task lists and event tracking are currently being populated.
+- **Current Version:** `v0.7.6` (Alpha)
+- **Status:** Active Development. Core logic is functional; game data is actively being expanded.
 
 ## Preview
 **Setup**
@@ -35,6 +35,7 @@ https://github.com/user-attachments/assets/b4fb7ae1-ec34-4e7b-9095-e7a8d2724ef7
 - **Multi-Account Support:** Seamlessly switch between main and alt accounts.
 - **Dynamic Themes:** Includes a default sleek dark mode and a specialized **HSR Sparkle** theme.
 - **Smart Cleanup:** Removing the last account for a game automatically cleans up your sidebar.
+- **Schedule & Event Tracking:** Visual calendar of patch releases, banners and livestreams with countdown timers and server-aware timing.
 
 ## Roadmap
 - [ ] **Hoyolab Integration:** Track your stamina in real time.
@@ -43,7 +44,7 @@ https://github.com/user-attachments/assets/b4fb7ae1-ec34-4e7b-9095-e7a8d2724ef7
 ## Installation & Building
 
 > [!IMPORTANT]
-> **Asset Notice:** Official game assets are **not** included in the source code. While future pre-built releases will bundle these via fan-use licenses, building from source currently requires you to provide your own assets.
+> **Asset Notice:** Official game assets are **not** included in the source code. Pre-built releases bundle these assets automatically. If building from source, you will need to provide your own assets.
 
 ```bash
 # Clone the repo

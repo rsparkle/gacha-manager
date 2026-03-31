@@ -11,6 +11,10 @@ function slugify(name) {
         .replace(/^_|_$/g, "");
 }
 
+function defaultImg(game) {
+    return new URL(`../assets/games/${slugify(game)}_default.webp`, import.meta.url).href;
+}
+
 function characterImg(name) {
     return new URL(`../assets/characters/${slugify(name)}_drip.webp`, import.meta.url).href;
 }
@@ -100,6 +104,7 @@ export function computeScheduleData(server) {
                     date: trailerDate,
                     label: `${character} Trailer`,
                     img: characterImg(character),
+                    fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
                     confirmed: trailerDate.getTime() <= Date.now()
                 };
             }
@@ -115,6 +120,7 @@ export function computeScheduleData(server) {
                 date: current.open,
                 label: `${game} ${formatVersion(gameData.current.version)} Release${char1 && ` - ${char1}` || ""}`,
                 img: char1 ? characterImg(char1) : gameImg(game, gameData.current.version),
+                fallbackImgs: [defaultImg(game)],
                 confirmed: true
             },
 
@@ -122,6 +128,7 @@ export function computeScheduleData(server) {
                 date: current.secondPhase,
                 label: char2 ? `${char2} Release` : `${game} ${formatVersion(gameData.current.version)} Second Phase`,
                 img: char2 ? characterImg(char2) : gameImg(game, gameData.current.version),
+                fallbackImgs: [defaultImg(game)],
                 confirmed: gameData.current.version_duration_confirmation || current.secondPhase.getTime() <= Date.now()
             },
 
@@ -129,6 +136,7 @@ export function computeScheduleData(server) {
                 date: next.open,
                 label: `${game} ${formatVersion(gameData.next.version)} Release${nextChar1 && ` - ${nextChar1}` || ""}`,
                 img: nextChar1 ? characterImg(nextChar1) : gameImg(game, gameData.next.version),
+                fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
                 confirmed: gameData.current.version_duration_confirmation || next.open.getTime() <= Date.now()
             },
 
@@ -136,6 +144,7 @@ export function computeScheduleData(server) {
                 date: next.secondPhase,
                 label: nextChar2 ? `${nextChar2} Release` : `${game} ${formatVersion(gameData.next.version)} Second Phase`,
                 img: nextChar2 ? characterImg(nextChar2) : gameImg(game, gameData.next.version),
+                fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
                 confirmed: gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation
             },
 
@@ -144,6 +153,7 @@ export function computeScheduleData(server) {
                     date: livestreamDate,
                     label: `${game} ${formatVersion(gameData.next.version)} Livestream`,
                     img: livestreamImg(game, gameData.next.version),
+                    fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
                     confirmed: (livestreamDate.getTime() - Date.now()) <= ((1000 * 60 * 60 * 24 * 3))
                 }
             } : {}),
@@ -153,6 +163,7 @@ export function computeScheduleData(server) {
                     date: nextLivestreamDate,
                     label: `${game} ${formatVersion(gameData.next.future_livestream_version)} Livestream`,
                     img: livestreamImg(game, gameData.next.future_livestream_version),
+                    fallbackImgs: [gameImg(game, gameData.next.version), gameImg(game, gameData.current.version), defaultImg(game)],
                     confirmed: false
                 }
             } : {})
