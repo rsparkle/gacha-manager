@@ -6,8 +6,8 @@ export function useFallbackImg(primary, fallbacks = []) {
 
     if (isRef(primary)) {
         watch([primary, fallbacks], ([newPrimary, newFallbacks]) => {
-            remaining = [...(newFallbacks ?? [])]
-            eventSrc.value = newPrimary
+            remaining = [...(newFallbacks ?? [])].filter(Boolean)
+            eventSrc.value = newPrimary || remaining.shift() || null
         })
     }
 

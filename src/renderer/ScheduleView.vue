@@ -46,7 +46,7 @@
                                 <span class="day-number">{{ day.date.getDate() }}</span>
                                 <div class="events-list">
                                     <div v-for="event in day.events.slice(0, 3)" :key="event.label" class="event"
-                                        :style="{ '--gc': event.color }"
+                                        :style="{ '--gc': event.color }" :class="{ 'unconfirmed': !event.confirmed }"
                                         @click.stop="selectedEvent = event; selectedDay = day">
                                         {{ event.label }}
                                     </div>
@@ -79,7 +79,7 @@
 
                     <div v-else class="event-panel-content">
                         <div class="event-panel-hero">
-                            <img v-if="selectedEvent?.img" :src="eventSrc" :key="selectedEvent.img" @error="onError"
+                            <img v-if="selectedEvent?.img && eventSrc" :src="eventSrc" :key="selectedEvent.img" @error="onError"
                                 class="event-panel-img" />
                             <div v-else class="event-panel-img-empty" />
                         </div>

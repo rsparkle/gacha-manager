@@ -1,6 +1,10 @@
 # Changelog
 
 ## [0.7.6] - 2026-03-31
+### Fixed
+- Skip falsy image paths in fallback chain
+
+## [0.7.6] - 2026-03-31
 ### Improved
 - Optimized asset loading by falling back to previous version images when newer ones are unavailable
 
