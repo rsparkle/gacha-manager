@@ -40,7 +40,7 @@ export const GAME_CONFIG = {
         },
         next: {
             version: 4.2,
-            future_livestream_version: 4.2,
+            future_livestream_version: 4.3,
             version_duration: 42,
             characters: ['Silver Wolf LV.999', "Evanescia"],
             version_duration_confirmation: true,
@@ -111,7 +111,7 @@ export const GAME_CONFIG = {
         current: {
             version: 1.1,
             version_start: "2026-03-12",
-            version_duration: 34,
+            version_duration: 36,
             characters: ['Tangtang', 'Rossi'],
             version_duration_confirmation: true,
         },
@@ -126,6 +126,7 @@ export const GAME_CONFIG = {
         maintenance_start: [22, 0],
         maintenance_duration: [6, 0],
         livestream_hour: [11, 30],
+        livestream_date: "2026-04-11",
         trailer_distance: 1,
         servers: {
             "Americas/Europe": { uid_prefix: 6, daily_reset: 9, second_phase: 17 },
@@ -140,7 +141,7 @@ export const GAME_CONFIG = {
         current: {
             version: 2.4,
             version_start: "2026-03-26",
-            version_duration: 28,
+            version_duration: 29,
             characters: [null, null],
             version_duration_confirmation: true,
         },
@@ -154,7 +155,8 @@ export const GAME_CONFIG = {
         livestream_prediction: false,
         maintenance_start: [19, 50],
         maintenance_duration: [7, 10],
-        livestream_hour: [11, 30],
+        livestream_hour: [12, 0],
+        livestream_date: "2026-04-19",
         trailer_distance: 1,
         servers: {
             "America": { uid_prefix: 6, daily_reset: 11 },

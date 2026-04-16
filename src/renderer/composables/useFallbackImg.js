@@ -8,7 +8,7 @@ export function useFallbackImg(primary, fallbacks = []) {
         watch([primary, fallbacks], ([newPrimary, newFallbacks]) => {
             remaining = [...(newFallbacks ?? [])].filter(Boolean)
             eventSrc.value = newPrimary || remaining.shift() || null
-        })
+        }, { immediate: true })
     }
 
     function onError() {

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.9] - 2026-04-16
+### Changed
+- Livestreams are skipped if no date or prediction is found
+
 ## [0.7.8] - 2026-03-31
 ### Added
 - Reduced opacity for unconfirmed events

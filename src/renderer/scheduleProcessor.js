@@ -37,6 +37,7 @@ function getLivestreamDate(secondPhaseDate, hourArray, day = null) {
     }
 
     livestream.setUTCHours(...hourArray, 0, 0)
+    if (day) console.log(livestream)
     return livestream;
 }
 
@@ -110,8 +111,10 @@ export function computeScheduleData(server) {
             }
         }
 
-        const livestreamDate = getLivestreamDate(current.secondPhase, gameData.livestream_hour, gameData.livestream_day);
-        const nextLivestreamDate = getLivestreamDate(next.secondPhase, gameData.livestream_hour, gameData.livestream_day);
+        const livestreamDate = (gameData.livestream_prediction || gameData.livestream_date) ? 
+                            getLivestreamDate(current.secondPhase, gameData.livestream_hour, gameData.livestream_date) : null
+        
+        const nextLivestreamDate = gameData.livestream_prediction ? getLivestreamDate(next.secondPhase, gameData.livestream_hour, null) : null;
 
         scheduleData[game] = {
             ...characterTrailers,
@@ -148,7 +151,7 @@ export function computeScheduleData(server) {
                 confirmed: gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation
             },
 
-            ...(gameData.livestream_prediction ? {
+            ...(livestreamDate ? {
                 livestream: {
                     date: livestreamDate,
                     label: `${game} ${formatVersion(gameData.next.version)} Livestream`,
@@ -158,7 +161,7 @@ export function computeScheduleData(server) {
                 }
             } : {}),
 
-            ...(gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation && gameData.livestream_prediction ? {
+            ...(gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation && gameData.nextLivestreamDate ? {
                 nextLivestream: {
                     date: nextLivestreamDate,
                     label: `${game} ${formatVersion(gameData.next.future_livestream_version)} Livestream`,
