@@ -27,6 +27,10 @@ https://github.com/user-attachments/assets/20fe0a42-f62a-42ce-ad12-a9cd656ae6dc
 
 https://github.com/user-attachments/assets/b4fb7ae1-ec34-4e7b-9095-e7a8d2724ef7
 
+**Schedule**
+
+https://github.com/user-attachments/assets/01ea2122-92d0-4f5a-bdce-edd0de8c71fc
+
 
 ## Key Features
 
