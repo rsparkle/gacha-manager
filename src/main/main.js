@@ -55,12 +55,7 @@ export async function loadGameConfig() {
   } catch (cacheError) {
   }
 
-  try {
-    const localModule = await import('../game-config.json', { with: { type: 'json' } });
-    return localModule.default;
-  } catch {
-    throw new Error("Critical: Failed to load game configuration from all sources.");
-  }
+  throw new Error("Critical: Failed to load game configuration from all sources.");
 }
 
 function startMonitoring() {
