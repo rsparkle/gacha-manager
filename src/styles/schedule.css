@@ -85,6 +85,56 @@
 }
 
 /* ─────────────────────────────────────────
+   Loading
+───────────────────────────────────────── */
+.schedule-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 24px;
+    padding: 40px;
+}
+
+.loading-sticker {
+    width: 120px;
+    height: auto;
+    object-fit: contain;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+.loading-bar-wrapper {
+    width: 100%;
+    max-width: 300px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.loading-bar {
+    width: 40%;
+    height: 100%;
+    background: var(--gc, #fff);
+    border-radius: 4px;
+    position: absolute;
+    left: -40%;
+    animation: loading-sweep 1.5s infinite linear;
+}
+
+@keyframes loading-sweep {
+    0% { left: -40%; }
+    100% { left: 100%; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.8; transform: scale(0.98); }
+    50% { opacity: 1; transform: scale(1); }
+}
+
+/* ─────────────────────────────────────────
    Game badges
 ───────────────────────────────────────── */
 .schedule-nav {
@@ -292,6 +342,27 @@
     outline-offset: -1px;
 }
 
+.cell-bg {
+    position: absolute;
+    inset: 0;
+    display: flex;
+}
+
+.cell-bg-slice {
+    height: 100%;
+    background-size: cover;
+    background-position: top center;
+    opacity: 0.45;
+    transition: transform 0.3s ease;
+}
+
+.cell-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.75) 100%);
+}
+
 .day-number {
     font-size: 10px;
     font-family: 'Space Mono', monospace;
@@ -301,6 +372,12 @@
     flex-shrink: 0;
     margin-bottom: 2px;
     align-self: flex-end;
+}
+
+.day-number,
+.events-list {
+    position: relative;
+    z-index: 1;
 }
 
 /* ─────────────────────────────────────────
@@ -320,20 +397,23 @@
     line-height: 1.6;
     padding: 2px 8px;
     border-radius: 999px;
-    border: none;
-    background: color-mix(in srgb, var(--gc) 32%, transparent);
-    color: rgba(240, 245, 242, 0.85);
+    background: color-mix(in srgb, var(--gc) 35%, rgba(0, 0, 0, 0.4)); 
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1px solid color-mix(in srgb, var(--gc) 40%, transparent); 
+    color: rgba(240, 245, 242, 0.95);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6); /* Pops the text */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     flex-shrink: 0;
-    transition: background 0.12s ease, color 0.12s ease;
-    border: 1px solid transparent;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 .event:hover {
-    background: color-mix(in srgb, var(--gc) 45%, transparent);
-    color: var(--text);
+    background: color-mix(in srgb, var(--gc) 55%, rgba(0, 0, 0, 0.6));
+    border-color: var(--gc);
+    color: #fff;
     cursor: default;
 }
 
@@ -422,8 +502,14 @@
     flex: 1;
 }
 
-.event-panel-list::-webkit-scrollbar { width: 4px; }
-.event-panel-list::-webkit-scrollbar-track { background: transparent; }
+.event-panel-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.event-panel-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
 .event-panel-list::-webkit-scrollbar-thumb {
     background: var(--border-hover);
     border-radius: 4px;
@@ -566,6 +652,13 @@
 }
 
 @keyframes sticker-float {
-    0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-6px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
 }

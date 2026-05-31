@@ -1,7 +1,6 @@
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import path from 'path';
-import { GAME_CONFIG } from '../../game-config.js';
 
 export const IS_DEV = !app.isPackaged;
 
@@ -87,6 +86,13 @@ export function runMigrations() {
 
                 ALTER TABLE accounts_new RENAME TO accounts;
             `);
+        },
+        () => {
+            db.exec(`
+                DELETE FROM tasks WHERE game_id = (SELECT id FROM games WHERE name = 'Arknights Endfield');
+                DELETE FROM accounts WHERE game_id = (SELECT id FROM games WHERE name = 'Arknights Endfield');
+                DELETE FROM games WHERE name = 'Arknights Endfield';
+            `);
         }
     ]
 
@@ -103,7 +109,7 @@ export function runMigrations() {
     }
 }
 
-export function seedDatabase() {
+export function seedDatabase(GAME_CONFIG) {
     const gameList = Object.keys(GAME_CONFIG).map(name => ({ name }));
     const SEED = [
         {
@@ -135,9 +141,9 @@ export function seedDatabase() {
                     game: "Zenless Zone Zero"
                 },
                 {
-                    label: "Sanity, Outpost Management",
+                    label: "Character Pixel",
                     type: "Daily",
-                    game: "Arknights Endfield"
+                    game: "Neverness To Everness"
                 },
                 {
                     label: "Vital Energy, Daily Wishes, Starlit Moments, Star Collecting",
@@ -165,9 +171,19 @@ export function seedDatabase() {
                     game: "Infinity Nikki"
                 },
                 {
-                    label: "Weekly Routine",
+                    label: "Weekly Bosses",
                     type: "Weekly",
-                    game: "Arknights Endfield"
+                    game: "Neverness To Everness"
+                },
+                {
+                    label: "City Stamina",
+                    type: "Weekly",
+                    game: "Neverness To Everness"
+                },
+                {
+                    label: "Pink Paws Heist",
+                    type: "Weekly",
+                    game: "Neverness To Everness"
                 },
                 {
                     label: "Divergent Universe",
@@ -305,12 +321,15 @@ function seedTasks(values) {
     tx(values);
 }
 
-export function syncGameConfig() {
-    const stmt = db.prepare(`INSERT INTO games (name, current_version) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET current_version = excluded.current_version`);
+export function syncGameConfig(GAME_CONFIG) {
+    const upsert = db.prepare(`INSERT INTO games (name, current_version) VALUES (?, ?) ON CONFLICT(name) DO UPDATE SET current_version = excluded.current_version, is_active = 1`);
+    const deactivate = db.prepare(`UPDATE games SET is_active = 0 WHERE name NOT IN (${Object.keys(GAME_CONFIG).map(() => '?').join(',')})`);
+    
     const tx = db.transaction(() => {
         for (const [name, config] of Object.entries(GAME_CONFIG)) {
-            stmt.run(name, config.current.version);
+            upsert.run(name, config.current.version);
         }
+        deactivate.run(...Object.keys(GAME_CONFIG));
     });
 
     tx();

@@ -21,13 +21,21 @@
                 <div v-for="game in gameList" :key="game" class="game-badge"
                     :style="{ '--gc': GAME_CONFIG[game]?.color }"
                     :class="{ 'game-badge--active': selectedGames.includes(game) }" @click="toggleSelectedGames(game)">
-                    <img :src="getImageUrl(game)" :alt="game" class="game-badge-icon" />
+                    <img :src="gameIcons[game]" :alt="game" class="game-badge-icon" />
                     <span class="game-badge-name">{{ GAME_CONFIG[game].abbr }}</span>
                 </div>
             </div>
         </div>
 
-        <div class="schedule-body">
+        <div v-if="isLoading" class="schedule-loading">
+            <img v-if="settings.theme && settings.theme !== 'default'" :src="getLoadingSticker()"
+                class="loading-sticker" alt="Loading schedule..." />
+            <div class="loading-bar-wrapper">
+                <div class="loading-bar" />
+            </div>
+        </div>
+
+        <div v-else class="schedule-body">
             <div class="calendar-grid">
                 <div class="week-header">
                     <div class="header-cell" v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
@@ -40,13 +48,23 @@
                         <div v-for="(day, di) in week" :key="di" class="cell" :class="{
                             empty: !day,
                             today: day && isToday(day.date),
-                            selected: day && selectedDay && day.date.toDateString() === selectedDay.date.toDateString()
+                            selected: day && selectedDay &&
+                                day.date.toDateString() === selectedDay.date.toDateString()
                         }" @click="day && selectDay(day)">
+
                             <template v-if="day">
+
+                                <div v-if="day.releases.length" class="cell-bg">
+                                    <div v-for="(rel, ri) in day.releases" :key="ri" class="cell-bg-slice" :style="{
+                                        width: day.releases.length === 1 ? '100%' : '50%',
+                                        backgroundImage: getBackgroundImageWithFallbacks(rel)
+                                    }" />
+                                </div>
+
                                 <span class="day-number">{{ day.date.getDate() }}</span>
                                 <div class="events-list">
                                     <div v-for="event in day.events.slice(0, 3)" :key="event.label" class="event"
-                                        :style="{ '--gc': event.color }" :class="{ 'unconfirmed': !event.confirmed }"
+                                        :style="{ '--gc': event.color }" :class="{ unconfirmed: !event.confirmed }"
                                         @click.stop="selectedEvent = event; selectedDay = day">
                                         {{ event.label }}
                                     </div>
@@ -54,6 +72,7 @@
                                         +{{ day.events.length - 3 }}
                                     </span>
                                 </div>
+
                             </template>
                         </div>
                     </div>
@@ -79,8 +98,8 @@
 
                     <div v-else class="event-panel-content">
                         <div class="event-panel-hero">
-                            <img v-if="selectedEvent?.img && eventSrc" :src="eventSrc" :key="selectedEvent.img" @error="onError"
-                                class="event-panel-img" />
+                            <img v-if="selectedEvent?.img && eventSrc" :src="eventSrc" :key="selectedEvent.img"
+                                @error="onError" class="event-panel-img" />
                             <div v-else class="event-panel-img-empty" />
                         </div>
 
@@ -122,12 +141,14 @@
 
 <script setup>
 import '../styles/schedule.css';
-import { computed, onMounted, ref, watch } from 'vue';
-import { computeScheduleData } from './scheduleProcessor';
-import { GAME_CONFIG } from '../game-config';
+import { computed, onMounted, ref, watch, reactive } from 'vue';
+import { createScheduleProcessor } from './scheduleProcessor';
 import { useSettings } from './composables/useSettings.js';
 import { useFallbackImg } from './composables/useFallbackImg.js';
+const props = defineProps(['gameConfig']);
+const GAME_CONFIG = props.gameConfig;
 const { settings, saveSettings } = useSettings()
+let computeScheduleData;
 
 const MS_IN_MIN = 60_000;
 const MS_IN_HOUR = 3_600_000;
@@ -140,10 +161,13 @@ const selectedDay = ref(null);
 const selectedEvent = ref(null);
 const servers = ['America', 'Europe', 'Asia'];
 const selectedServer = ref(settings.value?.server ?? 'America');
+const isLoading = ref(true);
 
-const scheduleData = computed(() => computeScheduleData(selectedServer.value))
+const scheduleData = ref({});
+
 const gameList = computed(() => Object.keys(scheduleData.value))
 const selectedGames = ref([]);
+const gameIcons = reactive({});
 
 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -163,22 +187,55 @@ const getNoEventsSticker = () => {
     return new URL(`../assets/themes/${settings.value.theme}/no_events.webp`, import.meta.url).href;
 }
 
+const getLoadingSticker = () => {
+    return new URL(`../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
+};
+
 const { eventSrc, onError } = useFallbackImg(
     computed(() => selectedEvent.value?.img),
     computed(() => selectedEvent.value?.fallbackImgs)
 )
 
-watch(selectedServer, (val) => {
-    if (selectedDay.value) {
-        const key = selectedDay.value.date.toDateString()
-        const freshEvents = eventsByDay.value[key] ?? []
-        selectedDay.value = { date: selectedDay.value.date, events: freshEvents }
-        selectedEvent.value = freshEvents[0] ?? null
+const loadGameIcons = async () => {
+    for (const game of gameList.value) {
+        const slug = getGameSlug(game);
+        gameIcons[game] = await window.api.cacheImage(`games/${slug}_icon.webp`);
     }
+};
+
+const getBackgroundImageWithFallbacks = (rel) => {
+    const allImages = [rel.img, ...(rel.fallbackImgs || [])].filter(Boolean);
+
+    return allImages.map(imgSrc => `url('${imgSrc}')`).join(', ');
+};
+
+watch(() => props.gameConfig, (config) => {
+    if (config) {
+        ({ computeScheduleData } = createScheduleProcessor(config));
+    }
+}, { immediate: true });
+
+watch(selectedServer, async (val) => {
+    isLoading.value = true;
 
     settings.value.server = val;
-    saveSettings(true)
-})
+    saveSettings(true);
+
+    scheduleData.value = await computeScheduleData(val);
+    await loadGameIcons();
+
+    if (selectedDay.value) {
+        const key = selectedDay.value.date.toDateString();
+        const freshEvents = eventsByDay.value[key] ?? [];
+        
+        selectedDay.value = { date: selectedDay.value.date, events: freshEvents };
+        
+        const prevLabel = selectedEvent.value?.label;
+        selectedEvent.value = freshEvents.find(e => e.label === prevLabel) ?? freshEvents[0] ?? null;
+    }
+
+    isLoading.value = false;
+}, { immediate: true });
 
 const nextMonth = () => {
     if (!canGoNext.value) return;
@@ -199,11 +256,6 @@ const isToday = (date) =>
 
 const getGameSlug = (name) =>
     name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-
-const getImageUrl = (game) => {
-    const slug = getGameSlug(game);
-    return new URL(`../assets/games/${slug}_icon.webp`, import.meta.url).href;
-};
 
 const toggleSelectedGames = (game) => {
     const index = selectedGames.value.indexOf(game);
@@ -248,7 +300,11 @@ const weeks = computed(() => {
     for (let i = 0; i < start.getDay(); i++) days.push(null);
     for (let d = 1; d <= end.getDate(); d++) {
         const date = new Date(currentYear.value, currentMonth.value, d);
-        days.push({ date, events: eventsByDay.value[date.toDateString()] ?? [] });
+        const events = eventsByDay.value[date.toDateString()] ?? [];
+
+        const releases = events.filter(e => e.label.includes("Release") && e.img);
+
+        days.push({ date, events, releases });
     }
 
     const result = [];

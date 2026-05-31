@@ -12,7 +12,7 @@
             <div class="game-grid" v-if="gameList.length">
                 <div class="game-card" v-for="game in gameList" :key="game.id"
                     :class="{ selected: selectedGames[game.id] }" @click="toggleGame(game)">
-                    <img :src="getImageUrl(game)" :alt="game.name" @error="handleImageError(game)" />
+                    <img :src="gameImages[game.id]" :alt="game.name" @error="handleImageError(game)" />
 
                     <div class="game-card-check">
                         <span v-if="selectedGames[game.id]">✓</span>
@@ -28,8 +28,8 @@
                     <div class="game-card-server" v-if="selectedGames[game.id]" @click.stop>
                         <p class="server-label">Server</p>
                         <div class="server-pills">
-                            <button class="server-pill" v-for="server in Object.keys(GAME_CONFIG[game.name].servers)" :key="server"
-                                :class="{ active: selectedGames[game.id]?.server === server }"
+                            <button class="server-pill" v-for="server in Object.keys(GAME_CONFIG[game.name].servers)"
+                                :key="server" :class="{ active: selectedGames[game.id]?.server === server }"
                                 @click.stop="setServer(game, server)">
                                 {{ server }}
                             </button>
@@ -58,14 +58,17 @@ import '../styles/setup.css';
 import { ref, computed, onMounted } from 'vue';
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js';
-import { GAME_CONFIG } from '../game-config.js';
 const { createNotification } = useNotification()
 const { settings } = useSettings()
+
+const props = defineProps(['gameConfig']);
+const GAME_CONFIG = props.gameConfig;
 
 const emit = defineEmits(['done'])
 
 const gameList = ref([]);
 const selectedGames = ref({});
+const gameImages = ref({});
 
 const hasSelection = computed(() =>
     Object.values(selectedGames.value).some(v => v !== null)
@@ -116,16 +119,13 @@ const confirm = async () => {
 
 };
 
-const getImageUrl = (game) => {
-    const slug = game.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
-    const filename = `${slug}_icon`;
-    return new URL(`../assets/games/${filename}.webp`, import.meta.url).href;
-};
-
 onMounted(async () => {
-    gameList.value = await window.api.getGamesWithoutAccounts();
+    const games = await window.api.getGamesWithoutAccounts();
+    gameList.value = games;
+
+    for (const game of games) {
+        const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        gameImages.value[game.id] = await window.api.cacheImage(`games/${slug}_icon.webp`);
+    }
 });
 </script>

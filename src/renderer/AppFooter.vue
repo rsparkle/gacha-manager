@@ -10,7 +10,7 @@
                 All game assets, characters, names, and trademarks belong to their respective owners -
                 <span class="footer-company">HoYoverse</span>,
                 <span class="footer-company">Paper Games</span>,
-                <span class="footer-company">Hypergryph</span>,
+                <span class="footer-company">Perfect World Games (Hotta Studio)</span>,
                 and all other rights holders.
             </p>
             <p class="footer-copy">

@@ -1,56 +1,52 @@
-import { GAME_CONFIG } from "../game-config";
+export function createScheduleProcessor(GAME_CONFIG) {
 
-function formatVersion(v) {
+  function formatVersion(v) {
     return Number(v).toFixed(1);
-}
+  }
 
-function slugify(name) {
+  function slugify(name) {
     return name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_|_$/g, "");
-}
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_|_$/g, "");
+  }
 
-function defaultImg(game) {
-    return new URL(`../assets/games/${slugify(game)}_default.webp`, import.meta.url).href;
-}
+  async function defaultImg(game) {
+    return await window.api.cacheImage(`games/${slugify(game)}_default.webp`);
+  }
 
-function characterImg(name) {
-    return new URL(`../assets/characters/${slugify(name)}_drip.webp`, import.meta.url).href;
-}
+  async function characterImg(name) {
+    return await window.api.cacheImage(`characters/${slugify(name)}.webp`);
+  }
 
-function gameImg(game, version) {
-    return new URL(`../assets/games/${slugify(game)}_${formatVersion(version)}.webp`, import.meta.url).href;
-}
+  async function gameImg(game, version) {
+    return await window.api.cacheImage(`games/${slugify(game)}_${formatVersion(version)}.webp`);
+  }
 
-function livestreamImg(game, version) {
-    return new URL(`../assets/games/${slugify(game)}_${formatVersion(version)}_livestream.webp`, import.meta.url).href;
-}
+  async function livestreamImg(game, version) {
+    return await window.api.cacheImage(`games/${slugify(game)}_${formatVersion(version)}_livestream.webp`);
+  }
 
-// Returns the Friday after 7 days from the given second phase date, unless day is specified
-function getLivestreamDate(secondPhaseDate, hourArray, day = null) {
+  function getLivestreamDate(secondPhaseDate, hourArray, day = null) {
     const livestream = day ? new Date(day) : new Date(secondPhaseDate);
     if (!day) {
-        livestream.setUTCDate(livestream.getUTCDate() + 7);
-        const distanceToFriday = (5 - livestream.getUTCDay() + 7) % 7 || 7;
-        livestream.setUTCDate(livestream.getUTCDate() + distanceToFriday);
+      livestream.setUTCDate(livestream.getUTCDate() + 7);
+      const distanceToFriday = (5 - livestream.getUTCDay() + 7) % 7 || 7;
+      livestream.setUTCDate(livestream.getUTCDate() + distanceToFriday);
     }
-
-    livestream.setUTCHours(...hourArray, 0, 0)
-    if (day) console.log(livestream)
+    livestream.setUTCHours(...hourArray, 0, 0);
+    if (day) console.log(livestream);
     return livestream;
-}
+  }
 
-// Returns a date N days before the given phase date at 04:00 UTC
-function getTrailerDate(phaseDate, distance) {
+  function getTrailerDate(phaseDate, distance) {
     const trailer = new Date(phaseDate);
     trailer.setUTCDate(trailer.getUTCDate() - distance);
     trailer.setUTCHours(4, 0, 0, 0);
     return trailer;
-}
+  }
 
-// Computes the key phase dates for current and next patch
-function computePhaseDates(gameData, game, server) {
+  function computePhaseDates(gameData, game, server) {
     const secondPhaseUTCHour = GAME_CONFIG[game].second_phase_hours[server];
 
     const currentOpen = new Date(gameData.current.version_start);
@@ -74,104 +70,108 @@ function computePhaseDates(gameData, game, server) {
     nextSecondPhase.setUTCHours(secondPhaseUTCHour, 0, 0, 0);
 
     return {
-        current: { open: currentOpen, secondPhase: currentSecondPhase },
-        next: { open: nextOpen, secondPhase: nextSecondPhase },
+      current: { open: currentOpen, secondPhase: currentSecondPhase },
+      next: { open: nextOpen, secondPhase: nextSecondPhase },
     };
-}
+  }
 
-export function computeScheduleData(server) {
+  async function computeScheduleData(server) {
     const scheduleData = {};
 
     for (const [game, gameData] of Object.entries(GAME_CONFIG)) {
-        const { current, next } = computePhaseDates(gameData, game, server);
+      const { current, next } = computePhaseDates(gameData, game, server);
 
+      const [char1, char2] = gameData.current.characters;
+      const [nextChar1, nextChar2] = gameData.next.characters;
 
-        const [char1, char2] = gameData.current.characters;
-        const [nextChar1, nextChar2] = gameData.next.characters;
+      const trailerEntries = [
+        { phase: current.open, character: char1 },
+        { phase: current.secondPhase, character: char2 },
+        { phase: next.open, character: nextChar1 },
+        { phase: next.secondPhase, character: nextChar2 },
+      ];
 
-        // Character trailer entries: N days before each phase goes live
-        const trailerEntries = [
-            { phase: current.open, character: char1 },
-            { phase: current.secondPhase, character: char2 },
-            { phase: next.open, character: nextChar1 },
-            { phase: next.secondPhase, character: nextChar2 },
-        ];
-
-        const characterTrailers = {};
-        for (const { phase, character } of trailerEntries) {
-            if (character) {
-                const trailerDate = getTrailerDate(phase, gameData.trailer_distance)
-                characterTrailers[character] = {
-                    date: trailerDate,
-                    label: `${character} Trailer`,
-                    img: characterImg(character),
-                    fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
-                    confirmed: trailerDate.getTime() <= Date.now()
-                };
-            }
+      const characterTrailers = {};
+      for (const { phase, character } of trailerEntries) {
+        if (character) {
+          const trailerDate = getTrailerDate(phase, gameData.trailer_distance);
+          characterTrailers[character] = {
+            date: trailerDate,
+            label: `${character} Trailer`,
+            img: await characterImg(character),
+            fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+            confirmed: trailerDate.getTime() <= Date.now()
+          };
         }
+      }
 
-        const livestreamDate = (gameData.livestream_prediction || gameData.livestream_date) ? 
-                            getLivestreamDate(current.secondPhase, gameData.livestream_hour, gameData.livestream_date) : null
-        
-        const nextLivestreamDate = gameData.livestream_prediction ? getLivestreamDate(next.secondPhase, gameData.livestream_hour, null) : null;
+      const livestreamDate = (gameData.is_livestream_predictable || gameData.livestream_date)
+        ? getLivestreamDate(current.secondPhase, gameData.livestream_hour, gameData.livestream_date)
+        : null;
 
-        scheduleData[game] = {
-            ...characterTrailers,
+      const nextLivestreamDate = gameData.is_livestream_predictable
+        ? getLivestreamDate(next.secondPhase, gameData.livestream_hour, null)
+        : null;
 
-            release: {
-                date: current.open,
-                label: `${game} ${formatVersion(gameData.current.version)} Release${char1 && ` - ${char1}` || ""}`,
-                img: char1 ? characterImg(char1) : gameImg(game, gameData.current.version),
-                fallbackImgs: [defaultImg(game)],
-                confirmed: true
-            },
+      scheduleData[game] = {
+        ...characterTrailers,
 
-            secondPhase: {
-                date: current.secondPhase,
-                label: char2 ? `${char2} Release` : `${game} ${formatVersion(gameData.current.version)} Second Phase`,
-                img: char2 ? characterImg(char2) : gameImg(game, gameData.current.version),
-                fallbackImgs: [defaultImg(game)],
-                confirmed: gameData.current.version_duration_confirmation || current.secondPhase.getTime() <= Date.now()
-            },
+        release: {
+          date: current.open,
+          label: `${game} ${formatVersion(gameData.current.version)} Release${char1 && ` - ${char1}` || ""}`,
+          img: char1 ? await characterImg(char1) : await gameImg(game, gameData.current.version),
+          fallbackImgs: [await defaultImg(game)],
+          confirmed: true
+        },
 
-            nextPatchRelease: {
-                date: next.open,
-                label: `${game} ${formatVersion(gameData.next.version)} Release${nextChar1 && ` - ${nextChar1}` || ""}`,
-                img: nextChar1 ? characterImg(nextChar1) : gameImg(game, gameData.next.version),
-                fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
-                confirmed: gameData.current.version_duration_confirmation || next.open.getTime() <= Date.now()
-            },
+        secondPhase: {
+          date: current.secondPhase,
+          label: char2 ? `${char2} Release` : `${game} ${formatVersion(gameData.current.version)} Second Phase`,
+          img: char2 ? await characterImg(char2) : await gameImg(game, gameData.current.version),
+          fallbackImgs: [await defaultImg(game)],
+          confirmed: gameData.current.is_version_duration_confirmed || current.secondPhase.getTime() <= Date.now()
+        },
 
-            nextPatchSecondPhase: {
-                date: next.secondPhase,
-                label: nextChar2 ? `${nextChar2} Release` : `${game} ${formatVersion(gameData.next.version)} Second Phase`,
-                img: nextChar2 ? characterImg(nextChar2) : gameImg(game, gameData.next.version),
-                fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
-                confirmed: gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation
-            },
+        nextPatchRelease: {
+          date: next.open,
+          label: `${game} ${formatVersion(gameData.next.version)} Release${nextChar1 && ` - ${nextChar1}` || ""}`,
+          img: nextChar1 ? await characterImg(nextChar1) : await gameImg(game, gameData.next.version),
+          fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+          confirmed: gameData.current.is_version_duration_confirmed || next.open.getTime() <= Date.now()
+        },
 
-            ...(livestreamDate ? {
-                livestream: {
-                    date: livestreamDate,
-                    label: `${game} ${formatVersion(gameData.next.version)} Livestream`,
-                    img: livestreamImg(game, gameData.next.version),
-                    fallbackImgs: [gameImg(game, gameData.current.version), defaultImg(game)],
-                    confirmed: (livestreamDate.getTime() - Date.now()) <= ((1000 * 60 * 60 * 24 * 3))
-                }
-            } : {}),
+        nextPatchSecondPhase: {
+          date: next.secondPhase,
+          label: nextChar2 ? `${nextChar2} Release` : `${game} ${formatVersion(gameData.next.version)} Second Phase`,
+          img: nextChar2 ? await characterImg(nextChar2) : await gameImg(game, gameData.next.version),
+          fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+          confirmed: gameData.current.is_version_duration_confirmed && gameData.next.is_version_duration_confirmed
+        },
 
-            ...(gameData.current.version_duration_confirmation && gameData.next.version_duration_confirmation && gameData.nextLivestreamDate ? {
-                nextLivestream: {
-                    date: nextLivestreamDate,
-                    label: `${game} ${formatVersion(gameData.next.future_livestream_version)} Livestream`,
-                    img: livestreamImg(game, gameData.next.future_livestream_version),
-                    fallbackImgs: [gameImg(game, gameData.next.version), gameImg(game, gameData.current.version), defaultImg(game)],
-                    confirmed: false
-                }
-            } : {})
-        };
+        ...(livestreamDate ? {
+          livestream: {
+            date: livestreamDate,
+            label: `${game} ${formatVersion(gameData.next.version)} Livestream`,
+            img: await livestreamImg(game, gameData.next.version),
+            fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+            confirmed: (livestreamDate.getTime() - Date.now()) <= (1000 * 60 * 60 * 24 * 3)
+          }
+        } : {}),
+
+        ...(gameData.current.is_version_duration_confirmed && gameData.next.is_version_duration_confirmed && nextLivestreamDate ? {
+          nextLivestream: {
+            date: nextLivestreamDate,
+            label: `${game} ${formatVersion(gameData.next.future_livestream_version)} Livestream`,
+            img: await livestreamImg(game, gameData.next.future_livestream_version),
+            fallbackImgs: [await gameImg(game, gameData.next.version), await gameImg(game, gameData.current.version), await defaultImg(game)],
+            confirmed: false
+          }
+        } : {})
+      };
     }
 
     return scheduleData;
+  }
+
+  return { computeScheduleData };
 }

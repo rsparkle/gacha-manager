@@ -154,7 +154,7 @@
     flex-direction: column;
     gap: 28px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
     background: var(--hero-bg);
 }
 
@@ -451,12 +451,6 @@
 
 /* ─────────────────────────────────────────
    Tasks grid
-
-   Background image comes from inline :style.
-   We use inset box-shadow as a dark overlay —
-   it sits between the bg image and the content,
-   works correctly in scrollable containers,
-   and needs no pseudo-element or wrapper.
 ───────────────────────────────────────── */
 .tasks-area {
     flex: 1;
@@ -481,8 +475,6 @@
 
 /* ─────────────────────────────────────────
    Task cards
-   Solid-dark background + blur so they
-   read clearly over whatever is behind them
 ───────────────────────────────────────── */
 .task-card {
     background: var(--card-solid);
@@ -641,4 +633,65 @@
 .task.done .task-progress {
     background: var(--done);
     box-shadow: none;
+}
+
+/* ─────────────────────────────────────────
+   Server picker
+───────────────────────────────────────── */
+.server-wrapper {
+    position: relative;
+    display: inline-flex;
+}
+
+.account-server {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.server-clickable {
+    cursor: pointer;
+    border-radius: 5px;
+    padding: 2px 5px 2px 3px;
+    margin-left: -3px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.server-clickable:hover {
+    background: var(--panel-hover);
+    color: var(--text);
+}
+
+.server-picker {
+    position: absolute;
+    left: 0;
+    min-width: 110px;
+    background: var(--card-solid);
+    border: 1px solid var(--border-hover);
+    border-radius: 10px;
+    overflow: hidden;
+    backdrop-filter: var(--panel-blur);
+    -webkit-backdrop-filter: var(--panel-blur);
+    z-index: 10;
+}
+
+.server-picker-item {
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.server-picker-item:hover {
+    background: var(--panel-hover);
+    color: var(--text);
+}
+
+.server-picker-item.active {
+    color: var(--accent);
+    background: var(--accent-glow);
 }

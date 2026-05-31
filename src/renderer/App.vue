@@ -5,10 +5,12 @@
         <ConfirmDialogue />
         <div class="app-bar">
             <div class="view-toggle" v-if="currentView !== 'setup'">
-                <button v-if="hideSetup" class="view-btn" :class="{ active: currentView === 'tasks' }" @click="currentView = 'tasks'">
+                <button v-if="hideSetup" class="view-btn" :class="{ active: currentView === 'tasks' }"
+                    @click="currentView = 'tasks'">
                     <span>Tasks</span>
                 </button>
-                <button v-else class="view-btn" :class="{ active: currentView === 'setup' }" @click="currentView = 'setup'">
+                <button v-else class="view-btn" :class="{ active: currentView === 'setup' }"
+                    @click="currentView = 'setup'">
                     <span>Setup</span>
                 </button>
                 <button class="view-btn" :class="{ active: currentView === 'schedule' }"
@@ -38,10 +40,10 @@
                 </button>
             </div>
         </div>
-        <SetupView v-if="currentView === 'setup'" @done="onSetupDone" />
+        <SetupView v-if="currentView === 'setup'" @done="onSetupDone" :gameConfig="GAME_CONFIG" />
         <TasksView v-else-if="currentView === 'tasks'" :accountsPerGame="accountsPerGame"
-            @refreshAccount="updateAccountTaskData" @refresh="loadData" />
-        <ScheduleView v-else-if="currentView === 'schedule'" />
+            @refreshAccount="updateAccountTaskData" @refresh="loadData" :gameConfig="GAME_CONFIG" />
+        <ScheduleView v-else-if="currentView === 'schedule'" :gameConfig="GAME_CONFIG" />
         <AppFooter />
     </div>
 </template>
@@ -59,7 +61,9 @@ import ConfirmDialogue from './components/ConfirmDialogue.vue'
 import AppSettings from './components/AppSettings.vue'
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js'
-import { computeTaskResetData, computeSingleAccountResetData } from './resetProcessor'
+import { createResetProcessor } from './resetProcessor';
+const GAME_CONFIG = ref(null);
+let computeTaskResetData, computeSingleAccountResetData;
 
 const { setTheme } = useNotification()
 const { settings, showSettings, saveSettings } = useSettings()
@@ -100,14 +104,17 @@ const scheduleUpdate = () => {
 watch(() => settings.value.theme, (val) => setTheme(val), { immediate: true });
 
 onMounted(async () => {
-    await loadData()
+    GAME_CONFIG.value = await window.api.getGameConfig();
+    ({ computeTaskResetData, computeSingleAccountResetData } = createResetProcessor(GAME_CONFIG.value));
 
-    hideSetup.value = accountsPerGame.value.length > 0
-    currentView.value = hideSetup.value ? 'tasks' : 'setup'
-    scheduleUpdate()
+    await loadData();
+
+    hideSetup.value = accountsPerGame.value.length > 0;
+    currentView.value = hideSetup.value ? 'tasks' : 'setup';
+    scheduleUpdate();
 })
 
 onUnmounted(() => {
-    clearTimeout(taskTimer)
+    clearTimeout(taskTimer);
 })
 </script>

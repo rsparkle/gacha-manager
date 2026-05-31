@@ -37,14 +37,31 @@
 
                     <div class="hero-bottom">
                         <div class="hero-account-info">
-                            <span class="account-server">{{ selectedAccount?.server }}</span>
+                            <div class="server-wrapper" ref="serverAnchor">
+                                <span class="account-server" :class="{ 'server-clickable': canChangeServer }"
+                                    @click="canChangeServer && (editingServer = !editingServer)">
+                                    {{ selectedAccount?.server }}
+                                    <svg v-if="canChangeServer" width="8" height="8" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                                        stroke-linejoin="round">
+                                        <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                </span>
+                                <Transition name="popover">
+                                    <div v-if="editingServer" class="server-picker">
+                                        <div class="server-picker-item" v-for="s in availableServers" :key="s"
+                                            :class="{ active: s === selectedAccount?.server }" @click="selectServer(s)">
+                                            {{ s }}</div>
+                                    </div>
+                                </Transition>
+                            </div>
                             <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{ selectedAccount?.uid
                                 || 0
-                                }}</span>
+                            }}</span>
                             <input class="account-uid account-uid-input" v-else type="text" v-model="editUidValue"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)" @keyup.escape="cancelUidEdit"
-                                ref="uidInput" maxlength="9" inputmode="numeric"
+                                ref="uidInput" :maxlength="currentGameConfig?.uid_digits" inputmode="numeric"
                                 @input="editUidValue = editUidValue.replace(/\D/g, '')">
                         </div>
                         <div class="hero-progress">
@@ -91,14 +108,16 @@
 
                 <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }"
                     @error="handleImageError(game)">
-                    <img :src="getGameImageSrc(selectedGame)" style="display: none;" :key="selectedGame.id"  @error="handleImageError(selectedGame)"/>
+                    <img :src="gameImages[selectedGame.id]" style="display: none;" :key="selectedGame.id"
+                        @error="handleImageError(selectedGame)" />
                     <div class="task-card" v-for="(tasks, task_type) in selectedAccount.tasks" :key="task_type">
                         <div class="task-card-header">
                             <p class="task-card-title">{{ task_type }}</p>
                         </div>
                         <div class="task-list">
                             <div class="task" v-for="task in tasks" :key="task.label"
-                                :class="{ done: task.isCompleted, disabled: task.isDisabled }" @click="manageTaskLog(task)">
+                                :class="{ done: task.isCompleted, disabled: task.isDisabled }"
+                                @click="manageTaskLog(task)">
                                 <div class="task-check">
                                     <span v-if="task.isCompleted">✓</span>
                                     <span v-if="task.isDisabled">✗</span>
@@ -135,7 +154,6 @@ import { ref, onMounted, onUnmounted, computed, watchEffect, watch, nextTick } f
 import { useNotification } from './composables/useNotification.js'
 import { useConfirm } from './composables/useConfirm.js'
 import { useSettings } from './composables/useSettings.js'
-import { GAME_CONFIG } from '../game-config.js';
 const { settings, saveSettings, toggleSetting } = useSettings()
 
 const { confirm } = useConfirm()
@@ -145,12 +163,19 @@ const props = defineProps({
     accountsPerGame: {
         type: Array,
         default: () => []
+    },
+    gameConfig: {
+        type: Object,
+        default: () => ({})
     }
 })
+
+const GAME_CONFIG = props.gameConfig;
 
 const emit = defineEmits(['refreshAccount', 'refresh'])
 
 const missingGames = ref([])
+const gameImages = ref({})
 const showGamePicker = ref(false)
 const selectedGame = ref(null)
 const selectedAccount = ref(null)
@@ -164,6 +189,11 @@ const uidInput = ref(null)
 const editLabelValue = ref('')
 const editingLabelId = ref(null)
 const labelInput = ref(null)
+
+const editingServer = ref(false)
+const serverAnchor = ref(null)
+
+const currentGameConfig = computed(() => GAME_CONFIG[selectedGame.value?.name])
 
 const isUrgent = (task) => {
     return taskProgress(task) > 80
@@ -215,6 +245,7 @@ watch(() => props.accountsPerGame, async (newAccountsPerGame) => {
 watch(() => [selectedGame, selectedAccount], () => {
     cancelLabelEdit()
     cancelUidEdit()
+    editingServer.value = false
 })
 
 watch(urgentTasks, (urgentEntries) => {
@@ -351,23 +382,29 @@ const commitUidEdit = async (account_id) => {
     }
 
     const newUid = editUidValue.value;
+    const id = selectedAccount.value.id
+    let server;
 
     if (!newUid) {
         createNotification('error', "Your UID can't be empty!", 2000);
         return
     }
 
-    if (newUid.toString().length !== 9) {
-        createNotification("error", "Your UID should have 9 digits!", 2000);
+    if (newUid.toString().length !== currentGameConfig.value.uid_digits) {
+        createNotification("error", `Your UID should have ${currentGameConfig.value.uid_digits} digits!`, 2000);
         return
     }
-    const firstDigit = parseInt(newUid.toString()[0]);
-    const server = Object.entries(GAME_CONFIG[selectedGame.value.name].servers).find(([_, s]) => s.uid_prefix === firstDigit)?.[0];
-    const id = selectedAccount.value.id
 
-    if (!server) {
-        createNotification('error', 'Your UID is invalid.', 2000);
-        return
+    if (currentGameConfig.value.has_uid_pattern) {
+        const firstDigit = parseInt(newUid.toString()[0]);
+        server = Object.entries(currentGameConfig.value.servers).find(([_, s]) => s.uid_prefix === firstDigit)?.[0];
+
+        if (!server) {
+            createNotification('error', 'Your UID is invalid.', 2000);
+            return
+        }
+    } else {
+        server = selectedAccount.value.server;
     }
 
     await apiCall(
@@ -384,6 +421,7 @@ const commitUidEdit = async (account_id) => {
 
 const cancelUidEdit = () => {
     editingUid.value = false
+    editingServer.value = false
 }
 
 const commitAndCancelUidEdit = async (account_id) => {
@@ -444,27 +482,54 @@ const commitAndMoveToNext = async (currentAccount) => {
     startLabelEdit(next)
 }
 
+const availableServers = computed(() => {
+    if (!selectedGame.value) return []
+    const config = GAME_CONFIG[selectedGame.value.name]
+    if (!config || config.has_uid_pattern) return []
+    return Object.keys(config.servers)
+})
+
+const canChangeServer = computed(() => {
+    if (!selectedGame.value) return false
+    const config = GAME_CONFIG[selectedGame.value.name]
+    return config && !config.has_uid_pattern
+})
+
+const selectServer = async (server) => {
+    editingServer.value = false
+    if (server === selectedAccount.value.server) return
+    const { id, uid, label } = selectedAccount.value
+    await apiCall(
+        () => window.api.updateAccount({ id, server, uid, label }),
+        () => {
+            createNotification('success', 'Server updated!', 1000)
+            selectedAccount.value.server = server
+            emit('refreshAccount', selectedGame.value.id, selectedAccount.value.id)
+        }
+    )
+}
+
+const handleClickOutside = (e) => {
+    if (serverAnchor.value && !serverAnchor.value.contains(e.target)) {
+        editingServer.value = false
+    }
+}
+
 const toggleAndSaveSetting = (map, gameId, accountId) => {
     toggleSetting(map, gameId, accountId)
     saveSettings()
 }
 
-const getGameImageSrc = (game) => {
-    const slug = game.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '_')
-        .replace(/^_|_$/g, '');
-
+const loadGameImage = async (game) => {
+    const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
     const filename = failedImages.value.has(game.id)
         ? `${slug}_default`
         : `${slug}_${Number(game.game_version).toFixed(1)}`;
-    
-
-    return new URL(`../assets/games/${filename}.webp`, import.meta.url).href;
+    gameImages.value[game.id] = await window.api.cacheImage(`games/${filename}.webp`);
 };
 
 const getGameImageBackgroundUrl = (game) => {
-    return `url(${getGameImageSrc(game)})`;
+    return gameImages.value[game.id] ? `url(${gameImages.value[game.id]})` : '';
 };
 
 const getCharacterThemeImage = () => {
@@ -477,6 +542,7 @@ const getCompletionSticker = () => {
 
 const handleImageError = (game) => {
     failedImages.value = new Set([...failedImages.value, game.id]);
+    loadGameImage(game);
 };
 
 const apiCall = async (fn, onSuccess) => {
@@ -493,7 +559,12 @@ const apiCall = async (fn, onSuccess) => {
 }
 
 onMounted(async () => {
-    missingGames.value = await window.api.getGamesWithoutAccounts()
+    document.addEventListener('mousedown', handleClickOutside);
+    missingGames.value = await window.api.getGamesWithoutAccounts();
+
+    for (const game of props.accountsPerGame) {
+        await loadGameImage(game);
+    };
 
     window.api.on('game-detected', (event, game) => {
         const gameGroup = props.accountsPerGame.find(g => g.name === game)
@@ -511,7 +582,8 @@ onMounted(async () => {
     })
 })
 
-onUnmounted(async () => {
-    window.api.removeAllListeners('game-detected')
+onUnmounted(() => {
+    window.api.removeAllListeners('game-detected');
+    document.removeEventListener('mousedown', handleClickOutside);
 })
 </script>

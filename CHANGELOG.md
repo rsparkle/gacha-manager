@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0] - 2026-05-31
+### Changed
+- Assets and configuration are now served remotely via a dedicated repository
+- Upcoming patches are visually distinct in the schedule page
+### Added
+- Neverness To Everness logic, data and assets
+### Removed
+- Arknights Endfield data and assets
+
 ## [0.7.9] - 2026-04-16
 ### Changed
 - Livestreams are skipped if no date or prediction is found
