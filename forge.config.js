@@ -39,7 +39,7 @@ module.exports = {
       console.log('  ✓ Copied production node_modules');
       const appUpdateYml = {
         provider: 'github',
-        owner: 'ricardomagid',
+        owner: 'rsparkle',
         repo: 'gacha-manager',
       };
 
@@ -91,7 +91,7 @@ module.exports = {
       name: '@electron-forge/publisher-github',
       config: {
         repository: {
-          owner: 'ricardomagid',
+          owner: 'rsparkle',
           name: 'gacha-manager'
         },
         prerelease: false,

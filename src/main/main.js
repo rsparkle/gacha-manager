@@ -11,9 +11,9 @@ const { autoUpdater } = require('electron-updater');
 const { dialog } = require('electron');
 const store = new Store()
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
-const CONFIG_BASE = 'https://raw.githubusercontent.com/ricardomagid/gacha-manager-assets/refs/heads/main/game-config.json';
+const CONFIG_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-config.json';
 const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
-const ASSETS_BASE = 'https://raw.githubusercontent.com/ricardomagid/gacha-manager-assets/refs/heads/main';
+const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main';
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
 
 let GAME_CONFIG = null;
@@ -254,7 +254,7 @@ app.whenReady().then(async () => {
   if (app.isPackaged) {
     autoUpdater.setFeedURL({
       provider: 'github',
-      owner: 'ricardomagid',
+      owner: 'rsparkle',
       repo: 'gacha-manager',
     });
     autoUpdater.checkForUpdatesAndNotify();
@@ -272,7 +272,7 @@ app.whenReady().then(async () => {
     return net.fetch('file:///' + filePath);
   });
 
-  app.setAppUserModelId('com.ricardomagid.gacha-manager');
+  app.setAppUserModelId('com.rsparkle.gacha-manager');
 
   initDB();
   runMigrations();

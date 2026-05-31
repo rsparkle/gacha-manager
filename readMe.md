@@ -7,7 +7,7 @@ A desktop task manager built for people who play multiple gacha games at once. T
 ---
 
 ## Project Status
-- **Current Version:** `v0.8.1` (Alpha)
+- **Current Version:** `v0.8.2` (Alpha)
 - **Status:** Active Development. Core logic is functional; game data is actively being expanded.
 
 ## Preview
@@ -48,7 +48,7 @@ https://github.com/user-attachments/assets/b4fb7ae1-ec34-4e7b-9095-e7a8d2724ef7
 
 ```bash
 # Clone the repo
-git clone https://github.com/ricardomagid/GachaManager.git
+git clone https://github.com/rsparkle/GachaManager.git
 
 # Install dependencies
 npm install

@@ -1,7 +1,7 @@
 {
   "name": "gacha-manager",
   "productName": "gacha-manager",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "A task manager for gacha game dailies and resets",
   "main": ".vite/build/main.js",
   "private": true,
@@ -14,13 +14,13 @@
   },
   "keywords": [],
   "author": {
-    "name": "ricardomagid",
+    "name": "rsparkle",
     "email": "ricardomagid50@gmail.com"
   },
   "build": {
     "publish": {
       "provider": "github",
-      "owner": "ricardomagid",
+      "owner": "rsparkle",
       "repo": "gacha-manager"
     }
   },
