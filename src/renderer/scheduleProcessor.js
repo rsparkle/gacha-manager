@@ -46,6 +46,15 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return trailer;
   }
 
+  function getMondayOfSameWeek(date) {
+    const startDate = new Date(date);
+    const currentDay = startDate.getUTCDay();
+    const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    startDate.setUTCDate(startDate.getUTCDate() - distanceToMonday);
+
+    return startDate;
+  }
+
   function computePhaseDates(gameData, game, server) {
     const secondPhaseUTCHour = GAME_CONFIG[game].second_phase_hours[server];
 
@@ -94,7 +103,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
       const characterTrailers = {};
       for (const { phase, character } of trailerEntries) {
         if (character) {
-          const trailerDate = getTrailerDate(phase, gameData.trailer_distance);
+          const trailerDate = getTrailerDate(phase, gameData.character_trailer_distance);
           characterTrailers[character] = {
             date: trailerDate,
             label: `${character} Trailer`,
@@ -102,6 +111,23 @@ export function createScheduleProcessor(GAME_CONFIG) {
             fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
             confirmed: trailerDate.getTime() <= Date.now()
           };
+        }
+      }
+
+      const patchTrailers = {};
+      if ((!gameData.is_livestream_predictable || !gameData.livestream_date) && gameData.patch_trailer_distance) {
+        const duration = Number(gameData.current.version_duration) || 0;
+        const trailer = Number(gameData.patch_trailer_distance);
+        const startDate = new Date(current.open);
+        startDate.setUTCDate(startDate.getUTCDate() + duration - trailer);
+        startDate.setUTCHours(4, 0, 0, 0);
+
+        patchTrailers["nextPatchTrailer"] = {
+          date: startDate,
+          label: `${game} ${formatVersion(gameData.next.version)} Trailer`,
+          img: await gameImg(game, gameData.current.version),
+          fallbackImgs: [await defaultImg(game)],
+          confirmed: true
         }
       }
 
@@ -113,8 +139,52 @@ export function createScheduleProcessor(GAME_CONFIG) {
         ? getLivestreamDate(next.secondPhase, gameData.livestream_hour, null)
         : null;
 
+      const dripMarketingDates = {};
+
+      const dripMarketingEntries = [
+        {
+          key: "current",
+          openDate: current.open,
+          associatedLivestream: livestreamDate,
+          versionNumber: formatVersion(gameData.next.version)
+        },
+        {
+          key: "next",
+          openDate: next.open,
+          associatedLivestream: nextLivestreamDate,
+          versionNumber: formatVersion(gameData.next.future_livestream_version)
+        }
+      ];
+
+      for (const { key, openDate, associatedLivestream, versionNumber } of dripMarketingEntries) {
+        let baseAnchorDate = gameData.drip_anchor === "patch"
+          ? new Date(openDate)
+          : (associatedLivestream ? new Date(associatedLivestream) : null);
+
+        if (!baseAnchorDate || isNaN(baseAnchorDate.getTime())) continue;
+
+        baseAnchorDate.setUTCDate(baseAnchorDate.getUTCDate() + (Number(gameData.drip_distance) || 0));
+
+        baseAnchorDate = gameData.drip_week_start_rule ? getMondayOfSameWeek(baseAnchorDate) : baseAnchorDate;
+
+        for (let dayOffset = 0; dayOffset < 2; dayOffset++) {
+          const dripDate = new Date(baseAnchorDate);
+          dripDate.setUTCDate(dripDate.getUTCDate() + dayOffset);
+
+          const uniqueKey = `${key}DripMarketing_day${dayOffset + 1}`;
+
+          dripMarketingDates[uniqueKey] = {
+            date: dripDate,
+            label: `${game} ${versionNumber} 5★ Drip Marketing - Day ${dayOffset + 1}`,
+            img: await gameImg(game, gameData.current.version),
+            fallbackImgs: [await defaultImg(game)],
+            confirmed: true
+          };
+        }
+      }
+
       scheduleData[game] = {
-        ...characterTrailers,
+        ...characterTrailers, ...patchTrailers, ...dripMarketingDates,
 
         release: {
           date: current.open,
@@ -169,7 +239,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
         } : {})
       };
     }
-
+    console.log(scheduleData)
     return scheduleData;
   }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.3] - 2026-06-20
+### Added
+- Patch trailers and drip marketing dates
+
 ## [0.8.0] - 2026-05-31
 ### Changed
 - Assets and configuration are now served remotely via a dedicated repository
