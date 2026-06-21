@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.4] - 2026-06-21
+### Added
+- Support for NTE-style livestream scheduling
+### Changed
+- Refactored schedule processor into focused builder functions
+
 ## [0.8.3] - 2026-06-20
 ### Added
 - Patch trailers and drip marketing dates

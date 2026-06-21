@@ -148,7 +148,6 @@ ipcMain.handle('get-game-config', () => GAME_CONFIG)
 
 ipcMain.handle('cache-image', async (_, filename) => {
   const localPath = path.join(ASSETS_CACHE, filename);
-  console.log('cache-image localPath:', localPath);
 
   try {
     await fs.access(localPath);
@@ -268,7 +267,6 @@ app.whenReady().then(async () => {
   protocol.handle('asset', (request) => {
     const url = request.url.replace('asset://', '');
     const filePath = url.replace(/^([a-z])\//, '$1:/');
-    console.log('asset handler fetching:', 'file:///' + filePath);
     return net.fetch('file:///' + filePath);
   });
 
