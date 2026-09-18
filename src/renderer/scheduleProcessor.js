@@ -111,7 +111,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
       characterTrailers[trailerKey] = {
         date: trailerDate,
         label: `${formatCharacterLabel(characters)} Trailer`,
-        title: `${formatCharacterLabel(characters)} 🎞️`,
+        title: `${formatCharacterLabel(characters)} Trailer`,
         img: await characterImg(characters[0]),
         fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
         confirmed: trailerDate.getTime() <= Date.now()
@@ -215,7 +215,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
       nextPatchTrailer: {
         date: startDate,
         label: `${gameData.abbr} ${gameData.next.version} Trailer`,
-        title: `${gameData.abbr} ${gameData.next.version} 🎞️`,
+        title: `${gameData.abbr} ${gameData.next.version} Trailer`,
         img: await gameImg(game, gameData.current.version),
         fallbackImgs: [await defaultImg(game)],
         confirmed: true
@@ -299,7 +299,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
           livestream: {
             date: livestreamDate,
             label: `${gameData.abbr} ${gameData.next.version} Livestream`,
-            title: `${gameData.abbr} ${gameData.next.version} 🎥`,
+            title: `${gameData.abbr} ${gameData.next.version} Live`,
             img: await livestreamImg(game, gameData.next.version),
             fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
             confirmed: (livestreamDate.getTime() - Date.now()) <= (1000 * 60 * 60 * 24 * 3)
@@ -309,7 +309,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
           nextLivestream: {
             date: nextLivestreamDate,
             label: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
-            title: `${gameData.abbr} ${gameData.next.future_livestream_version} 🎥`,
+            title: `${gameData.abbr} ${gameData.next.future_livestream_version} Live`,
             img: await livestreamImg(game, gameData.next.future_livestream_version),
             fallbackImgs: [await gameImg(game, gameData.next.version), await gameImg(game, gameData.current.version), await defaultImg(game)],
             confirmed: false

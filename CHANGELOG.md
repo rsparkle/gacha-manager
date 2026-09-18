@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.9] - 2026-09-18
+### Changed
+- Replaced emojis with text in calendar pills for better visiblity
+
 ## [0.8.8] - 2026-09-05
 ### Added
 - Automatic deletion of old cached assets
