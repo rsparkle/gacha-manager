@@ -13,13 +13,11 @@ const store = new Store();
 
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 
-//const CONFIG_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-config.json';
-const CONFIG_BASE = null;
+const CONFIG_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-config.json';
 
 const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
 
-//const CONFIG_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-tasks.json';
-const TASKS_BASE = null;
+const TASKS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-tasks.json';
 
 const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
 
