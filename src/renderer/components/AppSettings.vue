@@ -4,71 +4,64 @@
             <div class="settings-modal">
 
                 <div class="settings-header">
-                    <div>
-                        <p class="settings-eyebrow">Configuration</p>
-                        <h1 class="settings-title">Settings</h1>
-                    </div>
-                    <button class="settings-close" @click="showSettings = false">✕</button>
+                    <h1 class="settings-title">Settings</h1>
+                    <button class="settings-close" @click="showSettings = false" aria-label="Close">×</button>
                 </div>
 
                 <div class="settings-body">
 
-                    <div class="settings-section">
-                        <p class="settings-section-label">Automation</p>
+                    <div class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
-                                <span>Automatic Daily Detection</span>
+                                <span class="settings-row-title">Automation</span>
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
                             <label class="toggle">
                                 <input type="checkbox" v-model="settings.checkGachaProcesses">
-                                <span class="toggle-track"></span>
+                                <span class="toggle-box">
+                                    <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
+                                        <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="settings-section">
-                        <p class="settings-section-label">Storage</p>
-
+                    <div class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
-                                <span>Cached Assets</span>
+                                <span class="settings-row-title">Cached assets</span>
                                 <small>Remove downloaded images stored locally</small>
                             </div>
-
                             <button type="button" class="delete-cache-btn" @click="deleteCacheAssets()">
-                                Delete Cache
+                                Delete cache
                             </button>
                         </div>
                     </div>
 
                     <div class="settings-section">
-                        <p class="settings-section-label">Account Settings</p>
+                        <p class="settings-section-title">Account settings</p>
                         <p class="settings-section-desc">Configure automatic dailies and notifications per account</p>
                         <div class="game-groups">
-                            <div v-for="game in props.accountsPerGame" :key="game.id" class="game-group">
+                            <div v-for="game in props.accountsPerGame" :key="game.name" class="game-group">
                                 <p class="game-group-title">{{ game.name }}</p>
                                 <div class="account-grid">
                                     <div v-for="account in game.accounts" :key="account.id" class="account-chip-row">
                                         <span class="account-chip-label">{{ account.label || account.uid }}</span>
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
-                                            <label class="chip-toggle"
-                                                :class="{ active: settings.automaticDailies[game.id]?.includes(account.id) }"
-                                                title="Automatic Dailies" v-if="settings.checkGachaProcesses">
-                                                <input type="checkbox"
-                                                    :checked="settings.automaticDailies[game.id]?.includes(account.id)"
-                                                    @change="toggleSetting(settings.automaticDailies, game.id, account.id)" />
+                                            <button type="button" class="text-toggle"
+                                                :class="{ active: settings.automaticDailies[game.name]?.includes(account.id) }"
+                                                v-if="settings.checkGachaProcesses"
+                                                @click="toggleSetting(settings.automaticDailies, game.name, account.id)">
                                                 Auto
-                                            </label>
-                                            <label class="chip-toggle"
-                                                :class="{ active: settings.windowsNotifications[game.id]?.includes(account.id) }"
-                                                title="Notifications">
-                                                <input type="checkbox"
-                                                    :checked="settings.windowsNotifications[game.id]?.includes(account.id)"
-                                                    @change="toggleSetting(settings.windowsNotifications, game.id, account.id)" />
+                                            </button>
+                                            <button type="button" class="text-toggle"
+                                                :class="{ active: settings.windowsNotifications[game.name]?.includes(account.id) }"
+                                                @click="toggleSetting(settings.windowsNotifications, game.name, account.id)">
                                                 Notify
-                                            </label>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -80,7 +73,7 @@
 
                 <div class="settings-footer">
                     <button class="cancel-btn" @click="showSettings = false">Cancel</button>
-                    <button class="apply-btn" @click="saveChanges">Apply Changes</button>
+                    <button class="apply-btn" @click="saveChanges">Apply changes</button>
                 </div>
 
             </div>
@@ -134,7 +127,7 @@ const deleteCacheAssets = async () => {
 .settings-modal {
     width: min(660px, 90vw);
     max-height: 82vh;
-    border-radius: 16px;
+    border-radius: 10px;
     border: 1px solid var(--border-hover);
     background: var(--bg);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
@@ -145,61 +138,42 @@ const deleteCacheAssets = async () => {
 
 .settings-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    padding: 24px 28px 20px;
+    padding: 22px 28px 18px;
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
 
-.settings-eyebrow {
-    margin: 0 0 4px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--accent);
-    opacity: 0.75;
-}
-
 .settings-title {
     margin: 0;
-    font-size: 26px;
+    font-size: 22px;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     color: var(--text);
 }
 
 .settings-close {
-    width: 30px;
-    height: 30px;
-    border-radius: 7px;
-    border: 1px solid var(--border);
+    border: none;
     background: transparent;
     color: var(--muted2);
-    font-size: 12px;
+    font-size: 22px;
+    line-height: 1;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
-    margin-top: 2px;
+    padding: 4px 6px;
+    transition: color 0.15s;
 }
 
 .settings-close:hover {
-    border-color: var(--border-hover);
     color: var(--text);
-    background: var(--panel-hover);
 }
 
 .settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: 16px 28px 20px;
+    padding: 4px 28px 20px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
 }
 
 .settings-body::-webkit-scrollbar {
@@ -215,29 +189,36 @@ const deleteCacheAssets = async () => {
     border-radius: 4px;
 }
 
+.settings-section--plain {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 2px;
+}
+
+.settings-section--plain:last-of-type {
+    border-bottom: none;
+}
+
 .settings-section {
+    padding-top: 22px;
+}
+
+.settings-section:not(.settings-section--plain) {
     background: var(--card-solid);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 18px 20px;
-    transition: border-color 0.15s;
+    margin-top: 14px;
 }
 
-.settings-section:hover {
-    border-color: var(--border-hover);
-}
-
-.settings-section-label {
-    margin: 0 0 14px;
-    font-size: 10px;
+.settings-section-title {
+    margin: 0 0 4px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted2);
+    color: var(--text);
 }
 
 .settings-section-desc {
-    margin: -6px 0 16px;
+    margin: 0 0 16px;
     font-size: 12px;
     color: var(--muted);
     line-height: 1.55;
@@ -256,9 +237,9 @@ const deleteCacheAssets = async () => {
     gap: 4px;
 }
 
-.settings-row-label span {
+.settings-row-title {
     font-size: 14px;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--text);
 }
 
@@ -270,9 +251,9 @@ const deleteCacheAssets = async () => {
 
 .toggle {
     position: relative;
-    width: 42px;
-    height: 23px;
+    display: inline-flex;
     flex-shrink: 0;
+    cursor: pointer;
 }
 
 .toggle input {
@@ -282,36 +263,32 @@ const deleteCacheAssets = async () => {
     position: absolute;
 }
 
-.toggle-track {
-    position: absolute;
-    inset: 0;
-    border-radius: 999px;
+.toggle-box {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border: 1.5px solid var(--border-hover);
     background: var(--task-bg);
-    border: 1px solid var(--border-hover);
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.1s;
 }
 
-.toggle input:checked+.toggle-track {
-    background: var(--accent-glow);
-    border-color: var(--accent);
-}
-
-.toggle-track::after {
-    content: '';
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background: var(--muted);
-    transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), background 0.2s;
-}
-
-.toggle input:checked+.toggle-track::after {
-    transform: translateX(19px);
+.toggle input:checked+.toggle-box {
     background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+}
+
+.toggle-check {
+    transform: scale(0.6);
+    transition: transform 0.15s;
+}
+
+.toggle input:checked+.toggle-box .toggle-check {
+    transform: scale(1);
 }
 
 .game-groups {
@@ -324,9 +301,7 @@ const deleteCacheAssets = async () => {
     margin: 0 0 8px;
     font-size: 11px;
     font-weight: 700;
-    letter-spacing: 0.06em;
     color: var(--muted2);
-    text-transform: uppercase;
 }
 
 .account-grid {
@@ -335,31 +310,20 @@ const deleteCacheAssets = async () => {
     gap: 7px;
 }
 
-.account-chip {
+.account-chip-row {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 12px;
-    border-radius: 8px;
+    gap: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
     border: 1px solid var(--border);
     background: var(--task-bg);
-    cursor: pointer;
-    user-select: none;
-    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+    transition: border-color 0.15s;
 }
 
-.account-chip:hover {
+.account-chip-row:hover {
     border-color: var(--border-hover);
-    background: var(--panel-hover);
-}
-
-.account-chip--checked {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-}
-
-.account-chip input {
-    display: none;
 }
 
 .account-chip-label {
@@ -374,57 +338,31 @@ const deleteCacheAssets = async () => {
     font-family: 'Space Mono', monospace;
 }
 
-.account-chip-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--task-bg);
-    width: 100%;
-    transition: border-color 0.15s;
-}
-
-.account-chip-row:hover {
-    border-color: var(--border-hover);
-}
-
 .chip-toggles {
     margin-left: auto;
     display: flex;
-    gap: 6px;
+    gap: 14px;
 }
 
-.chip-toggle {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted2);
+.text-toggle {
+    border: none;
+    background: none;
+    padding: 2px 0;
     font-size: 11px;
     font-weight: 600;
+    color: var(--muted2);
     cursor: pointer;
-    transition: all 0.15s;
-    user-select: none;
+    border-bottom: 1.5px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
 }
 
-.chip-toggle input {
-    display: none;
-}
-
-.chip-toggle:hover {
-    border-color: var(--border-hover);
+.text-toggle:hover {
     color: var(--text);
 }
 
-.chip-toggle.active {
-    border-color: var(--accent);
-    background: var(--accent-glow);
+.text-toggle.active {
     color: var(--accent);
+    border-bottom-color: var(--accent);
 }
 
 .settings-footer {
@@ -439,7 +377,7 @@ const deleteCacheAssets = async () => {
 
 .cancel-btn {
     padding: 8px 18px;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--border-hover);
     background: transparent;
     color: var(--muted2);
@@ -456,13 +394,12 @@ const deleteCacheAssets = async () => {
 
 .apply-btn {
     padding: 8px 20px;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 1px solid var(--accent);
     background: var(--accent-glow);
     color: var(--accent);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.02em;
     cursor: pointer;
     transition: all 0.15s;
 }
@@ -501,17 +438,5 @@ const deleteCacheAssets = async () => {
 .confirm-leave-to {
     opacity: 0;
     transform: scale(0.98) translateY(4px);
-}
-
-.section-slide-enter-active,
-.section-slide-leave-active {
-    transition: opacity 0.2s, transform 0.2s;
-    overflow: hidden;
-}
-
-.section-slide-enter-from,
-.section-slide-leave-to {
-    opacity: 0;
-    transform: translateY(-6px);
 }
 </style>

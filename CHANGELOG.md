@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.0] - 2026-09-21
+### Changed
+- Game task definitions are now served remotely from the dedicated repository
+- Replaced SQLite storage with JSON-based account and task-completion storage
+- Reworked the reset processor to read reset rules from game-tasks.json, reducing the need for direct application updates when task schedules change
+- Improved the design across all pages
+- Account server can be changed manually regardless of the UID rules
+- Remove the number of accounts below gacha titles for a cleaner UI
+- Games without accounts are automatically hidden in the calendar by default
+
 ## [0.8.9] - 2026-09-18
 ### Changed
 - Replaced emojis with text in calendar pills for better visiblity

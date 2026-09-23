@@ -189,7 +189,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
       } else {
         releaseEvents[baseKey] = {
           date: phaseDate,
-          label: `${gameData.abbr} ${version}${isPhase1 ? "" : " Second Phase"}`,
+          label: `${gameData.abbr} ${version}${isPhase1 ? " Release" : " Second Phase"}`,
           title: `${gameData.abbr} ${version}${isPhase1 ? "" : " 2nd Phase"}`,
           img: await gameImg(game, patchData.version),
           fallbackImgs: [await defaultImg(game)],

@@ -3,13 +3,12 @@
         <div class="sidebar">
             <p class="sidebar-title">Game List</p>
             <div class="game-list">
-                <div class="game-item" v-for="gameGroup in accountsPerGame" :key="gameGroup.name"
+                <div class="game-item" v-for="gameGroup in trackedGames" :key="gameGroup.name"
                     @click="selectGame(gameGroup)" :class="{ active: selectedGame?.name === gameGroup.name }">
-                    <p class="game-name">{{ gameGroup.name }}</p>
-                    <p class="game-count">
-                        {{ gameGroup.accounts.length }}
-                        {{ gameGroup.accounts.length === 1 ? 'account' : 'accounts' }}
-                    </p>
+                    <div class="game-name-row">
+                        <img class="game-item-icon" :src="sidebarIcons[gameGroup.name]" :alt="gameGroup.name" />
+                        <p class="game-name">{{ gameGroup.name }}</p>
+                    </div>
                     <span v-if="hasUrgentTasks(gameGroup.name)" class="urgent-orb" />
                 </div>
             </div>
@@ -17,7 +16,7 @@
             <div class="add-game-wrapper" v-if="missingGames.length > 0">
                 <Transition name="popover">
                     <div v-if="showGamePicker" class="game-picker">
-                        <div class="game-picker-item" v-for="game in missingGames" :key="game.id"
+                        <div class="game-picker-item" v-for="game in missingGames" :key="game.name"
                             @click="addGame(game)">
                             {{ game.name }}
                         </div>
@@ -33,17 +32,15 @@
             <div class="main-inner" v-if="selectedGame && selectedAccount">
                 <div class="hero">
                     <img v-if="settings.theme" :src="getCharacterThemeImage()" class="hero-img">
-                    <p class="hero-title">{{ selectedGame.name }} {{ Number(selectedGame.game_version).toFixed(1) }}</p>
+                    <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
 
                     <div class="hero-bottom">
                         <div class="hero-account-info">
                             <div class="server-wrapper" ref="serverAnchor">
-                                <span class="account-server" :class="{ 'server-clickable': canChangeServer }"
-                                    @click="canChangeServer && (editingServer = !editingServer)">
+                                <span class="account-server server-clickable" @click="editingServer = !editingServer">
                                     {{ selectedAccount?.server }}
-                                    <svg v-if="canChangeServer" width="8" height="8" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="3" stroke-linecap="round"
-                                        stroke-linejoin="round">
+                                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
                                         <polyline points="6 9 12 15 18 9" />
                                     </svg>
                                 </span>
@@ -57,7 +54,7 @@
                             </div>
                             <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{ selectedAccount?.uid
                                 || 0
-                            }}</span>
+                                }}</span>
                             <input class="account-uid account-uid-input" v-else type="text" v-model="editUidValue"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)" @keyup.escape="cancelUidEdit"
@@ -75,15 +72,14 @@
                             <button class="btn-edit" v-else @mousedown.prevent="cancelLabelEdit"
                                 @click="cancelUidEdit">Cancel</button>
                             <button class="btn-delete" @click="deleteAccount">Delete Account</button>
-                            <button class="btn-bell"
-                                :class="{ active: settings.windowsNotifications?.[selectedGame.id]?.includes(selectedAccount.id) }"
-                                @click="toggleAndSaveSetting(settings.windowsNotifications, selectedGame.id, selectedAccount.id)"
-                                :title="selectedAccount?.notifications ? 'Notifications on' : 'Notifications off'">
+                            <button class="btn-bell" :class="{ active: notificationsEnabled }"
+                                @click="toggleAndSaveSetting(settings.windowsNotifications, selectedGame.name, selectedAccount.id)"
+                                :title="notificationsEnabled ? 'Notifications on' : 'Notifications off'">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    <line v-if="!selectedAccount?.notifications" x1="2" y1="2" x2="22" y2="22"
+                                    <line v-if="!notificationsEnabled" x1="2" y1="2" x2="22" y2="22"
                                         stroke="currentColor" />
                                 </svg>
                             </button>
@@ -92,11 +88,11 @@
                 </div>
 
                 <div class="account-nav">
-                    <div class="account-tab" v-for="account in selectedGame.accounts" :key="account.uid"
+                    <div class="account-tab" v-for="account in selectedGame.accounts" :key="account.id"
                         @click="selectedAccount = account" :class="{ active: selectedAccount?.id === account.id }">
 
                         <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
-                            {{ account.label ?? account.uid }}
+                            {{ account.label || account.uid || 'New Account' }}
                         </span>
                         <input v-else class="account-label-input" type="text" v-model="editLabelValue"
                             @keyup.enter="commitLabelEdit" @keyup.escape="cancelLabelEdit"
@@ -106,16 +102,15 @@
                     <div class="account-tab-add" @click="insertAccount">+</div>
                 </div>
 
-                <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }"
-                    @error="handleImageError(game)">
-                    <img :src="gameImages[selectedGame.id]" style="display: none;" :key="selectedGame.id"
+                <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
+                    <img :src="gameImages[selectedGame.name]" style="display: none;" :key="selectedGame.name"
                         @error="handleImageError(selectedGame)" />
-                    <div class="task-card" v-for="(tasks, task_type) in selectedAccount.tasks" :key="task_type">
+                    <div class="task-card" v-for="(tasks, taskType) in selectedAccount.tasks" :key="taskType">
                         <div class="task-card-header">
-                            <p class="task-card-title">{{ task_type }}</p>
+                            <p class="task-card-title">{{ taskType }}</p>
                         </div>
                         <div class="task-list">
-                            <div class="task" v-for="task in tasks" :key="task.label"
+                            <div class="task" v-for="task in tasks" :key="task.id"
                                 :class="{ done: task.isCompleted, disabled: task.isDisabled }"
                                 @click="manageTaskLog(task)">
                                 <div class="task-check">
@@ -176,6 +171,7 @@ const emit = defineEmits(['refreshAccount', 'refresh'])
 
 const missingGames = ref([])
 const gameImages = ref({})
+const sidebarIcons = ref({})
 const showGamePicker = ref(false)
 const selectedGame = ref(null)
 const selectedAccount = ref(null)
@@ -195,6 +191,14 @@ const serverAnchor = ref(null)
 
 const currentGameConfig = computed(() => GAME_CONFIG[selectedGame.value?.name])
 
+const trackedGames = computed(() =>
+    props.accountsPerGame.filter(game => game.accounts.length > 0)
+)
+
+const notificationsEnabled = computed(() =>
+    settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false
+)
+
 const isUrgent = (task) => {
     return taskProgress(task) > 80
 }
@@ -208,7 +212,7 @@ const urgentTasks = computed(() =>
                 Object.values(account.tasks).flatMap(taskGroup =>
                     taskGroup
                         .filter(task => !task.isCompleted && isUrgent(task))
-                        .map(task => ({ game: game.name, task, toNotify: (settings.value.windowsNotifications?.[game.id] ?? []).includes(account.id) }))
+                        .map(task => ({ game: game.name, task, toNotify: (settings.value.windowsNotifications?.[game.name] ?? []).includes(account.id) }))
                 )
             )
     )
@@ -218,8 +222,23 @@ const hasUrgentTasks = (gameName) => {
     return urgentTasks.value.some(({ game }) => game === gameName)
 }
 
+const hasFinishedAllTasks = (gameName) => {
+    const game = props.accountsPerGame.find(
+        game => game.name === gameName
+    );
+
+    if (!game?.accounts.length) return false;
+
+    return game.accounts.every(account => {
+        const tasks = Object.values(account.tasks ?? {}).flat();
+
+        return tasks.length > 0 &&
+            tasks.every(task => task.isCompleted);
+    });
+};
+
 watchEffect(() => {
-    const games = props.accountsPerGame
+    const games = trackedGames.value
 
     if (!selectedGame.value && games.length > 0) {
         selectedGame.value = games[0]
@@ -228,21 +247,29 @@ watchEffect(() => {
 })
 
 watch(() => props.accountsPerGame, async (newAccountsPerGame) => {
-    missingGames.value = await window.api.getGamesWithoutAccounts()
+    const missingGameNames = await window.api.getGamesWithoutAccounts()
+    missingGames.value = missingGameNames.map(name => ({ name }))
+
+    const games = newAccountsPerGame.filter(game => game.accounts.length > 0)
+
     if (!selectedGame.value) return
-    selectedGame.value = newAccountsPerGame.find(g => g.name === selectedGame.value.name)
+
+    selectedGame.value = games.find(game => game.name === selectedGame.value.name)
+
     if (!selectedGame.value) {
-        selectedGame.value = newAccountsPerGame[0]
-        selectedAccount.value = selectedGame.value.accounts[0] ?? null
+        selectedGame.value = games[0] ?? null
+        selectedAccount.value = selectedGame.value?.accounts[0] ?? null
         return
     }
-    selectedAccount.value = selectedGame.value.accounts.find(a => a.id === selectedAccount.value?.id)
+
+    selectedAccount.value = selectedGame.value.accounts.find(account => account.id === selectedAccount.value?.id)
+
     if (!selectedAccount.value) {
         selectedAccount.value = selectedGame.value.accounts[0] ?? null
     }
 }, { deep: true, immediate: true })
 
-watch(() => [selectedGame, selectedAccount], () => {
+watch([selectedGame, selectedAccount], () => {
     cancelLabelEdit()
     cancelUidEdit()
     editingServer.value = false
@@ -293,9 +320,10 @@ const getCompletionPercentage = (tasks) => {
 }
 
 const insertAccount = async () => {
-    const game_id = selectedGame.value.id;
+    const gameName = selectedGame.value.name;
+
     await apiCall(
-        () => window.api.insertAccounts([{ game_id, server: 'America' }]),
+        () => window.api.insertAccounts([{ name: gameName, server: 'America' }]),
         () => {
             createNotification("success", "Account created!", 1000);
             emit('refresh');
@@ -306,14 +334,16 @@ const insertAccount = async () => {
 const deleteAccount = async () => {
     const ok = await confirm('Are you sure you want to delete this account?')
     if (!ok) return
+
     const accountId = selectedAccount.value.id
-    const gameId = selectedGame.value.id
+    const gameName = selectedGame.value.name
+
     await apiCall(
-        () => window.api.deleteAccount(accountId),
+        () => window.api.deleteAccount({ gameName, id: accountId }),
         () => {
             createNotification('success', 'Account deleted!', 1000)
-            settings.value.automaticDailies[gameId] = settings.value.automaticDailies[gameId]?.filter(id => id !== accountId)
-            settings.value.windowsNotifications[gameId] = settings.value.windowsNotifications[gameId]?.filter(id => id !== accountId)
+            settings.value.automaticDailies[gameName] = settings.value.automaticDailies[gameName]?.filter(id => id !== accountId)
+            settings.value.windowsNotifications[gameName] = settings.value.windowsNotifications[gameName]?.filter(id => id !== accountId)
             saveSettings(true)
             emit('refresh')
         }
@@ -322,8 +352,9 @@ const deleteAccount = async () => {
 
 const addGame = async (game) => {
     showGamePicker.value = false;
+
     await apiCall(
-        () => window.api.insertAccounts([{ game_id: game.id, server: 'America' }]),
+        () => window.api.insertAccounts([{ name: game.name, server: 'America' }]),
         () => {
             createNotification('success', 'Account created!', 1000);
             emit('refresh')
@@ -335,32 +366,36 @@ const manageTaskLog = async (task) => {
     if (task.isDisabled) return
 
     const taskLogData = {
-        task_id: task.id,
-        account_id: selectedAccount.value.id
+        gameName: selectedGame.value.name,
+        taskId: task.id,
+        accountId: selectedAccount.value.id,
+        completed: task.isCompleted
     };
 
     await apiCall(
-        () => task.isCompleted ? window.api.deleteLastTaskLog(taskLogData) : window.api.insertTaskLog(taskLogData),
+        () => window.api.updateTaskLog(taskLogData),
         () => {
             createNotification('success', 'Task updated!', 1000)
-            task.last_completed = task.isCompleted ? null : new Date()
-            emit('refreshAccount', selectedGame.value.id, selectedAccount.value.id)
+            task.last_completed = task.isCompleted ? null : new Date().toISOString()
+            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
         }
     )
 }
 
-const completeTaskLog = async (task, account_id, game_id) => {
+const completeTaskLog = async (task, accountId, gameName) => {
     const taskLogData = {
-        task_id: task.id,
-        account_id
+        gameName,
+        taskId: task.id,
+        accountId,
+        completed: false
     };
 
     await apiCall(
-        () => window.api.insertTaskLog(taskLogData),
+        () => window.api.updateTaskLog(taskLogData),
         () => {
             createNotification('success', 'Task updated!', 1000)
-            task.last_completed = new Date()
-            emit('refreshAccount', game_id, account_id)
+            task.last_completed = new Date().toISOString()
+            emit('refreshAccount', gameName, accountId)
         }
     )
 }
@@ -373,10 +408,10 @@ const startUidEdit = () => {
     })
 }
 
-const commitUidEdit = async (account_id) => {
+const commitUidEdit = async (accountId) => {
     if (!editingUid.value) return
 
-    if (selectedAccount.value.id !== account_id) {
+    if (selectedAccount.value.id !== accountId) {
         cancelUidEdit()
         return
     }
@@ -408,13 +443,13 @@ const commitUidEdit = async (account_id) => {
     }
 
     await apiCall(
-        () => window.api.updateAccount({ id, server: server, label: selectedAccount.value.label, uid: newUid }),
+        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server, label: selectedAccount.value.label, uid: newUid }),
         () => {
             createNotification('success', 'Account updated!', 1000);
             selectedAccount.value.server = server
             selectedAccount.value.uid = newUid
             editingUid.value = false
-            emit('refreshAccount', selectedGame.value.id, selectedAccount.value.id)
+            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
         }
     )
 }
@@ -424,8 +459,8 @@ const cancelUidEdit = () => {
     editingServer.value = false
 }
 
-const commitAndCancelUidEdit = async (account_id) => {
-    await commitUidEdit(account_id)
+const commitAndCancelUidEdit = async (accountId) => {
+    await commitUidEdit(accountId)
     cancelUidEdit()
 }
 
@@ -451,8 +486,9 @@ const commitLabelEdit = async () => {
         return
     }
     const id = selectedAccount.value.id
+
     await apiCall(
-        () => window.api.updateAccount({ id, server: selectedAccount.value.server, uid: selectedAccount.value.uid, label: newLabel }),
+        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server: selectedAccount.value.server, uid: selectedAccount.value.uid, label: newLabel }),
         () => {
             createNotification('success', 'Account updated!', 1000);
             selectedAccount.value.label = newLabel
@@ -485,26 +521,22 @@ const commitAndMoveToNext = async (currentAccount) => {
 const availableServers = computed(() => {
     if (!selectedGame.value) return []
     const config = GAME_CONFIG[selectedGame.value.name]
-    if (!config || config.has_uid_pattern) return []
+    if (!config) return []
     return Object.keys(config.servers)
-})
-
-const canChangeServer = computed(() => {
-    if (!selectedGame.value) return false
-    const config = GAME_CONFIG[selectedGame.value.name]
-    return config && !config.has_uid_pattern
 })
 
 const selectServer = async (server) => {
     editingServer.value = false
     if (server === selectedAccount.value.server) return
+
     const { id, uid, label } = selectedAccount.value
+
     await apiCall(
-        () => window.api.updateAccount({ id, server, uid, label }),
+        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server, uid, label }),
         () => {
             createNotification('success', 'Server updated!', 1000)
             selectedAccount.value.server = server
-            emit('refreshAccount', selectedGame.value.id, selectedAccount.value.id)
+            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
         }
     )
 }
@@ -515,21 +547,27 @@ const handleClickOutside = (e) => {
     }
 }
 
-const toggleAndSaveSetting = (map, gameId, accountId) => {
-    toggleSetting(map, gameId, accountId)
+const toggleAndSaveSetting = (map, gameName, accountId) => {
+    toggleSetting(map, gameName, accountId)
     saveSettings()
 }
 
 const loadGameImage = async (game) => {
     const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    const filename = failedImages.value.has(game.id)
+    const filename = failedImages.value.has(game.name)
         ? `${slug}_default`
-        : `${slug}_${Number(game.game_version).toFixed(1)}`;
-    gameImages.value[game.id] = await window.api.cacheImage(`games/${filename}.webp`);
+        : `${slug}_${game.game_version}`;
+
+    gameImages.value[game.name] = await window.api.cacheImage(`games/${filename}.webp`);
+};
+
+const loadSidebarIcon = async (game) => {
+    const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    sidebarIcons.value[game.name] = await window.api.cacheImage(`games/${slug}_icon.webp`);
 };
 
 const getGameImageBackgroundUrl = (game) => {
-    return gameImages.value[game.id] ? `url(${gameImages.value[game.id]})` : '';
+    return gameImages.value[game.name] ? `url(${gameImages.value[game.name]})` : '';
 };
 
 const getCharacterThemeImage = () => {
@@ -541,9 +579,22 @@ const getCompletionSticker = () => {
 }
 
 const handleImageError = (game) => {
-    failedImages.value = new Set([...failedImages.value, game.id]);
+    if (failedImages.value.has(game.name)) return
+
+    failedImages.value = new Set([...failedImages.value, game.name]);
     loadGameImage(game);
 };
+
+watch(trackedGames, async (games) => {
+    for (const game of games) {
+        if (!gameImages.value[game.name]) {
+            await loadGameImage(game)
+        }
+        if (!sidebarIcons.value[game.name]) {
+            await loadSidebarIcon(game)
+        }
+    }
+}, { immediate: true })
 
 const apiCall = async (fn, onSuccess) => {
     try {
@@ -560,22 +611,22 @@ const apiCall = async (fn, onSuccess) => {
 
 onMounted(async () => {
     document.addEventListener('mousedown', handleClickOutside);
-    missingGames.value = await window.api.getGamesWithoutAccounts();
 
-    for (const game of props.accountsPerGame) {
-        await loadGameImage(game);
-    };
+    const missingGameNames = await window.api.getGamesWithoutAccounts();
+    missingGames.value = missingGameNames.map(name => ({ name }));
 
     window.api.on('game-detected', (event, game) => {
         const gameGroup = props.accountsPerGame.find(g => g.name === game)
         if (!gameGroup) return
 
         gameGroup.accounts.forEach(account => {
-            const toCheck = settings.value.automaticDailies[gameGroup.id]?.includes(account.id)
+            const toCheck = settings.value.automaticDailies[gameGroup.name]?.includes(account.id)
+
             if (toCheck) {
-                const task = account.tasks['Daily'][0]
+                const task = account.tasks.Daily?.[0]
+
                 if (task && task.id && !task.isCompleted) {
-                    completeTaskLog(task, account.id, gameGroup.id)
+                    completeTaskLog(task, account.id, gameGroup.name)
                 }
             }
         })

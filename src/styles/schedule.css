@@ -1,20 +1,14 @@
-/* ─────────────────────────────────────────
-   Schedule layout
-───────────────────────────────────────── */
 #scheduleApp {
-    padding: calc(44px + 24px) 24px 24px;
+    padding: 68px 24px 24px;
     height: 100vh;
     display: flex;
     flex-direction: column;
     gap: 16px;
     box-sizing: border-box;
     overflow: hidden;
-    background: var(--hero-bg);
+    background: var(--bg);
 }
 
-/* ─────────────────────────────────────────
-   Header
-───────────────────────────────────────── */
 .schedule-header {
     display: flex;
     align-items: center;
@@ -26,16 +20,7 @@
 }
 
 .schedule-header::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -20px;
-    width: 260px;
-    height: 260px;
-    border-radius: 50%;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
-    pointer-events: none;
-    z-index: 0;
+    display: none;
 }
 
 .schedule-month-nav,
@@ -64,7 +49,7 @@
 .schedule-month-label .year {
     font-size: 13px;
     font-weight: 600;
-    letter-spacing: 0.15em;
+    letter-spacing: normal;
     color: var(--muted);
 }
 
@@ -74,25 +59,22 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: 2px;
     border: 1px solid var(--border);
     background: transparent;
     color: var(--muted);
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.15s ease;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
     line-height: 1;
 }
 
 .nav-btn:hover {
     border-color: var(--border-selected);
     color: var(--accent);
-    background: var(--accent-glow);
+    background: var(--panel-hover);
 }
 
-/* ─────────────────────────────────────────
-   Loading
-───────────────────────────────────────── */
 .schedule-loading {
     display: flex;
     flex-direction: column;
@@ -114,8 +96,7 @@
     width: 100%;
     max-width: 300px;
     height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    background: var(--border);
     overflow: hidden;
     position: relative;
 }
@@ -124,64 +105,74 @@
     width: 40%;
     height: 100%;
     background: var(--accent);
-    border-radius: 4px;
     position: absolute;
     left: -40%;
     animation: loading-sweep 1.5s infinite linear;
 }
 
 @keyframes loading-sweep {
-    0% { left: -40%; }
-    100% { left: 100%; }
+    0% {
+        left: -40%;
+    }
+
+    100% {
+        left: 100%;
+    }
 }
 
 @keyframes pulse {
-    0%, 100% { opacity: 0.8; transform: scale(0.98); }
-    50% { opacity: 1; transform: scale(1); }
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(0.98);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
-/* ─────────────────────────────────────────
-   Server selector
-───────────────────────────────────────── */
 .server-select {
     display: flex;
     align-items: center;
-    gap: 2px;
-    background: rgba(0, 0, 0, 0.30);
+    gap: 0;
+    background: transparent;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 3px;
+    border-radius: 0;
+    padding: 0;
 }
 
 .server-btn {
+    min-height: 28px;
     padding: 4px 10px;
-    border-radius: 5px;
-    border: 1px solid transparent;
+    border: 0;
+    border-left: 1px solid var(--border);
+    border-radius: 0;
     background: transparent;
     color: var(--muted);
     font-size: 11px;
     font-weight: 600;
     font-family: 'Sora', sans-serif;
-    letter-spacing: 0.05em;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background-color 120ms ease, color 120ms ease;
+}
+
+.server-btn:first-child {
+    border-left: 0;
 }
 
 .server-btn:hover {
     color: var(--text);
     background: var(--panel-hover);
-    border-color: var(--border-hover);
 }
 
 .server-btn.active {
-    background: var(--accent-glow);
-    border-color: var(--border-selected);
+    background: var(--panel-selected);
     color: var(--accent);
 }
 
-/* ─────────────────────────────────────────
-   Game filters
-───────────────────────────────────────── */
 .schedule-nav {
     display: flex;
     align-items: center;
@@ -193,7 +184,7 @@
     align-items: center;
     gap: 6px;
     padding: 4px 10px 4px 6px;
-    border-radius: 6px;
+    border-radius: 2px;
     border: 1px solid var(--border);
     background: transparent;
     cursor: pointer;
@@ -201,32 +192,38 @@
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.game-badge:hover,
-.game-badge--active {
-    background: color-mix(in srgb, var(--gc) 18%, transparent);
+.game-badge:hover {
+    background: color-mix(in srgb, var(--gc) 12%, var(--panel));
     border-color: var(--gc);
+}
+
+.game-badge--disabled {
+    opacity: 0.35;
+    filter: grayscale(1);
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.game-badge--disabled:hover {
+    opacity: 0.55;
 }
 
 .game-badge-icon {
     width: 18px;
     height: 18px;
-    border-radius: 4px;
+    border-radius: 1px;
     object-fit: cover;
     flex-shrink: 0;
 }
 
 .game-badge-name {
     font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: normal;
     font-weight: 600;
     white-space: nowrap;
     color: var(--gc);
 }
 
-/* ─────────────────────────────────────────
-   Full-width schedule body
-───────────────────────────────────────── */
 .schedule-body {
     flex: 1;
     min-height: 0;
@@ -241,10 +238,8 @@
     grid-template-rows: auto 1fr auto;
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--panel);
-    backdrop-filter: var(--panel-blur);
-    -webkit-backdrop-filter: var(--panel-blur);
+    border-radius: 3px;
+    background: var(--card-solid);
 }
 
 .calendar-weeks {
@@ -257,32 +252,27 @@
 .calendar-footer {
     font-size: 9px;
     font-weight: 600;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
+    letter-spacing: normal;
     color: var(--muted);
-    opacity: 0.6;
     text-align: center;
     padding: 8px;
     flex-shrink: 0;
 }
 
-/* ─────────────────────────────────────────
-   Week headers
-───────────────────────────────────────── */
 .week-header {
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     border-bottom: 1px solid var(--border);
-    background: rgba(0, 0, 0, 0.18);
+    background: var(--panel);
 }
 
 .header-cell {
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: normal;
+    color: var(--muted2);
     text-align: center;
     padding: 10px 0;
-    text-transform: uppercase;
     pointer-events: none;
 }
 
@@ -297,9 +287,6 @@
     border-bottom: none;
 }
 
-/* ─────────────────────────────────────────
-   Day cells
-───────────────────────────────────────── */
 .cell {
     min-width: 0;
     min-height: 0;
@@ -307,7 +294,7 @@
     position: relative;
     border-right: 1px solid var(--border);
     background: transparent;
-    transition: box-shadow 0.15s ease;
+    transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
 .cell:last-child {
@@ -315,12 +302,12 @@
 }
 
 .cell:hover {
-    background: transparent;
+    background: var(--task-bg);
     box-shadow: inset 0 0 0 1px var(--border-hover);
 }
 
 .cell.empty {
-    background: rgba(0, 0, 0, 0.08);
+    background: var(--bg);
     pointer-events: none;
 }
 
@@ -348,6 +335,10 @@
     background: rgba(0, 0, 0, 0.04);
 }
 
+.cell--has-art {
+    background: var(--panel);
+}
+
 .cell-art-images {
     position: absolute;
     inset: 0;
@@ -363,24 +354,17 @@
     background-repeat: no-repeat;
     background-position: top center;
     opacity: 0.94;
-    filter: saturate(1.05) contrast(1.02);
-    transition: transform 0.24s ease;
-}
-
-.cell--has-art:hover .cell-art-slice {
-    transform: scale(1.025);
+    filter: saturate(0.95) contrast(1.02);
 }
 
 .cell-art-shade {
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(
-        to bottom,
-        transparent 48%,
-        rgba(0, 0, 0, 0.10) 64%,
-        rgba(0, 0, 0, 0.58) 100%
-    );
+    background: linear-gradient(to bottom,
+            transparent 48%,
+            rgba(0, 0, 0, 0.10) 64%,
+            rgba(0, 0, 0, 0.58) 100%);
 }
 
 .day-number {
@@ -410,7 +394,7 @@
     flex-wrap: wrap;
     align-content: flex-end;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
     overflow: hidden;
 }
 
@@ -423,22 +407,20 @@
     width: auto;
     max-width: 100%;
     min-width: 0;
-    height: 22px;
+    height: 21px;
     flex: 0 1 auto;
     display: inline-flex;
     align-items: center;
     justify-content: flex-start;
     gap: 4px;
-    padding: 0 9px;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--gc) 38%, transparent);
-    background: color-mix(in srgb, var(--gc) 20%, rgba(0, 0, 0, 0.56));
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    padding: 0 7px;
+    border-radius: 2px;
+    border: 1px solid color-mix(in srgb, var(--gc) 46%, var(--border));
+    background: color-mix(in srgb, var(--gc) 24%, rgba(8, 10, 9, 0.84));
     color: rgba(246, 248, 247, 0.96);
     font-family: 'Sora', sans-serif;
     font-size: 8.5px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1;
     white-space: nowrap;
     overflow: hidden;
@@ -449,7 +431,7 @@
 
 .event:hover,
 .event:focus-visible {
-    background: color-mix(in srgb, var(--gc) 42%, rgba(0, 0, 0, 0.52));
+    background: color-mix(in srgb, var(--gc) 36%, rgba(8, 10, 9, 0.84));
     border-color: var(--gc);
     color: #fff;
     outline: none;
@@ -463,7 +445,7 @@
 .event-dot {
     width: 5px;
     height: 5px;
-    border-radius: 50%;
+    border-radius: 1px;
     background: var(--gc);
     flex-shrink: 0;
 }
@@ -472,21 +454,16 @@
     min-width: 0;
 }
 
-/* ─────────────────────────────────────────
-   Floating event tooltip
-───────────────────────────────────────── */
 .schedule-event-tooltip {
     position: fixed;
     z-index: 9999;
     width: 290px;
     max-width: calc(100vw - 24px);
     overflow: hidden;
-    border-radius: 11px;
+    border-radius: 3px;
     border: 1px solid color-mix(in srgb, var(--gc) 52%, var(--border));
-    background: color-mix(in srgb, var(--panel) 94%, #050607 6%);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
-    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+    background: var(--card-solid);
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.3);
     color: var(--text);
     pointer-events: none;
 }
@@ -523,12 +500,10 @@
     right: 0;
     bottom: -2px;
     pointer-events: none;
-    background: linear-gradient(
-        to bottom,
-        transparent 55%,
-        rgba(0, 0, 0, 0.16) 72%,
-        rgba(0, 0, 0, 0.68) 100%
-    );
+    background: linear-gradient(to bottom,
+            transparent 55%,
+            rgba(0, 0, 0, 0.16) 72%,
+            rgba(0, 0, 0, 0.68) 100%);
 }
 
 .schedule-event-tooltip-game {
@@ -539,14 +514,13 @@
     align-items: center;
     min-height: 18px;
     padding: 0 6px;
-    border-radius: 5px;
+    border-radius: 2px;
     border: 1px solid color-mix(in srgb, var(--gc) 55%, transparent);
     background: color-mix(in srgb, var(--gc) 24%, rgba(0, 0, 0, 0.62));
     color: #fff;
     font-size: 8px;
-    font-weight: 750;
-    letter-spacing: 0.10em;
-    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: normal;
 }
 
 .schedule-event-tooltip-game--inline {
@@ -574,16 +548,15 @@
     margin-left: auto;
     color: var(--muted);
     font-size: 8px;
-    font-weight: 650;
-    letter-spacing: 0.11em;
-    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: normal;
     white-space: nowrap;
 }
 
 .schedule-event-tooltip-title {
     color: var(--text);
     font-size: 12px;
-    font-weight: 650;
+    font-weight: 600;
     line-height: 1.35;
 }
 
@@ -603,13 +576,12 @@
 
 .schedule-event-tooltip-unconfirmed {
     padding: 3px 6px;
-    border-radius: 5px;
-    border: 1px dashed rgba(248, 184, 84, 0.38);
-    color: rgba(248, 184, 84, 0.82);
+    border-radius: 2px;
+    border: 1px dashed color-mix(in srgb, var(--urgent) 55%, transparent);
+    color: var(--urgent);
     font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    letter-spacing: normal;
 }
 
 .schedule-event-tooltip-countdown {
@@ -624,32 +596,223 @@
     color: var(--muted);
     font-size: 8px;
     font-weight: 700;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+    letter-spacing: normal;
 }
 
 .schedule-event-tooltip-countdown-value {
     color: var(--accent);
     font-family: 'Space Mono', monospace;
     font-size: 14px;
-    font-weight: 750;
+    font-weight: 700;
     letter-spacing: 0.02em;
 }
 
 .event-tooltip-enter-active,
 .event-tooltip-leave-active {
-    transition: opacity 0.12s ease, filter 0.12s ease;
+    transition: opacity 0.12s ease;
 }
 
 .event-tooltip-enter-from,
 .event-tooltip-leave-to {
     opacity: 0;
-    filter: blur(2px);
 }
 
-/* ─────────────────────────────────────────
-   Responsive fallback
-───────────────────────────────────────── */
+.nav-btn:focus-visible,
+.server-btn:focus-visible,
+.game-badge:focus-visible,
+.event:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+#scheduleApp {
+    --bg: #141917;
+    --panel: #1d2421;
+    --card-solid: #202925;
+    --border: #34423a;
+    --muted: #9baaa1;
+    gap: 20px;
+}
+
+.sparkle #scheduleApp {
+    --bg: #200b12;
+    --panel: #3b1220;
+    --panel-hover: #491827;
+    --panel-selected: #651c2d;
+    --card-solid: #2d101b;
+    --border: #602237;
+    --border-hover: #a53650;
+    --border-selected: #ff4764;
+    --muted: #c194a0;
+    --muted2: #e6bcc7;
+    --text: #fff1f4;
+    --accent: #ff526e;
+}
+
+#scheduleApp .schedule-header {
+    flex-wrap: wrap;
+    row-gap: 12px;
+}
+
+#scheduleApp .schedule-month-label {
+    font-size: 23px;
+}
+
+#scheduleApp .nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    background: var(--panel);
+    color: var(--text);
+}
+
+#scheduleApp .server-select {
+    padding: 3px;
+    border-radius: 8px;
+    background: var(--panel);
+    gap: 3px;
+}
+
+#scheduleApp .server-btn {
+    border: 0;
+    border-radius: 5px;
+    color: var(--muted2);
+}
+
+#scheduleApp .server-btn.active {
+    background: var(--panel-selected);
+    color: var(--text);
+}
+
+#scheduleApp .schedule-nav {
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+#scheduleApp .game-badge {
+    padding: 6px 9px;
+    border-radius: 7px;
+    background: var(--panel);
+}
+
+#scheduleApp .game-badge-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+#scheduleApp .game-badge-name {
+    font-size: 11px;
+}
+
+#scheduleApp .calendar-grid {
+    border-radius: 10px;
+    box-shadow: 0 6px 22px #0003;
+}
+
+#scheduleApp .calendar-weeks {
+    grid-template-rows: none;
+    grid-auto-rows: minmax(0, 1fr);
+}
+
+#scheduleApp .header-cell {
+    padding: 12px 0;
+    font-size: 11px;
+}
+
+#scheduleApp .cell {
+    background: var(--card-solid);
+}
+
+#scheduleApp .cell.empty {
+    background: var(--bg);
+}
+
+#scheduleApp .cell:not(.empty):hover {
+    background: var(--panel-hover);
+}
+
+#scheduleApp .cell.today {
+    box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+#scheduleApp .day-number {
+    top: 7px;
+    right: 7px;
+    min-width: 23px;
+    height: 23px;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    border-radius: 50%;
+    color: var(--muted2);
+    text-shadow: none;
+}
+
+#scheduleApp .cell--has-art .day-number {
+    color: #fff;
+    background: #161219c9;
+}
+
+#scheduleApp .cell.today .day-number {
+    color: var(--bg);
+    background: var(--accent);
+    font-weight: 700;
+}
+
+#scheduleApp .event {
+    height: 25px;
+    padding: 0 7px;
+    border-radius: 5px;
+    font-family: system-ui, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    border-color: color-mix(in srgb, var(--gc) 38%, #343039);
+    background: color-mix(in srgb, var(--gc) 20%, #19171deb);
+}
+
+#scheduleApp .event-dot {
+    border-radius: 50%;
+}
+
+#scheduleApp .events-list {
+    gap: 4px;
+    bottom: 7px;
+}
+
+#scheduleApp .calendar-footer {
+    padding: 10px;
+    font-size: 10px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+}
+
+.schedule-event-tooltip {
+    border-radius: 9px;
+    background: #252128;
+    box-shadow: 0 10px 28px #0006;
+}
+
+.schedule-event-tooltip-game {
+    border-radius: 4px;
+    font-size: 10px;
+}
+
+.schedule-event-tooltip-date,
+.schedule-event-tooltip-countdown-label,
+.schedule-event-tooltip-unconfirmed {
+    font-size: 10px;
+}
+
+.schedule-event-tooltip-title {
+    font-size: 14px;
+}
+
+.schedule-event-tooltip-body {
+    padding: 14px;
+    gap: 10px;
+}
+
 @media (max-width: 1100px) {
     #scheduleApp {
         padding-left: 14px;

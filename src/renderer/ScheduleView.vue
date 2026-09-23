@@ -28,7 +28,7 @@
             <div class="schedule-nav">
                 <button v-for="game in gameList" :key="game" type="button" class="game-badge"
                     :style="{ '--gc': GAME_CONFIG[game]?.color }"
-                    :class="{ 'game-badge--active': selectedGames.includes(game) }"
+                    :class="{ 'game-badge--disabled': !selectedGames.includes(game) }"
                     :aria-pressed="selectedGames.includes(game)" @click="toggleSelectedGames(game)">
                     <img :src="gameIcons[game]" :alt="game" class="game-badge-icon" />
                     <span class="game-badge-name">{{ GAME_CONFIG[game]?.abbr ?? game }}</span>
@@ -162,7 +162,10 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { createScheduleProcessor } from './scheduleProcessor';
 import { useSettings } from './composables/useSettings.js';
 
-const props = defineProps(['gameConfig']);
+const props = defineProps({
+    gameConfig: Object,
+    gamesWithAccounts: Array
+});
 const GAME_CONFIG = computed(() => props.gameConfig ?? {});
 const { settings, saveSettings } = useSettings();
 
@@ -264,6 +267,7 @@ const loadGameIcons = async () => {
 
 const getBackgroundImageWithFallbacks = (event) => {
     const allImages = [event?.img, ...(event?.fallbackImgs || [])].filter(Boolean);
+    console.log(allImages)
     return allImages.map((imgSrc) => `url('${imgSrc}')`).join(', ');
 };
 
@@ -458,6 +462,8 @@ onMounted(() => {
     clockTimer = window.setInterval(() => {
         now.value = new Date();
     }, 30_000);
+
+    selectedGames.value.push(...props.gamesWithAccounts);
 });
 
 onBeforeUnmount(() => {

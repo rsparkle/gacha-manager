@@ -1,35 +1,30 @@
-/* ─────────────────────────────────────────
-   Tasks layout
-───────────────────────────────────────── */
 #tasksApp {
+    --panel: #191d1c;
+    --card-solid: #202725;
+    --border: #343d38;
+    --muted: #98a59e;
     display: flex;
     height: 100vh;
     padding-top: 44px;
-    box-sizing: border-box;
 }
 
-/* ─────────────────────────────────────────
-   Sidebar
-───────────────────────────────────────── */
 .sidebar {
     width: 220px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    padding: 20px 0;
-    border-right: 1px solid var(--border);
+    padding: 18px 0 12px;
     background: var(--panel);
+    border-right: 1px solid var(--border);
 }
 
 .sidebar-title {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    padding: 0 18px 12px;
+    margin: 0 16px 10px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--border);
-    margin: 0 0 8px;
-    color: var(--muted);
+    color: var(--muted2);
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .game-list {
@@ -38,20 +33,57 @@
 }
 
 .game-item {
-    padding: 10px 18px;
-    cursor: pointer;
-    border-left: 2px solid transparent;
-    transition: background 0.15s, border-color 0.15s;
     display: grid;
-    grid-template-areas:
-        "name  orb"
-        "count orb";
+    grid-template-areas: "name orb";
     grid-template-columns: 1fr auto;
     align-items: center;
+    min-height: 46px;
+    padding: 9px 16px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.game-name { grid-area: name; }
-.game-count { grid-area: count; }
+.game-item:hover {
+    background: var(--panel-hover);
+}
+
+.game-item.active {
+    background: var(--panel-selected);
+    border-left-color: var(--accent);
+}
+
+.game-name-row {
+    grid-area: name;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+
+.game-item-icon {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    object-fit: cover;
+    transition: border-color 120ms ease;
+}
+
+.game-item.active .game-item-icon {
+    border-color: var(--accent);
+}
+
+.game-name {
+    margin: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
 
 .urgent-orb {
     grid-area: orb;
@@ -80,105 +112,63 @@
     100% { transform: scale(2.2); opacity: 0; }
 }
 
-.game-item:hover {
-    background: var(--panel-hover);
-}
-
-.game-item.active {
-    border-left-color: var(--accent);
-    background: var(--panel-selected);
-}
-
-.game-name {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin: 0;
-}
-
-.game-count {
-    font-size: 11px;
-    margin: 2px 0 0;
-    color: var(--muted2);
+.add-game-wrapper {
+    position: relative;
+    margin: 14px 12px 0;
 }
 
 .add-game {
-    margin: 16px 12px 0;
-    padding: 10px;
-    border: 1px dashed var(--border-hover);
-    border-radius: 9px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border-hover);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    cursor: pointer;
-    color: var(--muted2);
-    background: transparent;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .add-game:hover {
-    border-style: solid;
+    background: var(--panel-hover);
     border-color: var(--accent);
-    color: var(--accent);
-    background: var(--panel-selected);
+    color: var(--text);
 }
 
-/* ─────────────────────────────────────────
-   Main area
-───────────────────────────────────────── */
-.main {
+.main,
+.main-inner {
+    min-width: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+}
+
+.main {
     background: var(--bg);
 }
 
-.main-inner {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
-}
-
-/* ─────────────────────────────────────────
-   Hero
-───────────────────────────────────────── */
 .hero {
+    position: relative;
     flex-shrink: 0;
-    padding: 24px 28px 14px;
-    border-bottom: 1px solid var(--border);
     display: flex;
     flex-direction: column;
-    gap: 28px;
-    position: relative;
+    gap: 24px;
+    min-height: 150px;
+    padding: 24px 28px 16px;
     overflow: visible;
     background: var(--hero-bg);
-}
-
-.hero::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -40px;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 65%);
-    pointer-events: none;
-    z-index: 1;
+    border-bottom: 1px solid var(--border);
 }
 
 .hero::after {
     content: '';
     position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 50%;
+    inset: auto 0 0;
+    height: 65%;
     background: linear-gradient(to bottom, transparent, var(--hero-fade));
     pointer-events: none;
-    z-index: 1;
 }
 
 .hero-img {
@@ -186,36 +176,41 @@
     right: 0;
     bottom: 0;
     height: 100%;
-    width: auto;
+    max-width: 52%;
     object-fit: contain;
     object-position: right bottom;
+    opacity: 0.88;
     pointer-events: none;
     user-select: none;
-
-    mask-image: linear-gradient(to right, transparent 0%, black 25%);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 24%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 24%);
 }
 
 .hero-title {
-    font-size: 24px;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    margin: 0;
     position: relative;
     z-index: 1;
-    background: var(--gradient-title);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    z-index: 1;
+    margin: 0;
+    color: var(--text);
+    font-size: 25px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.hero-title::before {
+    content: none;
+    display: inline-block;
+    width: 4px;
+    height: 0.8em;
+    margin-right: 10px;
+    background: var(--accent);
 }
 
 .hero-bottom {
+    position: relative;
+    z-index: 2;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    position: relative;
-    z-index: 2;
     gap: 16px;
 }
 
@@ -225,198 +220,207 @@
     gap: 4px;
 }
 
-.btn-bell {
-    height: 29px;
-    width: 32px;
-    border-radius: 8px;
+.account-server {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted2);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.account-uid,
+.account-uid-input,
+.hero-progress,
+.btn-edit,
+.btn-delete,
+.account-tab,
+.account-label-input,
+.task-countdown {
+    font-family: 'Space Mono', monospace;
+}
+
+.account-uid {
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.account-uid-input {
+    width: 100px;
+    padding: 1px 3px;
+    border: 1px solid var(--accent);
+    border-radius: 0;
+    outline: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.hero-progress {
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.hero-progress .complete {
+    color: var(--done);
+}
+
+.complete-sticker {
+    order: -1;
+    display: block;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 3px;
+    pointer-events: none;
+    animation: sticker-pop 180ms ease-out both;
+}
+
+@keyframes sticker-pop {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.88);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-bell,
+.btn-edit,
+.btn-delete {
+    min-height: 29px;
     border: 1px solid var(--border-hover);
-    background: var(--panel-hover);
+    border-radius: 2px;
+    background: var(--panel);
     color: var(--muted2);
     cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.btn-bell {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.15s;
-    flex-shrink: 0;
+    width: 32px;
+    padding: 0;
 }
 
-.btn-bell:hover {
+.btn-edit,
+.btn-delete {
+    padding: 5px 11px;
+}
+
+.btn-bell:hover,
+.btn-edit:hover {
+    background: var(--panel-hover);
     border-color: var(--accent);
     color: var(--text);
 }
 
 .btn-bell.active {
+    background: var(--panel-selected);
     border-color: var(--accent);
     color: var(--accent);
-    background: var(--accent-glow);
-}
-
-.account-server {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-}
-
-.account-uid {
-    font-size: 18px;
-    font-weight: 700;
-    font-family: 'Space Mono', monospace;
-    color: var(--text);
-}
-
-.account-uid-input {
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid var(--accent);
-    color: var(--text);
-    font-size: 18px;
-    font-weight: 700;
-    font-family: 'Space Mono', monospace;
-    outline: none;
-    width: 90px;
-    padding: 0;
-}
-
-.hero-progress {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--accent);
-}
-
-.hero-progress .complete {
-    background: linear-gradient(90deg, #f5c842, #f87171);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    filter: drop-shadow(0 0 6px rgba(245, 200, 66, 0.5));
-}
-
-.complete-sticker {
-    position: relative;
-    width: 55px;
-    height: 55px;
-    right: 25%;
-    bottom: 10px;
-    pointer-events: none;
-    animation: sticker-pop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-@keyframes sticker-pop {
-    0%   { opacity: 0; transform: translateX(-50%) scale(0.5); }
-    100% { opacity: 1; transform: translateX(-50%) scale(1); }
-}
-
-
-.hero-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.btn-edit {
-    padding: 6px 13px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: var(--panel-hover);
-    border: 1px solid var(--border-hover);
-    color: var(--muted2);
-    font-family: 'Space Mono', monospace;
-}
-
-.btn-edit:hover {
-    border-color: var(--accent);
-    color: var(--text);
 }
 
 .btn-delete {
-    padding: 6px 13px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: rgba(248, 113, 113, 0.12);
-    border: 1px solid rgba(248, 113, 113, 0.35);
-    color: rgba(248, 113, 113, 0.85);
-    backdrop-filter: blur(4px);
-    font-family: 'Space Mono', monospace;
+    border-color: #693b3f;
+    background: #2b1719;
+    color: #dc8585;
 }
 
 .btn-delete:hover {
-    background: rgba(248, 113, 113, 0.22);
-    border-color: rgba(248, 113, 113, 0.7);
-    color: var(--urgent);
+    border-color: var(--urgent);
+    background: #381b1f;
+    color: #f09a9a;
 }
 
-.add-game-wrapper {
-    position: relative;
-    margin: 16px 12px 0;
+.game-picker,
+.server-picker {
+    position: absolute;
+    z-index: 10;
+    overflow: hidden;
+    border: 1px solid var(--border-hover);
+    border-radius: 2px;
+    background: var(--card-solid);
+    box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
 }
 
 .game-picker {
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 0; right: 0;
-    background: var(--card-solid);
-    border: 1px solid var(--border-hover);
-    border-radius: 10px;
-    overflow: hidden;
-    backdrop-filter: var(--panel-blur);
+    right: 0;
+    bottom: calc(100% + 5px);
+    left: 0;
 }
 
 .game-picker-item {
-    padding: 10px 14px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
     color: var(--text);
     cursor: pointer;
-    transition: background 0.15s;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.game-picker-item:hover {
+.game-picker-item:last-child {
+    border-bottom: 0;
+}
+
+.game-picker-item:hover,
+.server-picker-item:hover {
     background: var(--panel-hover);
-    color: var(--accent);
+    color: var(--text);
 }
 
-.popover-enter-active, .popover-leave-active {
-    transition: opacity 0.15s, transform 0.15s;
+.popover-enter-active,
+.popover-leave-active {
+    transition: opacity 100ms ease, transform 100ms ease;
 }
-.popover-enter-from, .popover-leave-to {
+
+.popover-enter-from,
+.popover-leave-to {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(3px);
 }
 
-/* ─────────────────────────────────────────
-   Account tabs
-───────────────────────────────────────── */
 .account-nav {
     display: flex;
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
     flex-shrink: 0;
+    padding: 0 28px;
+    overflow-x: auto;
     background: var(--panel);
-    backdrop-filter: var(--panel-blur);
-    -webkit-backdrop-filter: var(--panel-blur);
+    border-bottom: 1px solid var(--border);
+}
+
+.account-tab,
+.account-tab-add {
+    margin-bottom: -1px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
 }
 
 .account-tab {
-    padding: 10px 16px;
-    font-size: 12px;
-    font-family: 'Space Mono', monospace;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: all 0.15s;
-    color: var(--muted2);
+    padding: 10px 14px;
+    font-size: 11px;
 }
 
-.account-tab:hover {
+.account-tab:hover,
+.account-tab-add:hover {
     color: var(--text);
 }
 
@@ -426,272 +430,407 @@
 }
 
 .account-tab-add {
-    padding: 10px 12px;
-    cursor: pointer;
+    padding: 8px 12px;
     font-size: 16px;
-    margin-bottom: -1px;
-    border-bottom: 2px solid transparent;
-    color: var(--muted);
-    transition: color 0.15s;
-}
-
-.account-tab-add:hover {
-    color: var(--accent);
 }
 
 .account-label-input {
-    background: transparent;
-    border: none;
-    color: var(--text);
-    font-size: 12px;
-    font-family: 'Space Mono', monospace;
-    outline: none;
     padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 11px;
 }
 
-/* ─────────────────────────────────────────
-   Tasks grid
-───────────────────────────────────────── */
 .tasks-area {
     flex: 1;
-    overflow-y: auto;
-    padding: 20px 28px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-content: start;
-    background-size: cover;
-    background-position: center top;
+    gap: 12px;
+    padding: 20px 28px 28px;
+    overflow-y: auto;
     background-repeat: no-repeat;
+    background-position: center top;
+    background-size: cover;
     box-shadow: inset 0 0 0 9999px var(--tasks-overlay);
 }
 
-.tasks-area::-webkit-scrollbar { width: 4px; }
-.tasks-area::-webkit-scrollbar-track { background: transparent; }
-.tasks-area::-webkit-scrollbar-thumb {
-    background: var(--border-hover);
-    border-radius: 4px;
-}
-
-/* ─────────────────────────────────────────
-   Task cards
-───────────────────────────────────────── */
 .task-card {
-    background: var(--card-solid);
-    backdrop-filter: var(--panel-blur);
-    -webkit-backdrop-filter: var(--panel-blur);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px 16px 12px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    transition: border-color 0.2s, background 0.2s;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--card-solid);
+    transition: border-color 120ms ease;
 }
 
 .task-card:hover {
     border-color: var(--border-hover);
-    background: var(--card-solid-hover);
 }
 
 .task-card-title {
-    font-size: 10px;
+    margin: 0 0 2px;
+    color: var(--text);
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted2);
-    margin: 0;
 }
 
 .task-list {
     display: flex;
     flex-direction: column;
-    gap: 5px;
 }
 
-/* ─────────────────────────────────────────
-   Individual task row
-───────────────────────────────────────── */
 .task {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 10px;
-    border-radius: 9px;
-    background: var(--task-bg);
-    border: 1px solid transparent;
+    min-height: 38px;
+    padding: 7px 4px;
+    border-top: 1px solid var(--border);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background-color 120ms ease;
+}
+
+.task:first-child {
+    border-top: 0;
 }
 
 .task:hover {
-    border-color: var(--border-hover);
-    background: var(--panel-hover);
+    background: var(--task-bg);
 }
 
 .task.done {
-    opacity: 0.4;
+    opacity: 0.52;
 }
 
-.task.done .task-name {
-    text-decoration: line-through;
+.task.done .task-name,
+.task.disabled .task-name {
     color: var(--muted2);
+    text-decoration: line-through;
 }
 
 .task-check {
-    width: 17px;
-    height: 17px;
-    border-radius: 5px;
-    border: 1.5px solid var(--border-hover);
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: 1px solid var(--border-hover);
+    border-radius: 2px;
+    color: var(--check-fg);
     font-size: 9px;
     font-weight: 800;
-    color: var(--check-fg);
-    transition: all 0.15s;
+    transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .task.done .task-check {
-    background: var(--done);
     border-color: var(--done);
+    background: var(--done);
 }
 
 .task.disabled {
-    opacity: 0.35;
+    opacity: 0.34;
     cursor: default;
     pointer-events: none;
 }
 
-.task.disabled .task-name {
-    color: var(--muted);
-    text-decoration: line-through;
-    text-decoration-color: rgba(240, 245, 242, 0.25);
-}
-
 .task.disabled .task-check {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--border);
+    background: var(--panel);
     color: var(--muted);
     font-size: 12px;
 }
 
 .task-name {
     flex: 1;
+    margin: 0;
+    color: var(--text);
     font-size: 13px;
     font-weight: 500;
-    color: var(--text);
-    margin: 0;
 }
 
 .task-completion {
+    width: 76px;
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 4px;
-    width: 76px;
-    flex-shrink: 0;
 }
 
 .task-countdown {
-    font-family: 'Space Mono', monospace;
-    font-size: 10px;
+    padding: 1px 4px;
     color: var(--muted2);
-    background: var(--panel-hover);
-    padding: 2px 6px;
-    border-radius: 5px;
+    font-size: 10px;
     white-space: nowrap;
 }
 
 .task-countdown.urgent {
     color: var(--urgent);
-    background: rgba(248, 113, 113, 0.09);
 }
 
 .task.done .task-countdown {
     color: var(--done);
-    background: rgba(52, 211, 153, 0.08);
 }
 
 .task-countdown-bar {
     width: 68px;
     height: 2px;
-    background: var(--border);
-    border-radius: 99px;
     overflow: hidden;
+    background: var(--border);
 }
 
 .task-progress {
     height: 100%;
-    background: var(--accent);
-    border-radius: 99px;
-    box-shadow: 0 0 6px var(--accent-glow);
-    transition: width 0.5s ease;
+    background: var(--task-progress);
+    transition: width 300ms ease;
 }
 
 .task.done .task-progress {
     background: var(--done);
-    box-shadow: none;
 }
 
-/* ─────────────────────────────────────────
-   Server picker
-───────────────────────────────────────── */
 .server-wrapper {
     position: relative;
     display: inline-flex;
 }
 
-.account-server {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
 .server-clickable {
-    cursor: pointer;
-    border-radius: 5px;
-    padding: 2px 5px 2px 3px;
     margin-left: -3px;
-    transition: background 0.15s, color 0.15s;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
 }
 
 .server-clickable:hover {
-    background: var(--panel-hover);
+    border-color: var(--accent);
     color: var(--text);
 }
 
 .server-picker {
-    position: absolute;
     left: 0;
-    min-width: 110px;
-    background: var(--card-solid);
-    border: 1px solid var(--border-hover);
-    border-radius: 10px;
-    overflow: hidden;
-    backdrop-filter: var(--panel-blur);
-    -webkit-backdrop-filter: var(--panel-blur);
-    z-index: 10;
+    min-width: 116px;
 }
 
 .server-picker-item {
-    padding: 7px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
     color: var(--muted2);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    font-size: 11px;
+    font-weight: 600;
 }
 
-.server-picker-item:hover {
-    background: var(--panel-hover);
-    color: var(--text);
+.server-picker-item:last-child {
+    border-bottom: 0;
 }
 
 .server-picker-item.active {
+    background: var(--panel-selected);
     color: var(--accent);
-    background: var(--accent-glow);
+}
+
+.game-item:focus-visible,
+.add-game:focus-visible,
+.btn-bell:focus-visible,
+.btn-edit:focus-visible,
+.btn-delete:focus-visible,
+.account-tab:focus-visible,
+.account-tab-add:focus-visible,
+.task:focus-visible,
+.server-clickable:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
+.sparkle #tasksApp {
+    --panel: #2b1018;
+    --panel-hover: #461623;
+    --panel-selected: #651c2d;
+    --card-solid: #38131f;
+    --border: #652337;
+    --border-hover: #a53650;
+    --border-selected: #ff4764;
+    --muted: #c194a0;
+    --muted2: #e6bcc7;
+    --text: #fff1f4;
+    --accent: #ff526e;
+    --task-progress: #ff3658;
+    --hero-bg: #360d19;
+}
+
+#tasksApp .sidebar {
+    padding-top: 22px;
+}
+
+#tasksApp .sidebar-title {
+    border: 0;
+    color: var(--muted);
+}
+
+#tasksApp .game-item {
+    margin: 3px 10px;
+    padding: 12px 12px;
+    border-radius: 7px;
+}
+
+#tasksApp .game-item.active {
+    background: linear-gradient(90deg, var(--panel-selected), var(--panel));
+}
+
+#tasksApp .game-item-icon {
+    border-radius: 6px;
+}
+
+#tasksApp .hero {
+    padding: 25px 28px 12px;
+    gap: 22px;
+}
+
+#tasksApp .hero-img {
+    opacity: 1;
+}
+
+#tasksApp .hero-title {
+    font-size: 27px;
+    font-weight: 700;
+}
+
+#tasksApp .hero-bottom {
+    margin-top: auto;
+}
+
+#tasksApp .hero-progress {
+    min-width: 112px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    background: transparent;
+    color: var(--muted2);
+    line-height: 1.2;
+    text-align: center;
+    text-shadow: 0 1px 10px #0008;
+}
+
+#tasksApp .btn-edit,
+#tasksApp .btn-delete,
+#tasksApp .btn-bell,
+#tasksApp .add-game {
+    border-radius: 6px;
+    font-family: inherit;
+}
+
+#tasksApp .account-nav {
+    background: var(--panel);
+    overflow-y: hidden;
+}
+
+#tasksApp .account-tab {
+    font-family: inherit;
+    font-size: 12px;
+    padding: 12px 17px;
+}
+
+#tasksApp .account-tab.active {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+#tasksApp .tasks-area {
+    gap: 18px;
+    padding: 24px 28px;
+    align-items: start;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+#tasksApp .task-card {
+    padding: 18px;
+    gap: 12px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--card-solid) 94%, transparent);
+    box-shadow: 0 5px 16px #0003, inset 0 1px 0 #ffffff05;
+}
+
+#tasksApp .task-card-title {
+    font-size: 14px;
+    padding: 0 5px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+#tasksApp .task {
+    min-height: 48px;
+    padding: 9px 7px;
+    border: 0;
+    border-radius: 6px;
+}
+
+#tasksApp .task-list {
+    gap: 3px;
+}
+
+#tasksApp .task:hover {
+    background: var(--panel-hover);
+}
+
+#tasksApp .task-check {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border-color: var(--muted);
+}
+
+#tasksApp .task-name {
+    line-height: 1.45;
+}
+
+#tasksApp .task.done {
+    opacity: 1;
+}
+
+#tasksApp .task.done .task-name {
+    color: var(--muted);
+}
+
+#tasksApp .task-countdown {
+    font-size: 11px;
+}
+
+#tasksApp .task-countdown-bar {
+    height: 3px;
+    border-radius: 4px;
+}
+
+#tasksApp .task-progress {
+    border-radius: inherit;
+}
+
+#tasksApp .game-picker,
+#tasksApp .server-picker {
+    border-radius: 7px;
+    box-shadow: 0 8px 24px #0005;
+}
+
+@media (max-width: 1350px) {
+    #tasksApp .tasks-area {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    #tasksApp .tasks-area {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        width: 190px;
+    }
+
+    .tasks-area {
+        grid-template-columns: 1fr;
+    }
 }

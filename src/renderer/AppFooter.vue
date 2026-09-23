@@ -2,8 +2,7 @@
     <footer class="app-footer">
         <div class="footer-inner">
             <p class="footer-main">
-                <span class="footer-tag">Fan-Made</span>
-                This is an unofficial, fan-made gacha companion app and is not affiliated with, endorsed by, or
+                This is a non-commercial, unofficial, fan-made gacha companion app and is not affiliated with, endorsed by, or
                 associated with any of the game publishers listed below.
             </p>
             <p class="footer-owners">
@@ -12,9 +11,6 @@
                 <span class="footer-company">Paper Games</span>,
                 <span class="footer-company">Perfect World Games (Hotta Studio)</span>,
                 and all other rights holders.
-            </p>
-            <p class="footer-copy">
-                No commercial use intended
             </p>
         </div>
     </footer>
@@ -47,22 +43,6 @@
     color: var(--muted);
     line-height: 1.6;
     margin: 0;
-}
-
-.footer-tag {
-    display: inline-block;
-    padding: 1px 7px;
-    border-radius: 4px;
-    border: 1px solid var(--border-selected);
-    color: var(--accent);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-right: 7px;
-    vertical-align: middle;
-    position: relative;
-    top: -1px;
 }
 
 .footer-owners {
