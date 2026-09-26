@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.2] - 2026-09-26
+### Changed
+- Character trailer dates are now always marked as estimated
+
 ## [1.0.1] - 2026-09-26
 ### Fixed
 - Future character trailers not appearing due to duplicate trailer keys

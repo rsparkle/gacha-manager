@@ -114,7 +114,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
         title: `${formatCharacterLabel(characters)} Trailer`,
         img: await characterImg(characters[0]),
         fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
-        confirmed: trailerDate.getTime() <= Date.now()
+        confirmed: false,
       };
     }
 
