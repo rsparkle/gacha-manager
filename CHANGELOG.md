@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.1] - 2026-09-26
+### Fixed
+- Future character trailers not appearing due to duplicate trailer keys
+
 ## [1.0.0] - 2026-09-21
 ### Changed
 - Game task definitions are now served remotely from the dedicated repository

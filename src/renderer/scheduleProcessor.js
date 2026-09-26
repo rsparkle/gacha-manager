@@ -91,10 +91,10 @@ export function createScheduleProcessor(GAME_CONFIG) {
 
   async function buildCharacterTrailers(game, gameData, phases) {
     const trailerEntries = [
-      { phaseKey: "phase1", phase: phases.current.open,      patchData: gameData.current, phaseNum: "1" },
-      { phaseKey: "phase2", phase: phases.current.secondPhase, patchData: gameData.current, phaseNum: "2" },
-      { phaseKey: "phase1", phase: phases.next.open,         patchData: gameData.next,    phaseNum: "1" },
-      { phaseKey: "phase2", phase: phases.next.secondPhase,  patchData: gameData.next,    phaseNum: "2" },
+      { phaseKey: "current_phase1", phase: phases.current.open,        patchData: gameData.current, phaseNum: "1" },
+      { phaseKey: "current_phase2", phase: phases.current.secondPhase, patchData: gameData.current, phaseNum: "2" },
+      { phaseKey: "next_phase1",    phase: phases.next.open,           patchData: gameData.next,    phaseNum: "1" },
+      { phaseKey: "next_phase2",    phase: phases.next.secondPhase,    patchData: gameData.next,    phaseNum: "2" },
     ];
 
     const characterTrailers = {};
