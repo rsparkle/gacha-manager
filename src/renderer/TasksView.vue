@@ -54,7 +54,7 @@
                             </div>
                             <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{ selectedAccount?.uid
                                 || 0
-                                }}</span>
+                            }}</span>
                             <input class="account-uid account-uid-input" v-else type="text" v-model="editUidValue"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)" @keyup.escape="cancelUidEdit"
@@ -88,18 +88,36 @@
                 </div>
 
                 <div class="account-nav">
-                    <div class="account-tab" v-for="account in selectedGame.accounts" :key="account.id"
-                        @click="selectedAccount = account" :class="{ active: selectedAccount?.id === account.id }">
+                    <div class="account-nav-list">
+                        <div class="account-tab" v-for="account in selectedGame.accounts" :key="account.id"
+                            @click="selectedAccount = account" :class="{ active: selectedAccount?.id === account.id }">
 
-                        <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
-                            {{ account.label || account.uid || 'New Account' }}
-                        </span>
-                        <input v-else class="account-label-input" type="text" v-model="editLabelValue"
-                            @keyup.enter="commitLabelEdit" @keyup.escape="cancelLabelEdit"
-                            @keydown.tab.prevent="commitAndMoveToNext(account)" @blur="commitLabelEdit" ref="labelInput"
-                            :style="{ width: ((editLabelValue?.length || account.uid?.length) * 7) + 'px' }" />
+                            <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
+                                {{ account.label || account.uid || 'New Account' }}
+                            </span>
+
+                            <input v-else class="account-label-input" type="text" v-model="editLabelValue"
+                                @keyup.enter="commitLabelEdit" @keyup.escape="cancelLabelEdit"
+                                @keydown.tab.prevent="commitAndMoveToNext(account)" @blur="commitLabelEdit"
+                                ref="labelInput"
+                                :style="{ width: ((editLabelValue?.length || account.uid?.length) * 7) + 'px' }" />
+                        </div>
+
+                        <div class="account-tab-add" @click="insertAccount">+</div>
                     </div>
-                    <div class="account-tab-add" @click="insertAccount">+</div>
+
+                    <div class="monthly-sub" @click="startMonthlySubEdit">
+                        <template v-if="!editingMonthlySub">
+                            {{ currentGameConfig?.monthlySub ?? 'Monthly Sub' }}:
+                            <span :class="{ 'monthly-sub-urgent': Number(selectedAccount?.monthlySubRemaining ?? 0) < 5}">
+                                {{ selectedAccount?.monthlySubRemaining ?? 0 }}
+                            </span>
+                        </template>
+
+                        <input v-else ref="monthlySubInput" v-model="monthlySubValue" type="number" min="0" step="1"
+                            @click.stop @keydown.enter.prevent="$event.target.blur()"
+                            @keydown.esc.prevent="cancelMonthlySubEdit" @blur="saveMonthlySub" />
+                    </div>
                 </div>
 
                 <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
@@ -188,6 +206,10 @@ const labelInput = ref(null)
 
 const editingServer = ref(false)
 const serverAnchor = ref(null)
+
+const editingMonthlySub = ref(false)
+const monthlySubValue = ref('')
+const monthlySubInput = ref(null)
 
 const currentGameConfig = computed(() => GAME_CONFIG[selectedGame.value?.name])
 
@@ -312,7 +334,7 @@ const countdownFormat = (countdown) => {
 
 const getCompletionPercentage = (tasks) => {
     const allTasks = Object.values(tasks).flat();
-    const completedTasks = allTasks.filter(task => task.isCompleted).length;
+    const completedTasks = allTasks.filter(task => task.isCompleted || task.isDisabled).length;
 
     return allTasks.length > 0
         ? Math.floor((completedTasks / allTasks.length) * 100)
@@ -516,6 +538,47 @@ const commitAndMoveToNext = async (currentAccount) => {
 
     selectedAccount.value = next
     startLabelEdit(next)
+}
+
+const startMonthlySubEdit = () => {
+    if (editingMonthlySub.value) return
+
+    monthlySubValue.value = selectedAccount.value?.monthlySubRemaining ?? 0
+    editingMonthlySub.value = true
+    nextTick(() => monthlySubInput.value?.select())
+}
+
+const cancelMonthlySubEdit = () => {
+    editingMonthlySub.value = false
+}
+
+const saveMonthlySub = async () => {
+    if (!editingMonthlySub.value) return
+    editingMonthlySub.value = false
+
+    const monthlySubRemaining = Number(monthlySubValue.value)
+    if (!Number.isInteger(monthlySubRemaining) || monthlySubRemaining < 0) {
+        createNotification('error', 'Enter a valid number of days', 2000)
+        return
+    }
+
+    const account = selectedAccount.value
+    if (monthlySubRemaining === Number(account.monthlySubRemaining ?? 0)) return
+
+    await apiCall(
+        () => window.api.updateAccount({
+            gameName: selectedGame.value.name,
+            id: account.id,
+            server: account.server,
+            uid: account.uid,
+            label: account.label,
+            monthlySubRemaining
+        }),
+        () => {
+            account.monthlySubRemaining = monthlySubRemaining
+            createNotification('success', 'Subscription updated!', 1000)
+        }
+    )
 }
 
 const availableServers = computed(() => {

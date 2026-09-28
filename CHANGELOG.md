@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3] - 2026-09-28
+### Added
+- Monthly subscription system added
+- Option to reduce the count by calendar day or when a daily task is completed
+- Setting to enable or disable automatic update checks
+### Fixed
+- Tasks completion logic now takes into account disabled tasks 
+
 ## [1.0.2] - 2026-09-26
 ### Changed
 - Character trailer dates are now always marked as estimated

@@ -13,6 +13,45 @@
                     <div class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
+                                <span class="settings-row-title">Automatic Updates</span>
+                                <small>Allow the app to look for updates</small>
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" v-model="settings.automaticUpdates">
+                                <span class="toggle-box">
+                                    <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
+                                        <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section settings-section--plain">
+                        <div class="settings-row">
+                            <div class="settings-row-label">
+                                <span class="settings-row-title">Monthly Sub Tracking</span>
+                                <small>Choose when to reduce the remaining day count</small>
+                            </div>
+                        </div>
+
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="monthlySubCheck" value="calendar" v-model="settings.monthlySubCheck">
+                                Count each calendar day even when the app is closed
+                            </label>
+
+                            <label>
+                                <input type="radio" name="monthlySubCheck" value="dailyTask" v-model="settings.monthlySubCheck">
+                                Count a day only when its daily task is checked
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section settings-section--plain">
+                        <div class="settings-row">
+                            <div class="settings-row-label">
                                 <span class="settings-row-title">Automation</span>
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
@@ -438,5 +477,28 @@ const deleteCacheAssets = async () => {
 .confirm-leave-to {
     opacity: 0;
     transform: scale(0.98) translateY(4px);
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.radio-group input {
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: var(--accent);
 }
 </style>

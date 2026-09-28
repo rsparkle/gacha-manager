@@ -397,15 +397,47 @@
 
 .account-nav {
     display: flex;
+    align-items: stretch;
     flex-shrink: 0;
     padding: 0 28px;
-    overflow-x: auto;
+    overflow: hidden;
     background: var(--panel);
     border-bottom: 1px solid var(--border);
 }
 
+.account-nav-list {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.monthly-sub {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    padding-left: 16px;
+    margin-left: 12px;
+    border-left: 1px solid var(--border);
+    color: var(--muted2);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.monthly-sub span {
+    padding-left: 2px;
+}
+
+.monthly-sub-urgent {
+    color: var(--urgent);
+    font-weight: 700;
+}
+
 .account-tab,
 .account-tab-add {
+    flex-shrink: 0;
     margin-bottom: -1px;
     border: 0;
     border-bottom: 2px solid transparent;

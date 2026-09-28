@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, protocol, net, Notification } from 'electron';
 
-import { initializeAccounts, getAccounts, insertAccounts, updateAccount, deleteAccount, updateTaskLog } from './accountHelper.js';
+import { initializeAccounts, getAccounts, insertAccounts, updateAccount, deleteAccount, updateTaskLog, syncCalendarMonthlySubs } from './accountHelper.js';
 
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
@@ -290,8 +290,7 @@ ipcMain.handle('cacheImage', async (_event, filename) => {
     /\\/g,
     '/'
   )}`;
-}
-);
+});
 
 ipcMain.handle('getGamesWithoutAccounts', () => {
   const accounts = getAccounts();
@@ -300,8 +299,7 @@ ipcMain.handle('getGamesWithoutAccounts', () => {
     gameName =>
       !accounts[gameName]?.length
   );
-}
-);
+});
 
 ipcMain.handle('getGroupedAccounts', () => getGroupedAccounts());
 
@@ -320,8 +318,7 @@ ipcMain.handle('insertAccounts', (_event, gameList) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('updateAccount', (_event, accountData) => {
   try {
@@ -331,7 +328,10 @@ ipcMain.handle('updateAccount', (_event, accountData) => {
       {
         server: accountData.server,
         uid: accountData.uid,
-        label: accountData.label
+        label: accountData.label,
+        ...(accountData.monthlySubRemaining !== undefined && {
+          monthlySubRemaining: accountData.monthlySubRemaining
+        })
       }
     );
 
@@ -344,8 +344,7 @@ ipcMain.handle('updateAccount', (_event, accountData) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('deleteAccount', (_event, accountData) => {
   try {
@@ -363,16 +362,19 @@ ipcMain.handle('deleteAccount', (_event, accountData) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('updateTaskLog', (_event, taskLogData) => {
   try {
+    const monthlySubCheck = store.get('monthlySubCheck', 'calendar');
+
     updateTaskLog(
       taskLogData.gameName,
       taskLogData.taskId,
       taskLogData.accountId,
-      taskLogData.completed
+      taskLogData.completed,
+      monthlySubCheck,
+      GAME_TASKS[taskLogData.gameName]?.tasks ?? []
     );
 
     return {
@@ -384,8 +386,7 @@ ipcMain.handle('updateTaskLog', (_event, taskLogData) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('loadSettings', () => {
   try {
@@ -418,8 +419,7 @@ ipcMain.handle('saveSettings', (_event, settings) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('sendNotification', (_event, { title, body }) => {
   try {
@@ -440,8 +440,7 @@ ipcMain.handle('sendNotification', (_event, { title, body }) => {
       error: error.message
     };
   }
-}
-);
+});
 
 ipcMain.handle('deleteCacheAssets', async () => {
   try {
@@ -456,8 +455,7 @@ ipcMain.handle('deleteCacheAssets', async () => {
       error: error.message
     };
   }
-}
-);
+});
 
 // --- App Entry Point ---
 
@@ -466,10 +464,12 @@ app.whenReady().then(async () => {
 
   initializeAccounts();
 
+  syncCalendarMonthlySubs(store.get('monthlySubCheck', 'calendar'));
+
   GAME_CONFIG = await loadGameFile(CONFIG_BASE, CONFIG_CACHE);
   GAME_TASKS = await loadGameFile(TASKS_BASE, TASKS_CACHE);
 
-  if (app.isPackaged) {
+  if (app.isPackaged && store.get('automaticUpdates', false)) {
     autoUpdater.setFeedURL({
       provider: 'github',
       owner: 'rsparkle',

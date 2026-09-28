@@ -75,15 +75,19 @@ export function updateAccount(gameName, accountId, changes) {
     throw new Error('Account not found');
   }
 
+  if (changes.monthlySubRemaining !== undefined) {
+    changes.lastMonthlySubEditedDay = new Date().toISOString()
+  }
+
   const nextAccounts = {
     ...accounts,
     [gameName]: gameAccounts.map(account =>
       account.id === accountId
         ? {
-            ...account,
-            ...changes,
-            id: account.id
-          }
+          ...account,
+          ...changes,
+          id: account.id
+        }
         : account
     )
   };
@@ -114,12 +118,7 @@ export function deleteAccount(gameName, accountId) {
   return deletedAccount;
 }
 
-export function updateTaskLog(
-  gameName,
-  taskId,
-  accountId,
-  toDelete
-) {
+export function updateTaskLog(gameName, taskId, accountId, toDelete, monthlySubCheck, taskDefinitions) {
   const account = accounts[gameName]?.find(
     account => account.id === accountId
   );
@@ -130,6 +129,18 @@ export function updateTaskLog(
 
   if (!toDelete) {
     account.tasks[taskId] = new Date().toISOString();
+
+    const task = taskDefinitions.find(
+      task => task.id === taskId
+    );
+    const isDailyTask = task?.type === 'Daily';
+    const today = new Date().toISOString().slice(0, 10);
+    const lastCountedDay = account.lastMonthlySubEditedDay?.slice(0, 10);
+
+    if (monthlySubCheck === 'dailyTask' && isDailyTask && Number(account.monthlySubRemaining ?? 0) > 0 && lastCountedDay !== today) {
+      account.monthlySubRemaining--;
+      account.lastMonthlySubEditedDay = new Date().toISOString();
+    }
   } else {
     if (!Object.hasOwn(account.tasks, taskId)) {
       return false;
@@ -153,4 +164,41 @@ export function getTasksForAccount(gameName, accountId) {
   }
 
   return structuredClone(account.tasks);
+}
+
+export function syncCalendarMonthlySubs(monthlySubCheck) {
+  if (monthlySubCheck !== 'calendar') return;
+
+  const now = new Date().toISOString();
+  const today = now.slice(0, 10);
+  let changed = false;
+
+  for (const gameAccounts of Object.values(accounts)) {
+    for (const account of gameAccounts) {
+      if (account.monthlySubRemaining == null) continue;
+
+      const lastDay = account.lastMonthlySubEditedDay?.slice(0, 10);
+
+      if (!lastDay) {
+        account.lastMonthlySubEditedDay = now;
+        changed = true;
+        continue;
+      }
+
+      const elapsedDays = Math.floor(
+        (Date.parse(today) - Date.parse(lastDay)) / 86_400_000
+      );
+
+      if (elapsedDays <= 0) continue;
+
+      account.monthlySubRemaining = Math.max(
+        0,
+        account.monthlySubRemaining - elapsedDays
+      );
+      account.lastMonthlySubEditedDay = now;
+      changed = true;
+    }
+  }
+
+  if (changed) saveAccounts(accounts);
 }
