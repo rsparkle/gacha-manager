@@ -5,8 +5,13 @@ import { app } from 'electron';
 
 let accounts = {};
 let accountPath;
+let gameTasks;
+let gameConfig;
 
-export function initializeAccounts() {
+export function initializeAccounts({ tasks, config }) {
+  gameTasks = tasks;
+  gameConfig = config;
+
   accountPath = path.join(app.getPath('userData'), 'accounts.json');
 
   if (!fs.existsSync(accountPath)) {
@@ -118,7 +123,7 @@ export function deleteAccount(gameName, accountId) {
   return deletedAccount;
 }
 
-export function updateTaskLog(gameName, taskId, accountId, toDelete, monthlySubCheck, taskDefinitions) {
+export function updateTaskLog(gameName, taskId, accountId, toDelete, monthlySubCheck) {
   const account = accounts[gameName]?.find(
     account => account.id === accountId
   );
@@ -128,18 +133,34 @@ export function updateTaskLog(gameName, taskId, accountId, toDelete, monthlySubC
   }
 
   if (!toDelete) {
-    account.tasks[taskId] = new Date().toISOString();
+    const now = new Date();
+    account.tasks[taskId] = now.toISOString();
 
-    const task = taskDefinitions.find(
-      task => task.id === taskId
-    );
+    // Decrease monthly subscription once per server reset day when a daily task is completed
+    const task = gameTasks[gameName]?.tasks.find(task => task.id === taskId);
     const isDailyTask = task?.type === 'Daily';
-    const today = new Date().toISOString().slice(0, 10);
-    const lastCountedDay = account.lastMonthlySubEditedDay?.slice(0, 10);
 
-    if (monthlySubCheck === 'dailyTask' && isDailyTask && Number(account.monthlySubRemaining ?? 0) > 0 && lastCountedDay !== today) {
+    const resetHour = gameConfig[gameName]?.servers[account.server]?.daily_reset;
+    if (resetHour === undefined) {
+      throw new Error('Daily reset not found for account server');
+    }
+
+    const lastReset = new Date(now);
+    lastReset.setUTCHours(resetHour, 0, 0, 0);
+    if (lastReset > now) {
+      lastReset.setUTCDate(lastReset.getUTCDate() - 1);
+    }
+
+    const lastCountedAt = Date.parse(account.lastMonthlySubEditedDay ?? '');
+
+    if (
+      monthlySubCheck === 'dailyTask' &&
+      isDailyTask &&
+      Number(account.monthlySubRemaining ?? 0) > 0 &&
+      (!Number.isFinite(lastCountedAt) || lastCountedAt < lastReset.getTime())
+    ) {
       account.monthlySubRemaining--;
-      account.lastMonthlySubEditedDay = new Date().toISOString();
+      account.lastMonthlySubEditedDay = now.toISOString();
     }
   } else {
     if (!Object.hasOwn(account.tasks, taskId)) {
@@ -151,7 +172,7 @@ export function updateTaskLog(gameName, taskId, accountId, toDelete, monthlySubC
 
   saveAccounts(accounts);
 
-  return true;
+  return { monthlySubRemaining: account.monthlySubRemaining ?? null };
 }
 
 export function getTasksForAccount(gameName, accountId) {
@@ -169,25 +190,34 @@ export function getTasksForAccount(gameName, accountId) {
 export function syncCalendarMonthlySubs(monthlySubCheck) {
   if (monthlySubCheck !== 'calendar') return;
 
-  const now = new Date().toISOString();
-  const today = now.slice(0, 10);
+  const now = new Date();
+  const nowMs = now.getTime();
+  const dayMs = 86_400_000;
   let changed = false;
 
-  for (const gameAccounts of Object.values(accounts)) {
+  for (const [gameName, gameAccounts] of Object.entries(accounts)) {
     for (const account of gameAccounts) {
       if (account.monthlySubRemaining == null) continue;
 
-      const lastDay = account.lastMonthlySubEditedDay?.slice(0, 10);
+      const resetHour =
+        gameConfig[gameName]?.servers[account.server]?.daily_reset;
 
-      if (!lastDay) {
-        account.lastMonthlySubEditedDay = now;
+      if (!Number.isInteger(resetHour) || resetHour < 0 || resetHour > 23) {
+        throw new Error(`Invalid daily reset for ${gameName}/${account.server}`);
+      }
+
+      const lastMs = Date.parse(account.lastMonthlySubEditedDay ?? '');
+
+      if (!Number.isFinite(lastMs)) {
+        account.lastMonthlySubEditedDay = now.toISOString();
         changed = true;
         continue;
       }
 
-      const elapsedDays = Math.floor(
-        (Date.parse(today) - Date.parse(lastDay)) / 86_400_000
-      );
+      const resetOffset = resetHour * 3_600_000;
+      const currentGameDay = Math.floor((nowMs - resetOffset) / dayMs);
+      const lastGameDay = Math.floor((lastMs - resetOffset) / dayMs);
+      const elapsedDays = currentGameDay - lastGameDay;
 
       if (elapsedDays <= 0) continue;
 
@@ -195,7 +225,7 @@ export function syncCalendarMonthlySubs(monthlySubCheck) {
         0,
         account.monthlySubRemaining - elapsedDays
       );
-      account.lastMonthlySubEditedDay = now;
+      account.lastMonthlySubEditedDay = now.toISOString();
       changed = true;
     }
   }

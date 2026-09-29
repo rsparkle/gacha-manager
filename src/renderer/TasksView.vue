@@ -396,10 +396,10 @@ const manageTaskLog = async (task) => {
 
     await apiCall(
         () => window.api.updateTaskLog(taskLogData),
-        () => {
+        (result) => {
             createNotification('success', 'Task updated!', 1000)
             task.last_completed = task.isCompleted ? null : new Date().toISOString()
-            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
+            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id, result.monthlySubRemaining)
         }
     )
 }
@@ -414,10 +414,10 @@ const completeTaskLog = async (task, accountId, gameName) => {
 
     await apiCall(
         () => window.api.updateTaskLog(taskLogData),
-        () => {
+        (result) => {
             createNotification('success', 'Task updated!', 1000)
             task.last_completed = new Date().toISOString()
-            emit('refreshAccount', gameName, accountId)
+            emit('refreshAccount', gameName, accountId, result.monthlySubRemaining)
         }
     )
 }
@@ -575,8 +575,9 @@ const saveMonthlySub = async () => {
             monthlySubRemaining
         }),
         () => {
-            account.monthlySubRemaining = monthlySubRemaining
-            createNotification('success', 'Subscription updated!', 1000)
+            account.monthlySubRemaining = monthlySubRemaining;
+            account.lastMonthlySubEditedDay = new Date().toISOString()
+            createNotification('success', 'Subscription updated!', 1000);
         }
     )
 }

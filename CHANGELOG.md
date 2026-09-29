@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.4] - 2026-09-29
+### Fixed
+- Monthly subscriptions now count days according to each account's server reset
+
 ## [1.0.3] - 2026-09-28
 ### Added
 - Monthly subscription system added

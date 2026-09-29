@@ -83,26 +83,16 @@ const gamesWithAccounts = computed(() => {
     return accountsPerGame.value.filter(game => game.accounts.length > 0).map(game => game.name)
 })
 
-const updateAccountTaskData = (
-    gameName,
-    accountId
-) => {
-    const game = accountsPerGame.value.find(
-        game => game.name === gameName
-    );
+const updateAccountTaskData = (gameName, accountId, monthlySubRemaining) => {
+  const game = accountsPerGame.value.find(game => game.name === gameName);
+  const account = game?.accounts.find(account => account.id === accountId);
+  if (!account) return;
 
-    if (!game) return;
+  if (monthlySubRemaining !== undefined) {
+    account.monthlySubRemaining = monthlySubRemaining;
+  }
 
-    const account = game.accounts.find(
-        account => account.id === accountId
-    );
-
-    if (!account) return;
-
-    computeSingleAccountResetData(
-        account,
-        gameName
-    );
+  computeSingleAccountResetData(account, gameName);
 };
 
 const onSetupDone = async () => {

@@ -366,19 +366,17 @@ ipcMain.handle('deleteAccount', (_event, accountData) => {
 
 ipcMain.handle('updateTaskLog', (_event, taskLogData) => {
   try {
-    const monthlySubCheck = store.get('monthlySubCheck', 'calendar');
-
-    updateTaskLog(
+    const result = updateTaskLog(
       taskLogData.gameName,
       taskLogData.taskId,
       taskLogData.accountId,
       taskLogData.completed,
-      monthlySubCheck,
-      GAME_TASKS[taskLogData.gameName]?.tasks ?? []
+      store.get('monthlySubCheck', 'calendar')
     );
 
     return {
-      success: true
+      success: true,
+      ...result
     };
   } catch (error) {
     return {
@@ -462,12 +460,15 @@ ipcMain.handle('deleteCacheAssets', async () => {
 app.whenReady().then(async () => {
   await deleteCacheFiles();
 
-  initializeAccounts();
-
-  syncCalendarMonthlySubs(store.get('monthlySubCheck', 'calendar'));
-
   GAME_CONFIG = await loadGameFile(CONFIG_BASE, CONFIG_CACHE);
   GAME_TASKS = await loadGameFile(TASKS_BASE, TASKS_CACHE);
+
+  initializeAccounts({
+    tasks: GAME_TASKS,
+    config: GAME_CONFIG
+  });
+
+  syncCalendarMonthlySubs(store.get('monthlySubCheck', 'calendar'));
 
   if (app.isPackaged && store.get('automaticUpdates', false)) {
     autoUpdater.setFeedURL({
