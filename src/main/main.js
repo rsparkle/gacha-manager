@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, net, Notification } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net, Notification, dialog } from 'electron';
 
 import { initializeAccounts, getAccounts, insertAccounts, updateAccount, deleteAccount, updateTaskLog, syncCalendarMonthlySubs } from './accountHelper.js';
 
@@ -63,9 +63,10 @@ async function fetchWithTimeout(url, ms = 5000) {
 export async function loadGameFile(base, cache) {
   try {
     const response = await fetchWithTimeout(base);
-
     if (response.ok) {
       const data = await response.json();
+
+      await fs.mkdir(path.dirname(cache), { recursive: true });
 
       await fs.writeFile(
         cache,
@@ -100,17 +101,18 @@ function startMonitoring() {
   function checkProcesses() {
     if (!mainWindow || mainWindow.isDestroyed()) return;
 
-    exec('tasklist', (error, stdout) => {
-      if (error || !mainWindow || mainWindow.isDestroyed()) {
-        return;
-      }
+    const automaticDailies = store.get('automaticDailies', {});
+    const gamesToCheck = Object.entries(GAME_CONFIG)
+      .filter(([gameName]) => automaticDailies[gameName]?.length > 0);
 
-      for (const [gameName, gameConfig] of Object.entries(GAME_CONFIG)) {
+    if (gamesToCheck.length === 0) return;
+
+    exec('tasklist', (error, stdout) => {
+      if (error || !mainWindow || mainWindow.isDestroyed()) return;
+
+      for (const [gameName, gameConfig] of gamesToCheck) {
         if (stdout.includes(gameConfig.process)) {
-          mainWindow.webContents.send(
-            'game-detected',
-            gameName
-          );
+          mainWindow.webContents.send('game-detected', gameName);
         }
       }
     });
@@ -455,18 +457,38 @@ ipcMain.handle('deleteCacheAssets', async () => {
   }
 });
 
+ipcMain.handle('syncCalendarMonthlySubs', (_event, monthlySubCheck) => {
+  try {
+    return {
+      success: true, changed: syncCalendarMonthlySubs(monthlySubCheck)
+    };
+  } catch (err) {
+    return {
+      success: false, error: err.message
+    };
+  }
+});
+
 // --- App Entry Point ---
 
 app.whenReady().then(async () => {
   await deleteCacheFiles();
 
-  GAME_CONFIG = await loadGameFile(CONFIG_BASE, CONFIG_CACHE);
-  GAME_TASKS = await loadGameFile(TASKS_BASE, TASKS_CACHE);
+  try {
+    GAME_CONFIG = await loadGameFile(CONFIG_BASE, CONFIG_CACHE);
+    GAME_TASKS = await loadGameFile(TASKS_BASE, TASKS_CACHE);
+  } catch (err) {
+    dialog.showErrorBox('Startup failed', err.message);
+    app.quit();
+    return;
+  }
 
-  initializeAccounts({
-    tasks: GAME_TASKS,
-    config: GAME_CONFIG
-  });
+  try {
+    initializeAccounts({ tasks: GAME_TASKS, config: GAME_CONFIG });
+  } catch {
+    app.quit();
+    return;
+  }
 
   syncCalendarMonthlySubs(store.get('monthlySubCheck', 'calendar'));
 
@@ -511,9 +533,11 @@ app.whenReady().then(async () => {
     return net.fetch(`file:///${filePath}`);
   });
 
-  app.setAppUserModelId(
-    'com.rsparkle.gacha-manager'
-  );
+  app.setAppUserModelId('com.electron.gacha-manager');
+
+  if (!app.requestSingleInstanceLock()) {
+    app.quit()
+  };
 
   createMainWindow();
 

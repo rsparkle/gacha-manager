@@ -1,8 +1,8 @@
 {
   "name": "gacha-manager",
-  "productName": "gacha-manager",
-  "version": "1.0.4",
-  "description": "A task manager for gacha game dailies and resets",
+  "productName": "Gacha Manager",
+  "version": "1.0.5",
+  "description": "A calendar and task manager for gacha game dailies, resets and schedules",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {

@@ -62,9 +62,9 @@
                                 @input="editUidValue = editUidValue.replace(/\D/g, '')">
                         </div>
                         <div class="hero-progress">
-                            <span :class="{ complete: getCompletionPercentage(selectedAccount.tasks) === 100 }">{{
-                                getCompletionPercentage(selectedAccount.tasks) }}% Completed</span>
-                            <img v-if="getCompletionPercentage(selectedAccount.tasks) === 100 && settings.theme"
+                            <span :class="{ complete: completionPercentage === 100 }">{{
+                                completionPercentage }}% Completed</span>
+                            <img v-if="completionPercentage === 100 && settings.theme"
                                 :src="getCompletionSticker()" class="complete-sticker">
                         </div>
                         <div class="hero-actions">
@@ -90,7 +90,8 @@
                 <div class="account-nav">
                     <div class="account-nav-list">
                         <div class="account-tab" v-for="account in selectedGame.accounts" :key="account.id"
-                            @click="selectedAccount = account" :class="{ active: selectedAccount?.id === account.id }">
+                            @click="selectedAccountId = account.id"
+                            :class="{ active: selectedAccount?.id === account.id }">
 
                             <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
                                 {{ account.label || account.uid || 'New Account' }}
@@ -109,7 +110,8 @@
                     <div class="monthly-sub" @click="startMonthlySubEdit">
                         <template v-if="!editingMonthlySub">
                             {{ currentGameConfig?.monthlySub ?? 'Monthly Sub' }}:
-                            <span :class="{ 'monthly-sub-urgent': Number(selectedAccount?.monthlySubRemaining ?? 0) < 5}">
+                            <span
+                                :class="{ 'monthly-sub-urgent': Number(selectedAccount?.monthlySubRemaining ?? 0) < 5 }">
                                 {{ selectedAccount?.monthlySubRemaining ?? 0 }}
                             </span>
                         </template>
@@ -163,10 +165,11 @@ const MS_IN_HOUR = 1000 * 60 * 60
 const MS_IN_MIN = 1000 * 60
 
 import '../styles/tasks.css';
-import { ref, onMounted, onUnmounted, computed, watchEffect, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useNotification } from './composables/useNotification.js'
 import { useConfirm } from './composables/useConfirm.js'
 import { useSettings } from './composables/useSettings.js'
+import { isUrgent, taskProgress } from './composables/useDeadlineNotifications.js'
 const { settings, saveSettings, toggleSetting } = useSettings()
 
 const { confirm } = useConfirm()
@@ -187,14 +190,12 @@ const GAME_CONFIG = props.gameConfig;
 
 const emit = defineEmits(['refreshAccount', 'refresh'])
 
-const missingGames = ref([])
 const gameImages = ref({})
 const sidebarIcons = ref({})
 const showGamePicker = ref(false)
-const selectedGame = ref(null)
-const selectedAccount = ref(null)
+const selectedGameName = ref(null)
+const selectedAccountId = ref(null)
 const failedImages = ref(new Set());
-const notifiedTaskIds = new Set()
 
 const editUidValue = ref('')
 const editingUid = ref(false)
@@ -217,32 +218,31 @@ const trackedGames = computed(() =>
     props.accountsPerGame.filter(game => game.accounts.length > 0)
 )
 
+const selectedGame = computed(() =>
+    trackedGames.value.find(g => g.name === selectedGameName.value)
+    ?? trackedGames.value[0] ?? null
+)
+
+const selectedAccount = computed(() =>
+    selectedGame.value?.accounts.find(a => a.id === selectedAccountId.value)
+    ?? selectedGame.value?.accounts[0] ?? null
+)
+
+const missingGames = computed(() =>
+    props.accountsPerGame.filter(g => g.accounts.length === 0)
+)
+
+
 const notificationsEnabled = computed(() =>
     settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false
 )
 
-const isUrgent = (task) => {
-    return taskProgress(task) > 80
-}
-
-const taskProgress = (task) => Math.max(0, Math.floor(((task.duration - task.nextReset) / task.duration) * 100));
-
-const urgentTasks = computed(() =>
-    props.accountsPerGame.flatMap(game =>
-        game.accounts
-            .flatMap(account =>
-                Object.values(account.tasks).flatMap(taskGroup =>
-                    taskGroup
-                        .filter(task => !task.isCompleted && isUrgent(task))
-                        .map(task => ({ game: game.name, task, toNotify: (settings.value.windowsNotifications?.[game.name] ?? []).includes(account.id) }))
-                )
-            )
-    )
-);
-
-const hasUrgentTasks = (gameName) => {
-    return urgentTasks.value.some(({ game }) => game === gameName)
-}
+const hasUrgentTasks = (gameName) =>
+    props.accountsPerGame
+        .find(g => g.name === gameName)
+        ?.accounts.some(account =>
+            Object.values(account.tasks).flat().some(task => !task.isCompleted && isUrgent(task))
+        ) ?? false
 
 const hasFinishedAllTasks = (gameName) => {
     const game = props.accountsPerGame.find(
@@ -259,67 +259,15 @@ const hasFinishedAllTasks = (gameName) => {
     });
 };
 
-watchEffect(() => {
-    const games = trackedGames.value
-
-    if (!selectedGame.value && games.length > 0) {
-        selectedGame.value = games[0]
-        selectedAccount.value = games[0].accounts[0]
-    }
-})
-
-watch(() => props.accountsPerGame, async (newAccountsPerGame) => {
-    const missingGameNames = await window.api.getGamesWithoutAccounts()
-    missingGames.value = missingGameNames.map(name => ({ name }))
-
-    const games = newAccountsPerGame.filter(game => game.accounts.length > 0)
-
-    if (!selectedGame.value) return
-
-    selectedGame.value = games.find(game => game.name === selectedGame.value.name)
-
-    if (!selectedGame.value) {
-        selectedGame.value = games[0] ?? null
-        selectedAccount.value = selectedGame.value?.accounts[0] ?? null
-        return
-    }
-
-    selectedAccount.value = selectedGame.value.accounts.find(account => account.id === selectedAccount.value?.id)
-
-    if (!selectedAccount.value) {
-        selectedAccount.value = selectedGame.value.accounts[0] ?? null
-    }
-}, { deep: true, immediate: true })
-
-watch([selectedGame, selectedAccount], () => {
+watch([selectedGameName, selectedAccountId], () => {
     cancelLabelEdit()
     cancelUidEdit()
     editingServer.value = false
 })
 
-watch(urgentTasks, (urgentEntries) => {
-    const newUrgent = urgentEntries.filter(({ task, toNotify }) => !notifiedTaskIds.has(task.id) && toNotify)
-    if (newUrgent.length === 0) return;
-
-    newUrgent.forEach(({ task }) => notifiedTaskIds.add(task.id))
-
-    const gameList = new Set();
-    newUrgent.forEach(({ game }) => gameList.add(game));
-    const games = [...gameList].join(', ');
-
-    const body = newUrgent.length === 1
-        ? `There is 1 task approaching its deadline in ${games}`
-        : `There are ${newUrgent.length} tasks approaching their deadlines in ${games}`;
-
-    window.api.sendNotification({
-        title: 'Some tasks are approaching their deadline!',
-        body
-    });
-});
-
 const selectGame = (gameGroup) => {
-    selectedGame.value = gameGroup
-    selectedAccount.value = gameGroup.accounts[0]
+    selectedGameName.value = gameGroup.name
+    selectedAccountId.value = gameGroup.accounts[0]?.id ?? null
 }
 
 const countdownFormat = (countdown) => {
@@ -332,14 +280,15 @@ const countdownFormat = (countdown) => {
             `00:${String(minsLeft).padStart(2, '0')}`
 }
 
-const getCompletionPercentage = (tasks) => {
+const completionPercentage = computed(() => {
+    const tasks = selectedAccount.value?.tasks ?? {};
     const allTasks = Object.values(tasks).flat();
     const completedTasks = allTasks.filter(task => task.isCompleted || task.isDisabled).length;
 
     return allTasks.length > 0
         ? Math.floor((completedTasks / allTasks.length) * 100)
         : 0;
-}
+})
 
 const insertAccount = async () => {
     const gameName = selectedGame.value.name;
@@ -488,7 +437,7 @@ const commitAndCancelUidEdit = async (accountId) => {
 
 const startLabelEdit = (account) => {
     if (selectedAccount.value.id !== account.id) {
-        selectedAccount.value = account
+        selectedAccountId.value = account.id
         return
     }
     editingLabelId.value = account.id
@@ -536,7 +485,7 @@ const commitAndMoveToNext = async (currentAccount) => {
 
     if (!next) return
 
-    selectedAccount.value = next
+    selectedAccountId.value = next.id
     startLabelEdit(next)
 }
 
@@ -631,7 +580,8 @@ const loadSidebarIcon = async (game) => {
 };
 
 const getGameImageBackgroundUrl = (game) => {
-    return gameImages.value[game.name] ? `url(${gameImages.value[game.name]})` : '';
+    const src = gameImages.value[game.name]
+    return src ? `url("${src}")` : ''
 };
 
 const getCharacterThemeImage = () => {
@@ -675,30 +625,9 @@ const apiCall = async (fn, onSuccess) => {
 
 onMounted(async () => {
     document.addEventListener('mousedown', handleClickOutside);
-
-    const missingGameNames = await window.api.getGamesWithoutAccounts();
-    missingGames.value = missingGameNames.map(name => ({ name }));
-
-    window.api.on('game-detected', (event, game) => {
-        const gameGroup = props.accountsPerGame.find(g => g.name === game)
-        if (!gameGroup) return
-
-        gameGroup.accounts.forEach(account => {
-            const toCheck = settings.value.automaticDailies[gameGroup.name]?.includes(account.id)
-
-            if (toCheck) {
-                const task = account.tasks.Daily?.[0]
-
-                if (task && task.id && !task.isCompleted) {
-                    completeTaskLog(task, account.id, gameGroup.name)
-                }
-            }
-        })
-    })
 })
 
 onUnmounted(() => {
-    window.api.removeAllListeners('game-detected');
     document.removeEventListener('mousedown', handleClickOutside);
 })
 </script>

@@ -171,6 +171,7 @@ const { settings, saveSettings } = useSettings();
 
 let computeScheduleData;
 let clockTimer;
+let requestId = 0;
 
 const MS_IN_MIN = 60_000;
 const MS_IN_HOUR = 3_600_000;
@@ -267,7 +268,6 @@ const loadGameIcons = async () => {
 
 const getBackgroundImageWithFallbacks = (event) => {
     const allImages = [event?.img, ...(event?.fallbackImgs || [])].filter(Boolean);
-    console.log(allImages)
     return allImages.map((imgSrc) => `url('${imgSrc}')`).join(', ');
 };
 
@@ -288,8 +288,6 @@ const toggleSelectedGames = (game) => {
 };
 
 const filteredScheduleData = computed(() => {
-    if (selectedGames.value.length === 0) return scheduleData.value;
-
     return Object.fromEntries(
         Object.entries(scheduleData.value)
             .filter(([game]) => selectedGames.value.includes(game))
@@ -444,6 +442,7 @@ watch(() => props.gameConfig, (config) => {
 watch(selectedServer, async (server) => {
     if (!computeScheduleData) return;
 
+    const id = ++requestId;
     hideEventTooltip();
     isLoading.value = true;
 
@@ -451,10 +450,12 @@ watch(selectedServer, async (server) => {
     saveSettings(true);
 
     try {
-        scheduleData.value = await computeScheduleData(server);
+        const data = await computeScheduleData(server)
+        if (id !== requestId) return
+        scheduleData.value = data
         await loadGameIcons();
     } finally {
-        isLoading.value = false;
+        if (id === requestId) isLoading.value = false;
     }
 }, { immediate: true });
 

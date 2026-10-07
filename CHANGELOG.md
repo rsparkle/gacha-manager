@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.5] - 2026-10-07
+### Added
+- Added single-instance protection to prevent multiple app windows from running simultaneously
+- Added support for reset times tied directly to an anchor timestamp via anchorTime
+- Added fallback handling for unknown reset times in external task configuration, defaulting to the daily reset
+- Calendar-mode monthly subscription now updates automatically when the app stays open past a daily reset
+### Fixed
+- Asia server reset calculations now account for the server's shifted reset day
+- Deadline notifications now fire again after a task reset
+- Deadline notifications are no longer suppressed across accounts with the same task
+- Notifications should now appear when deleting cache
+- Editing a UID or account label should no longer be interrupted by the automatic minute refresh
+- Game monitoring and deadline notifications now work on every screen, not just Tasks
+- Cancel in Settings now discards unsaved changes
+- Game version should now be displayed in Setup
+- A corrupted accounts.json is now detected on launch and the app no longer hangs silently on launch
+- Windows notifications now show the app name instead of an internal identifier
+
 ## [1.0.4] - 2026-09-29
 ### Fixed
 - Monthly subscriptions now count days according to each account's server reset

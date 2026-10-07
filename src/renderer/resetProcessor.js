@@ -23,11 +23,17 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
       ];
     }
 
-    throw new Error(`Unknown reset time: ${time}`);
+    // Fall back to daily reset for unknown values in external config
+    return [resetHour, 0];
   }
 
   function atTime(date, time, context) {
     const result = new Date(date);
+
+    if (time === "anchorTime") {
+      return result;
+    }
+
     const [hour, minute] = getTime(time, context.gameConfig, context.resetHour);
 
     result.setUTCHours(hour, minute, 0, 0);
@@ -42,28 +48,24 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     return last > now ? addDays(last, -1) : last;
   }
 
-  function getWeeklyWindow({ lastDailyReset, reset }) {
-    const daysSinceReset = (lastDailyReset.getUTCDay() - reset.weekday + 7) % 7;
+  function getWeeklyWindow({ lastDailyReset, resetDate, reset }) {
+    const daysSinceReset = (resetDate.getUTCDay() - reset.weekday + 7) % 7;
     const last = addDays(lastDailyReset, -daysSinceReset);
-
     return { last, next: addDays(last, 7) };
   }
 
-  function getCalendarWindow({ now, resetHour }, days) {
+  function getCalendarWindow({ now, resetHour, resetDate, dayShift }, days) {
     const boundaries = [];
-    const year = now.getUTCFullYear();
-    const month = now.getUTCMonth();
+    const year = resetDate.getUTCFullYear();
+    const month = resetDate.getUTCMonth();
 
     for (const offset of [-1, 0, 1]) {
       const monthLength = new Date(Date.UTC(year, month + offset + 1, 0)).getUTCDate();
 
       for (const day of days) {
-        boundaries.push(new Date(Date.UTC(
-          year,
-          month + offset,
-          Math.min(day, monthLength),
-          resetHour
-        )));
+        boundaries.push(new Date(
+          Date.UTC(year, month + offset, Math.min(day, monthLength), resetHour) - dayShift * MS_IN_DAY
+        ));
       }
     }
 
@@ -102,7 +104,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     const startTime = reset.startTime ?? 'dailyReset';
     const endTime = reset.endTime ?? startTime;
 
-    const anchor = atTime(reset.anchor, startTime, context);
+    const anchor = atLabel(reset.anchor, startTime, context);
     const intervalMs = reset.intervalDays * MS_IN_DAY;
     const cycles = Math.floor((now - anchor) / intervalMs);
 
@@ -132,27 +134,20 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     const { gameConfig, reset, now } = context;
     const patchStart = new Date(`${gameConfig.current.version_start}T00:00:00Z`);
 
-    const last = atTime(
-      addDays(patchStart, reset.startOffsetDays),
-      reset.startTime ?? 'dailyReset',
-      context
-    );
-
-    const next = atTime(
-      addDays(patchStart, gameConfig.current.version_duration + reset.endOffsetDays),
-      reset.endTime ?? 'dailyReset',
-      context
-    );
+    const last = atLabel(addDays(patchStart, reset.startOffsetDays), reset.startTime ?? 'dailyReset', context);
+    const next = atLabel(addDays(patchStart, gameConfig.current.version_duration + reset.endOffsetDays), reset.endTime ?? 'dailyReset', context);
 
     return { last, next, isDisabled: now < last || now >= next };
   }
 
-  function getSeasonalWindow({ reset }) {
+  function getSeasonalWindow({ reset, now }) {
+    const last = new Date(reset.currentStart);
+    const next = reset.nextStart ? new Date(reset.nextStart) : null;
+
     return {
-      last: new Date(reset.currentStart),
-      next: reset.nextStart
-        ? new Date(reset.nextStart)
-        : null
+      last,
+      next,
+      isDisabled: now < last || (next !== null && now >= next)
     };
   }
 
@@ -215,15 +210,13 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     ) {
       fail();
     }
+  }
 
-    for (const time of [reset.startTime, reset.endTime]) {
-      if (
-        time !== undefined &&
-        !['dailyReset', 'maintenanceStart', 'maintenanceEnd'].includes(time)
-      ) {
-        fail();
-      }
-    }
+  function atLabel(label, time, context) {
+    if (time !== 'dailyReset') return atTime(label, time, context);
+    const d = addDays(new Date(label), -context.dayShift);
+    d.setUTCHours(context.resetHour, 0, 0, 0);
+    return d;
   }
 
   for (const gameName of Object.keys(GAME_TASKS)) {
@@ -268,6 +261,8 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     }
 
     const lastDailyReset = getLastDailyReset(now, resetHour);
+    const dayShift = gameConfig.servers[account.server].day_shift ?? 0;
+    const resetDate = addDays(lastDailyReset, dayShift);
 
     Object.values(account.tasks).forEach(taskGroup => {
       taskGroup.forEach(task => {
@@ -278,7 +273,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         }
 
         const reset = definition.reset;
-        const resetWindow = RESET_HANDLERS[reset.kind]({ now, gameConfig, resetHour, lastDailyReset, reset });
+        const resetWindow = RESET_HANDLERS[reset.kind]({ now, gameConfig, resetHour, lastDailyReset, resetDate, dayShift, reset });
 
         const { last, next } = resetWindow;
 

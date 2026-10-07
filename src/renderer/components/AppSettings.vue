@@ -1,11 +1,11 @@
 <template>
     <Transition name="confirm">
-        <div v-if="showSettings" class="settings-overlay" @click.self="showSettings = false">
+        <div v-if="showSettings" class="settings-overlay" @click.self="closeSettings">
             <div class="settings-modal">
 
                 <div class="settings-header">
                     <h1 class="settings-title">Settings</h1>
-                    <button class="settings-close" @click="showSettings = false" aria-label="Close">×</button>
+                    <button class="settings-close" @click="closeSettings" aria-label="Close">×</button>
                 </div>
 
                 <div class="settings-body">
@@ -17,7 +17,7 @@
                                 <small>Allow the app to look for updates</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="settings.automaticUpdates">
+                                <input type="checkbox" v-model="draft.automaticUpdates">
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -38,12 +38,12 @@
 
                         <div class="radio-group">
                             <label>
-                                <input type="radio" name="monthlySubCheck" value="calendar" v-model="settings.monthlySubCheck">
+                                <input type="radio" name="monthlySubCheck" value="calendar" v-model="draft.monthlySubCheck">
                                 Count each calendar day even when the app is closed
                             </label>
 
                             <label>
-                                <input type="radio" name="monthlySubCheck" value="dailyTask" v-model="settings.monthlySubCheck">
+                                <input type="radio" name="monthlySubCheck" value="dailyTask" v-model="draft.monthlySubCheck">
                                 Count a day only when its daily task is checked
                             </label>
                         </div>
@@ -56,7 +56,7 @@
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="settings.checkGachaProcesses">
+                                <input type="checkbox" v-model="draft.checkGachaProcesses">
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
@@ -91,14 +91,14 @@
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
                                             <button type="button" class="text-toggle"
-                                                :class="{ active: settings.automaticDailies[game.name]?.includes(account.id) }"
-                                                v-if="settings.checkGachaProcesses"
-                                                @click="toggleSetting(settings.automaticDailies, game.name, account.id)">
+                                                :class="{ active: draft.automaticDailies[game.name]?.includes(account.id) }"
+                                                v-if="draft.checkGachaProcesses"
+                                                @click="toggleSetting(draft.automaticDailies, game.name, account.id)">
                                                 Auto
                                             </button>
                                             <button type="button" class="text-toggle"
-                                                :class="{ active: settings.windowsNotifications[game.name]?.includes(account.id) }"
-                                                @click="toggleSetting(settings.windowsNotifications, game.name, account.id)">
+                                                :class="{ active: draft.windowsNotifications[game.name]?.includes(account.id) }"
+                                                @click="toggleSetting(draft.windowsNotifications, game.name, account.id)">
                                                 Notify
                                             </button>
                                         </div>
@@ -111,7 +111,7 @@
                 </div>
 
                 <div class="settings-footer">
-                    <button class="cancel-btn" @click="showSettings = false">Cancel</button>
+                    <button class="cancel-btn" @click="closeSettings">Cancel</button>
                     <button class="apply-btn" @click="saveChanges">Apply changes</button>
                 </div>
 
@@ -121,20 +121,28 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+import { useNotification } from '../composables/useNotification.js'
 import { useSettings } from '../composables/useSettings.js'
 
 const { settings, showSettings, toggleSetting, saveSettings } = useSettings()
+const { createNotification } = useNotification()
+const draft = ref(null)
 
 const props = defineProps({
-    accountsPerGame: {
-        type: Array,
-        default: () => []
-    }
+    accountsPerGame: { type: Array, default: () => [] }
 })
 
+watch(showSettings, (open) => {
+    if (open) draft.value = JSON.parse(JSON.stringify(settings.value))
+}, { immediate: true })
+
+const closeSettings = () => { showSettings.value = false }
+
 const saveChanges = async () => {
-    await saveSettings();
-    showSettings.value = !showSettings.value
+    Object.assign(settings.value, draft.value)
+    await saveSettings()
+    showSettings.value = false
 }
 
 const deleteCacheAssets = async () => {

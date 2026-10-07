@@ -27,6 +27,8 @@ contextBridge.exposeInMainWorld('api', {
 
     sendNotification: notificationData => ipcRenderer.invoke('sendNotification', notificationData),
 
+    syncCalendarMonthlySubs: (check) => ipcRenderer.invoke('syncCalendarMonthlySubs', check),
+
     on: (channel, callback) => ipcRenderer.on(channel, callback),
 
     removeAllListeners: channel => ipcRenderer.removeAllListeners(channel)

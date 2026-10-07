@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { app } from 'electron';
+import { app, dialog } from 'electron';
 
 let accounts = {};
 let accountPath;
@@ -14,23 +14,42 @@ export function initializeAccounts({ tasks, config }) {
 
   accountPath = path.join(app.getPath('userData'), 'accounts.json');
 
+  accounts = loadStoredAccounts();
+}
+
+function loadStoredAccounts() {
   if (!fs.existsSync(accountPath)) {
     fs.writeFileSync(accountPath, '{}', 'utf-8');
+    return {};
   }
 
-  const storedAccounts = JSON.parse(
-    fs.readFileSync(accountPath, 'utf-8')
-  );
+  try {
+    const parsed = JSON.parse(fs.readFileSync(accountPath, 'utf-8'));
 
-  if (
-    storedAccounts === null ||
-    typeof storedAccounts !== 'object' ||
-    Array.isArray(storedAccounts)
-  ) {
-    throw new Error('Invalid accounts.json structure');
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Invalid accounts.json structure');
+    }
+
+    return parsed;
+  } catch (err) {
+    const choice = dialog.showMessageBoxSync({
+      type: 'error',
+      title: 'Accounts file is corrupted',
+      message: 'Your accounts file could not be read.',
+      detail: `${err.message}\n\nStart fresh? The damaged file will be saved as a backup first, so nothing is deleted.`,
+      buttons: ['Start fresh', 'Quit'],
+      defaultId: 1,
+      cancelId: 1
+    });
+
+    if (choice !== 0) throw err;
+
+    const backup = accountPath.replace('.json', `.corrupt-${Date.now()}.json`);
+    fs.copyFileSync(accountPath, backup);
+    fs.writeFileSync(accountPath, '{}', 'utf-8');
+
+    return {};
   }
-
-  accounts = storedAccounts;
 }
 
 function saveAccounts(nextAccounts) {
@@ -203,7 +222,8 @@ export function syncCalendarMonthlySubs(monthlySubCheck) {
         gameConfig[gameName]?.servers[account.server]?.daily_reset;
 
       if (!Number.isInteger(resetHour) || resetHour < 0 || resetHour > 23) {
-        throw new Error(`Invalid daily reset for ${gameName}/${account.server}`);
+        console.warn(`Invalid daily reset for ${gameName}/${account.server}`);
+        continue;
       }
 
       const lastMs = Date.parse(account.lastMonthlySubEditedDay ?? '');
@@ -231,4 +251,6 @@ export function syncCalendarMonthlySubs(monthlySubCheck) {
   }
 
   if (changed) saveAccounts(accounts);
+
+  return changed;
 }

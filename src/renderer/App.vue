@@ -43,7 +43,8 @@
         <SetupView v-if="currentView === 'setup'" @done="onSetupDone" :gameConfig="GAME_CONFIG" />
         <TasksView v-else-if="currentView === 'tasks'" :accountsPerGame="accountsPerGame"
             @refreshAccount="updateAccountTaskData" @refresh="loadData" :gameConfig="GAME_CONFIG" />
-        <ScheduleView v-else-if="currentView === 'schedule'" :gameConfig="GAME_CONFIG" :gamesWithAccounts="gamesWithAccounts"/>
+        <ScheduleView v-else-if="currentView === 'schedule'" :gameConfig="GAME_CONFIG"
+            :gamesWithAccounts="gamesWithAccounts" />
         <AppFooter />
     </div>
 </template>
@@ -61,18 +62,21 @@ import ConfirmDialogue from './components/ConfirmDialogue.vue'
 import AppSettings from './components/AppSettings.vue'
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js'
+import { useDeadlineNotifications } from './composables/useDeadlineNotifications.js';
 import { createResetProcessor } from './resetProcessor';
 const GAME_CONFIG = ref(null);
 const GAME_TASKS = ref(null);
 let computeTaskResetData, computeSingleAccountResetData;
 
-const { setTheme } = useNotification()
+const { createNotification, setTheme } = useNotification()
 const { settings, showSettings, saveSettings } = useSettings()
 
 const accountsPerGame = ref([])
 const hideSetup = ref(false)
 const currentView = ref(null)
 let taskTimer = null
+
+useDeadlineNotifications(accountsPerGame)
 
 const loadData = async () => {
     const groupedAccounts = await window.api.getGroupedAccounts()
@@ -84,15 +88,15 @@ const gamesWithAccounts = computed(() => {
 })
 
 const updateAccountTaskData = (gameName, accountId, monthlySubRemaining) => {
-  const game = accountsPerGame.value.find(game => game.name === gameName);
-  const account = game?.accounts.find(account => account.id === accountId);
-  if (!account) return;
+    const game = accountsPerGame.value.find(game => game.name === gameName);
+    const account = game?.accounts.find(account => account.id === accountId);
+    if (!account) return;
 
-  if (monthlySubRemaining !== undefined) {
-    account.monthlySubRemaining = monthlySubRemaining;
-  }
+    if (monthlySubRemaining !== undefined) {
+        account.monthlySubRemaining = monthlySubRemaining;
+    }
 
-  computeSingleAccountResetData(account, gameName);
+    computeSingleAccountResetData(account, gameName);
 };
 
 const onSetupDone = async () => {
@@ -105,10 +109,43 @@ const scheduleUpdate = () => {
     const now = new Date()
     const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds()
 
-    taskTimer = setTimeout(() => {
-        accountsPerGame.value = computeTaskResetData(accountsPerGame.value)
+    taskTimer = setTimeout(async () => {
+        try {
+            const res = await window.api.syncCalendarMonthlySubs(settings.value.monthlySubCheck)
+
+            if (res?.changed) {
+                await loadData()
+            } else {
+                accountsPerGame.value = computeTaskResetData(accountsPerGame.value)
+            }
+        } catch (err) {
+            console.error('Minute tick failed:', err)
+        }
         scheduleUpdate()
     }, msUntilNextMinute)
+}
+
+const onGameDetected = async (_event, gameName) => {
+    const game = accountsPerGame.value.find(g => g.name === gameName)
+    if (!game) return
+
+    let changed = false
+    for (const account of game.accounts) {
+        if (!settings.value.automaticDailies?.[gameName]?.includes(account.id)) continue
+
+        const task = account.tasks.Daily?.[0]
+        if (!task || task.isCompleted) continue
+
+        const res = await window.api.updateTaskLog({
+            gameName, taskId: task.id, accountId: account.id, completed: false
+        })
+        if (res.success) changed = true
+    }
+
+    if (changed) {
+        createNotification('success', 'Daily completed!', 1000)
+        await loadData()
+    }
 }
 
 watch(
@@ -139,10 +176,13 @@ onMounted(async () => {
     );
     currentView.value = hideSetup.value ? 'tasks' : 'setup';
     scheduleUpdate();
+
+    window.api.on('game-detected', onGameDetected)
 })
 
 onUnmounted(() => {
     clearTimeout(taskTimer);
     document.documentElement.classList.remove(settings.value.theme);
+    window.api.removeAllListeners('game-detected');
 })
 </script>

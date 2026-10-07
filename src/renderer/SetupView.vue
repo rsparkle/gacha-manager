@@ -3,13 +3,13 @@
         <div class="setup-inner">
             <div class="setup-header">
                 <h1 class="setup-title">Select Your Games</h1>
-                <p class="setup-subtitle">Choose which games you want to track. You can add more later.</p>
+                <p class="setup-subtitle">Choose which games you want to track (you can add more later).</p>
             </div>
 
             <div class="game-grid" v-if="gameList.length">
                 <div class="game-card" v-for="game in gameList" :key="game.name"
                     :class="{ selected: selectedGames[game.name] }" @click="toggleGame(game)">
-                    <img :src="gameImages[game.name]" :alt="game.name" @error="handleImageError(game)" />
+                    <img :src="gameImages[game.name]" :alt="game.name" />
 
                     <div class="game-card-check">
                         <span v-if="selectedGames[game.name]">✓</span>
@@ -17,8 +17,8 @@
 
                     <div class="game-card-body">
                         <p class="game-card-name">{{ game.name }}</p>
-                        <p class="game-card-version" v-if="game.current_version">
-                            v{{ Number(game.current_version).toFixed(1) }}
+                        <p class="game-card-version" v-if="game.currentVersion">
+                            v{{ game.currentVersion }}
                         </p>
                     </div>
 
@@ -41,7 +41,7 @@
             </div>
 
             <div class="setup-footer">
-                <button class="btn-confirm" :disabled="!hasSelection" @click="confirm">
+                <button class="btn-confirm" :disabled="!hasSelection || submitting" @click="submit">
                     Continue
                 </button>
             </div>
@@ -78,6 +78,7 @@ const { settings } = useSettings();
 const gameList = ref([]);
 const selectedGames = ref({});
 const gameImages = ref({});
+const submitting = ref(false);
 
 const hasSelection = computed(
     () => Object.keys(selectedGames.value).length > 0
@@ -136,7 +137,10 @@ const setServer = (game, server) => {
     };
 };
 
-const confirm = async () => {
+const submit = async () => {
+    if (submitting.value) return;
+    submitting.value = true;
+
     try {
         const accountList = Object.entries(
             selectedGames.value
@@ -165,6 +169,8 @@ const confirm = async () => {
             `Critical Error: ${error.message}`,
             2000
         );
+    } finally {
+        submitting.value = false;
     }
 };
 
@@ -178,16 +184,18 @@ onMounted(async () => {
             GAME_CONFIG[name].current.version
     }));
 
-    for (const game of gameList.value) {
-        const slug = game.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '_')
-            .replace(/^_|_$/g, '');
+    await Promise.all(
+        gameList.value.map(async game => {
+            const slug = game.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '');
 
-        gameImages.value[game.name] =
-            await window.api.cacheImage(
-                `games/${slug}_icon.webp`
-            );
-    }
+            gameImages.value[game.name] =
+                await window.api.cacheImage(
+                    `games/${slug}_icon.webp`
+                );
+        })
+    );
 });
 </script>
