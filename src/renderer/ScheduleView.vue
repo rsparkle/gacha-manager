@@ -111,9 +111,6 @@
                     <div v-if="hoveredEventHasImage" class="schedule-event-tooltip-hero"
                         :style="{ backgroundImage: getBackgroundImageWithFallbacks(hoveredEvent) }">
                         <div class="schedule-event-tooltip-hero-shade" />
-                        <span class="schedule-event-tooltip-game">
-                            {{ GAME_CONFIG[hoveredEvent.game]?.abbr ?? hoveredEvent.game }}
-                        </span>
                     </div>
 
                     <div class="schedule-event-tooltip-body">
@@ -217,8 +214,18 @@ const hoveredEventHasImage = computed(() => {
     return Boolean(hoveredEvent.value.img || hoveredEvent.value.fallbackImgs?.length);
 });
 
-const isPortraitTooltip = (event) =>
-    /trailer|release/i.test(event?.label ?? '');
+const isPortraitTooltip = (event) => {
+    const abbvs = Object.values(GAME_CONFIG.value).map(game => game.abbr);
+    const label = event?.label ?? '';
+
+    if (/release/i.test(label)) return true;
+
+    if (/trailer/i.test(label) && !abbvs.some(abbr => label.includes(abbr))) {
+        return true;
+    }
+
+    return false;
+};
 
 const hoveredEventIsPortrait = computed(() =>
     isPortraitTooltip(hoveredEvent.value)

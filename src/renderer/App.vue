@@ -25,12 +25,12 @@
                     <span class="app-bar-label">Theme</span>
                     <button class="theme-btn" :class="{ active: settings.theme === '' }"
                         @click="settings.theme = ''; saveSettings(true)">
-                        <span class="theme-swatch emerald"></span>
+                        <span class="theme-swatch default"></span>
                         <span>Default</span>
                     </button>
                     <button class="theme-btn" :class="{ active: settings.theme === 'sparkle' }"
                         @click="settings.theme = 'sparkle'; saveSettings(true)">
-                        <span class="theme-swatch crimson"></span>
+                        <span class="theme-swatch sparkle"></span>
                         <span>Sparkle</span>
                     </button>
                 </div>
@@ -62,8 +62,7 @@ import ConfirmDialogue from './components/ConfirmDialogue.vue'
 import AppSettings from './components/AppSettings.vue'
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js'
-import { useDeadlineNotifications } from './composables/useDeadlineNotifications.js';
-import { createResetProcessor } from './resetProcessor';
+import { createResetProcessor } from '../shared/resetProcessor';
 const GAME_CONFIG = ref(null);
 const GAME_TASKS = ref(null);
 let computeTaskResetData, computeSingleAccountResetData;
@@ -75,8 +74,6 @@ const accountsPerGame = ref([])
 const hideSetup = ref(false)
 const currentView = ref(null)
 let taskTimer = null
-
-useDeadlineNotifications(accountsPerGame)
 
 const loadData = async () => {
     const groupedAccounts = await window.api.getGroupedAccounts()
@@ -111,7 +108,7 @@ const scheduleUpdate = () => {
 
     taskTimer = setTimeout(async () => {
         try {
-            const res = await window.api.syncCalendarMonthlySubs(settings.value.monthlySubCheck)
+            const res = await window.api.syncCalendarMonthlySubs()
 
             if (res?.changed) {
                 await loadData()
@@ -125,27 +122,9 @@ const scheduleUpdate = () => {
     }, msUntilNextMinute)
 }
 
-const onGameDetected = async (_event, gameName) => {
-    const game = accountsPerGame.value.find(g => g.name === gameName)
-    if (!game) return
-
-    let changed = false
-    for (const account of game.accounts) {
-        if (!settings.value.automaticDailies?.[gameName]?.includes(account.id)) continue
-
-        const task = account.tasks.Daily?.[0]
-        if (!task || task.isCompleted) continue
-
-        const res = await window.api.updateTaskLog({
-            gameName, taskId: task.id, accountId: account.id, completed: false
-        })
-        if (res.success) changed = true
-    }
-
-    if (changed) {
-        createNotification('success', 'Daily completed!', 1000)
-        await loadData()
-    }
+const onDailiesCompleted = async () => {
+    createNotification('success', 'Daily completed!', 1000)
+    await loadData()
 }
 
 watch(
@@ -177,12 +156,12 @@ onMounted(async () => {
     currentView.value = hideSetup.value ? 'tasks' : 'setup';
     scheduleUpdate();
 
-    window.api.on('game-detected', onGameDetected)
+    window.api.on('dailies-completed', onDailiesCompleted)
 })
 
 onUnmounted(() => {
     clearTimeout(taskTimer);
     document.documentElement.classList.remove(settings.value.theme);
-    window.api.removeAllListeners('game-detected');
+    window.api.removeAllListeners('dailies-completed');
 })
 </script>

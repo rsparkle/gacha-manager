@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.0.6] - 2026-10-08
+### Added
+- App icon
+- System tray support: minimizing sends the app to the tray, where it keeps running in the background
+- Deadline notifications and automatic dailies now keep working while the app is in the tray
+### Changed
+- Minimizing now fully closes the window to save memory; the app reopens from the tray
+- Improved overall app design
+- Removed unnecessary game tags from schedule tooltips
+### Fixed
+- Improved tooltip portrait event detection in schedule
+
 ## [1.0.5] - 2026-10-07
 ### Added
 - Added single-instance protection to prevent multiple app windows from running simultaneously

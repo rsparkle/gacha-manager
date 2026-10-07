@@ -21,65 +21,81 @@ input {
 
 :root {
     color-scheme: dark;
-    --scrollbar-thumb: #43c98c;
-    --scrollbar-thumb-hover: #63d9a3;
-    --scrollbar-track: #0e1511;
-    --bg: #0e1511;
-    --panel: #151e18;
-    --panel-hover: #1b271f;
-    --panel-selected: #193326;
+
+    --bg: #0f0f11;
+    --panel: #17171a;
+    --panel-hover: #1e1e22;
+    --panel-selected: #303038;
     --panel-blur: none;
-    --border: #29352d;
-    --border-hover: #415247;
-    --border-selected: #43c98c;
-    --accent: #43c98c;
-    --task-progress: #43c98c;
-    --accent-glow: rgba(67, 201, 140, 0.14);
-    --accent-hover: #63d9a3;
-    --text: #edf3ef;
-    --muted: #78867d;
-    --muted2: #a5b1aa;
-    --check-fg: #0e1511;
-    --pill-active-bg: #193326;
+    --card-solid: #1c1c20;
+    --card-solid-hover: #212126;
+    --task-bg: #121214;
+    --hero-bg: #151518;
+    --hero-fade: rgba(15, 15, 17, 0.72);
+    --tasks-overlay: rgba(8, 8, 9, 0.72);
+    --bar-bg: #09090a;
+
+    --border: #2e2e34;
+    --border-hover: #45454d;
+    --border-selected: #d4d4d8;
+
+    --text: #ececee;
+    --muted: #8a8a94;
+    --muted2: #b0b0b8;
+
+    --accent: #e4e4e7;
+    --accent-hover: #ffffff;
+    --accent-glow: rgba(255, 255, 255, 0.06);
+    --task-progress: #e4e4e7;
+    --check-fg: #0f0f11;
+    --pill-active-bg: #303038;
     --gradient-title: none;
-    --task-bg: #111914;
-    --hero-bg: #121c16;
-    --hero-fade: rgba(14, 21, 17, 0.72);
+
+    --scrollbar-thumb: #3f3f46;
+    --scrollbar-thumb-hover: #52525b;
+    --scrollbar-track: #0f0f11;
+
     --done: #51bd7a;
     --urgent: #e16b6b;
-    --tasks-overlay: rgba(8, 13, 10, 0.72);
-    --card-solid: #172019;
-    --card-solid-hover: #1a251d;
+    --danger: #e16b6b;
 }
 
+[data-theme="sparkle"],
 .sparkle {
+    --bg: #140b0d;
+    --panel: #2b1018;
+    --panel-hover: #461623;
+    --panel-selected: #651c2d;
+    --card-solid: #38131f;
+    --card-solid-hover: #431827;
+    --task-bg: #1b0e10;
+    --hero-bg: #360d19;
+    --hero-fade: rgba(20, 11, 13, 0.74);
+    --tasks-overlay: rgba(14, 6, 8, 0.74);
+    --bar-bg: #0e0708;
+
+    --border: #652337;
+    --border-hover: #a53650;
+    --border-selected: #ff4764;
+
+    --text: #fff1f4;
+    --muted: #c194a0;
+    --muted2: #e6bcc7;
+
+    --accent: #ff526e;
+    --accent-hover: #ff7188;
+    --accent-glow: rgba(255, 82, 110, 0.14);
+    --task-progress: #ff3658;
+    --check-fg: #1a0a0d;
+    --pill-active-bg: #651c2d;
+
     --scrollbar-thumb: #ff526e;
     --scrollbar-thumb-hover: #ff7188;
     --scrollbar-track: #140b0d;
-    --bg: #140b0d;
-    --panel: #211114;
-    --panel-hover: #2b171a;
-    --panel-selected: #37181c;
-    --border: #422328;
-    --border-hover: #684047;
-    --border-selected: #c94a55;
-    --accent: #c94a55;
-    --task-progress: #c94a55;
-    --accent-glow: rgba(210, 169, 86, 0.12);
-    --accent-hover: #e36a74;
-    --text: #f1e6d5;
-    --muted: #8f7c75;
-    --muted2: #baa9a0;
-    --check-fg: #211114;
-    --pill-active-bg: #37181c;
-    --task-bg: #1b0e10;
-    --hero-bg: #251114;
-    --hero-fade: rgba(20, 11, 13, 0.74);
+
     --done: #63b878;
-    --urgent: #e16b6b;
-    --tasks-overlay: rgba(14, 6, 8, 0.74);
-    --card-solid: #241215;
-    --card-solid-hover: #2a171a;
+    --urgent: #f2a541;
+    --danger: #ff8f8f;
 }
 
 .app-bar {
@@ -91,12 +107,8 @@ input {
     align-items: center;
     justify-content: space-between;
     padding: 0 16px 0 20px;
-    background: #090d0b;
+    background: var(--bar-bg);
     border-bottom: 1px solid var(--border);
-}
-
-.sparkle .app-bar {
-    background: #0e0708;
 }
 
 .app-bar-logo {
@@ -191,12 +203,12 @@ input {
     border-radius: 1px;
 }
 
-.theme-swatch.emerald {
-    background: #43c98c;
+.theme-swatch.default {
+    background: #e4e4e7;
 }
 
-.theme-swatch.crimson {
-    background: #c94a55;
+.theme-swatch.sparkle {
+    background: #ff526e;
 }
 
 .settings-btn {

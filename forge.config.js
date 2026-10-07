@@ -6,9 +6,9 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 
 module.exports = {
   packagerConfig: {
-    asar: {
-      unpack: '**/*.node',
-    },
+    asar: { unpack: '**/*.node' },
+    icon: './src/assets/icon',
+    extraResource: ['./src/assets/icon.ico'],
   },
   hooks: {
     packageAfterCopy: async (forgeConfig, buildPath) => {

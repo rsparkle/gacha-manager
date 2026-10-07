@@ -8,4 +8,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   root: path.join(__dirname, 'src/renderer'),
   plugins: [vue()],
+  server: {
+    fs: {
+      allow: [path.join(__dirname, 'src')],
+    },
+  },
 });

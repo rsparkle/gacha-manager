@@ -25,9 +25,7 @@ contextBridge.exposeInMainWorld('api', {
 
     saveSettings: settings => ipcRenderer.invoke('saveSettings', settings),
 
-    sendNotification: notificationData => ipcRenderer.invoke('sendNotification', notificationData),
-
-    syncCalendarMonthlySubs: (check) => ipcRenderer.invoke('syncCalendarMonthlySubs', check),
+    syncCalendarMonthlySubs: () => ipcRenderer.invoke('syncCalendarMonthlySubs'),
 
     on: (channel, callback) => ipcRenderer.on(channel, callback),
 

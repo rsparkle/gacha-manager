@@ -1,6 +1,17 @@
-import { app, BrowserWindow, ipcMain, protocol, net, Notification, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net, Notification, dialog, Tray, Menu, powerMonitor } from 'electron';
 
-import { initializeAccounts, getAccounts, insertAccounts, updateAccount, deleteAccount, updateTaskLog, syncCalendarMonthlySubs } from './accountHelper.js';
+import {
+  initializeAccounts,
+  getAccounts,
+  insertAccounts,
+  updateAccount,
+  deleteAccount,
+  updateTaskLog,
+  getGroupedAccounts,
+  syncCalendarMonthlySubs,
+  updateNextNotification,
+  completeAutomaticDailies
+} from './accountHelper.js';
 
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
@@ -29,6 +40,9 @@ let GAME_CONFIG = null;
 let GAME_TASKS = null;
 let mainWindow;
 let monitorInterval = null;
+let tray = null;
+let hidingToTray = false;
+app.setAppUserModelId('com.electron.gacha-manager');
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -95,12 +109,26 @@ export async function loadGameFile(base, cache) {
   );
 }
 
+function handleGameDetected(gameName) {
+  try {
+    const accountIds = store.get('automaticDailies', {})[gameName] ?? [];
+
+    const changed = completeAutomaticDailies(gameName, accountIds);
+
+    if (!changed) return;
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('dailies-completed');
+    }
+  } catch (err) {
+    console.error('Automatic daily failed:', err);
+  }
+}
+
 function startMonitoring() {
   if (monitorInterval) return;
 
   function checkProcesses() {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-
     const automaticDailies = store.get('automaticDailies', {});
     const gamesToCheck = Object.entries(GAME_CONFIG)
       .filter(([gameName]) => automaticDailies[gameName]?.length > 0);
@@ -108,11 +136,11 @@ function startMonitoring() {
     if (gamesToCheck.length === 0) return;
 
     exec('tasklist', (error, stdout) => {
-      if (error || !mainWindow || mainWindow.isDestroyed()) return;
+      if (error) return;
 
       for (const [gameName, gameConfig] of gamesToCheck) {
         if (stdout.includes(gameConfig.process)) {
-          mainWindow.webContents.send('game-detected', gameName);
+          handleGameDetected(gameName);
         }
       }
     });
@@ -129,43 +157,6 @@ function startMonitoring() {
 function stopMonitoring() {
   clearInterval(monitorInterval);
   monitorInterval = null;
-}
-
-function getTasksForUI(gameName, account) {
-  return GAME_TASKS[gameName].tasks.reduce(
-    (groupedTasks, task) => {
-      const formattedTask = {
-        ...task,
-        last_completed:
-          account.tasks?.[task.id] ?? null
-      };
-
-      (groupedTasks[task.type] ??= []).push(
-        formattedTask
-      );
-
-      return groupedTasks;
-    },
-    {}
-  );
-}
-
-function getGroupedAccounts() {
-  const accounts = getAccounts();
-
-  return Object.entries(GAME_CONFIG).map(
-    ([gameName, gameConfig]) => ({
-      name: gameName,
-      game_version: gameConfig.current.version,
-
-      accounts: (accounts[gameName] ?? []).map(
-        account => ({
-          ...account,
-          tasks: getTasksForUI(gameName, account)
-        })
-      )
-    })
-  );
 }
 
 async function deleteCacheFiles(months = 4) {
@@ -218,13 +209,20 @@ async function deleteCacheFiles(months = 4) {
 
 // --- Window Management ---
 
+const ICON_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'icon.ico')
+  : path.join(__dirname, '../../src/assets/icon.ico');
+
 const createMainWindow = () => {
+  hidingToTray = false;
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 750,
     minWidth: 800,
     minHeight: 550,
     show: false,
+    icon: ICON_PATH,
 
     webPreferences: {
       preload: PRELOAD_PATH
@@ -243,7 +241,40 @@ const createMainWindow = () => {
     mainWindow.maximize();
     mainWindow.show();
   });
+
+  mainWindow.on('minimize', event => {
+    hidingToTray = true;
+    mainWindow.close();
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+    setTimeout(() => {
+      console.log(app.getAppMetrics().map(m => `${m.type}: ${Math.round(m.memory.workingSetSize / 1024)} MB`));
+    }, 3000);
+  });
 };
+
+const showWindow = () => {
+  if (!mainWindow) {
+    createMainWindow();
+    return;
+  }
+
+  mainWindow.show();
+  mainWindow.focus();
+};
+
+function createTray() {
+  tray = new Tray(ICON_PATH);
+  tray.setToolTip('Gacha Manager');
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: 'Open', click: showWindow },
+    { label: 'Quit', click: () => app.quit() }
+  ]));
+  tray.on('click', showWindow);
+  tray.on('double-click', showWindow);
+}
 
 // --- IPC Handlers ---
 
@@ -373,7 +404,6 @@ ipcMain.handle('updateTaskLog', (_event, taskLogData) => {
       taskLogData.taskId,
       taskLogData.accountId,
       taskLogData.completed,
-      store.get('monthlySubCheck', 'calendar')
     );
 
     return {
@@ -410,26 +440,7 @@ ipcMain.handle('saveSettings', (_event, settings) => {
       ? startMonitoring()
       : stopMonitoring();
 
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
-
-ipcMain.handle('sendNotification', (_event, { title, body }) => {
-  try {
-    const notification = new Notification({
-      title,
-      body,
-      silent: false
-    });
-
-    notification.show();
+    updateNextNotification();
 
     return {
       success: true
@@ -457,10 +468,10 @@ ipcMain.handle('deleteCacheAssets', async () => {
   }
 });
 
-ipcMain.handle('syncCalendarMonthlySubs', (_event, monthlySubCheck) => {
+ipcMain.handle('syncCalendarMonthlySubs', () => {
   try {
     return {
-      success: true, changed: syncCalendarMonthlySubs(monthlySubCheck)
+      success: true, changed: syncCalendarMonthlySubs()
     };
   } catch (err) {
     return {
@@ -484,13 +495,18 @@ app.whenReady().then(async () => {
   }
 
   try {
-    initializeAccounts({ tasks: GAME_TASKS, config: GAME_CONFIG });
+    initializeAccounts({ tasks: GAME_TASKS, config: GAME_CONFIG, settingsStore: store });
   } catch {
     app.quit();
     return;
   }
 
-  syncCalendarMonthlySubs(store.get('monthlySubCheck', 'calendar'));
+  powerMonitor.on('resume', () => {
+    syncCalendarMonthlySubs();
+    updateNextNotification();
+  });
+
+  syncCalendarMonthlySubs();
 
   if (app.isPackaged && store.get('automaticUpdates', false)) {
     autoUpdater.setFeedURL({
@@ -533,28 +549,27 @@ app.whenReady().then(async () => {
     return net.fetch(`file:///${filePath}`);
   });
 
-  app.setAppUserModelId('com.electron.gacha-manager');
-
   if (!app.requestSingleInstanceLock()) {
     app.quit()
   };
 
   createMainWindow();
 
+  createTray();
+
   if (store.store.checkGachaProcesses) {
-    mainWindow.webContents.once(
-      'did-finish-load',
-      () => {
-        startMonitoring();
-      }
-    );
+    startMonitoring()
   }
 });
 
 app.on('window-all-closed', () => {
+  if (hidingToTray) return;
+
   stopMonitoring();
 
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
+
+app.on('second-instance', showWindow);

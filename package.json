@@ -1,7 +1,7 @@
 {
   "name": "gacha-manager",
   "productName": "Gacha Manager",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A calendar and task manager for gacha game dailies, resets and schedules",
   "main": ".vite/build/main.js",
   "private": true,
@@ -22,6 +22,13 @@
       "provider": "github",
       "owner": "rsparkle",
       "repo": "gacha-manager"
+    },
+    "win": {
+      "icon": "src/assets/icon.ico"
+    },
+    "nsis": {
+      "installerIcon": "src/assets/icon.ico",
+      "uninstallerIcon": "src/assets/icon.ico"
     }
   },
   "license": "MIT",

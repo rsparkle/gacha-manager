@@ -54,7 +54,7 @@
                             </div>
                             <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{ selectedAccount?.uid
                                 || 0
-                            }}</span>
+                                }}</span>
                             <input class="account-uid account-uid-input" v-else type="text" v-model="editUidValue"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)" @keyup.escape="cancelUidEdit"
@@ -64,8 +64,8 @@
                         <div class="hero-progress">
                             <span :class="{ complete: completionPercentage === 100 }">{{
                                 completionPercentage }}% Completed</span>
-                            <img v-if="completionPercentage === 100 && settings.theme"
-                                :src="getCompletionSticker()" class="complete-sticker">
+                            <img v-if="completionPercentage === 100 && settings.theme" :src="getCompletionSticker()"
+                                class="complete-sticker">
                         </div>
                         <div class="hero-actions">
                             <button class="btn-edit" v-if="!editingUid" @click="startUidEdit">Edit UID</button>
@@ -169,7 +169,6 @@ import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
 import { useNotification } from './composables/useNotification.js'
 import { useConfirm } from './composables/useConfirm.js'
 import { useSettings } from './composables/useSettings.js'
-import { isUrgent, taskProgress } from './composables/useDeadlineNotifications.js'
 const { settings, saveSettings, toggleSetting } = useSettings()
 
 const { confirm } = useConfirm()
@@ -236,6 +235,11 @@ const missingGames = computed(() =>
 const notificationsEnabled = computed(() =>
     settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false
 )
+
+const taskProgress = (task) =>
+    Math.max(0, Math.floor(((task.duration - task.nextReset) / task.duration) * 100))
+
+const isUrgent = (task) => taskProgress(task) > 80
 
 const hasUrgentTasks = (gameName) =>
     props.accountsPerGame
