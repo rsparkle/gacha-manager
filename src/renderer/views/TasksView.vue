@@ -166,9 +166,9 @@ const MS_IN_MIN = 1000 * 60
 
 import '../styles/tasks.css';
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
-import { useNotification } from './composables/useNotification.js'
-import { useConfirm } from './composables/useConfirm.js'
-import { useSettings } from './composables/useSettings.js'
+import { useNotification } from '.././composables/useNotification.js'
+import { useConfirm } from '.././composables/useConfirm.js'
+import { useSettings } from '.././composables/useSettings.js'
 const { settings, saveSettings, toggleSetting } = useSettings()
 
 const { confirm } = useConfirm()
@@ -344,7 +344,7 @@ const manageTaskLog = async (task) => {
         gameName: selectedGame.value.name,
         taskId: task.id,
         accountId: selectedAccount.value.id,
-        completed: task.isCompleted
+        wasCompleted: task.isCompleted
     };
 
     await apiCall(
@@ -353,24 +353,6 @@ const manageTaskLog = async (task) => {
             createNotification('success', 'Task updated!', 1000)
             task.last_completed = task.isCompleted ? null : new Date().toISOString()
             emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id, result.monthlySubRemaining)
-        }
-    )
-}
-
-const completeTaskLog = async (task, accountId, gameName) => {
-    const taskLogData = {
-        gameName,
-        taskId: task.id,
-        accountId,
-        completed: false
-    };
-
-    await apiCall(
-        () => window.api.updateTaskLog(taskLogData),
-        (result) => {
-            createNotification('success', 'Task updated!', 1000)
-            task.last_completed = new Date().toISOString()
-            emit('refreshAccount', gameName, accountId, result.monthlySubRemaining)
         }
     )
 }
@@ -407,7 +389,7 @@ const commitUidEdit = async (accountId) => {
 
     if (currentGameConfig.value.has_uid_pattern) {
         const firstDigit = parseInt(newUid.toString()[0]);
-        server = Object.entries(currentGameConfig.value.servers).find(([_, s]) => s.uid_prefix === firstDigit)?.[0];
+        server = Object.entries(currentGameConfig.value.servers).find(([, s]) => s.uid_prefix === firstDigit)?.[0];
 
         if (!server) {
             createNotification('error', 'Your UID is invalid.', 2000);
@@ -589,11 +571,11 @@ const getGameImageBackgroundUrl = (game) => {
 };
 
 const getCharacterThemeImage = () => {
-    return new URL(`../assets/themes/${settings.value.theme}/game_theme.webp`, import.meta.url).href;
+    return new URL(`../../assets/themes/${settings.value.theme}/game_theme.webp`, import.meta.url).href;
 }
 
 const getCompletionSticker = () => {
-    return new URL(`../assets/themes/${settings.value.theme}/tasks_completed.webp`, import.meta.url).href;
+    return new URL(`../../assets/themes/${settings.value.theme}/tasks_completed.webp`, import.meta.url).href;
 }
 
 const handleImageError = (game) => {

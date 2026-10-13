@@ -156,8 +156,8 @@
 <script setup>
 import '../styles/schedule.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { createScheduleProcessor } from './scheduleProcessor';
-import { useSettings } from './composables/useSettings.js';
+import { createScheduleProcessor } from '../lib/scheduleProcessor.js';
+import { useSettings } from '.././composables/useSettings.js';
 
 const props = defineProps({
     gameConfig: Object,
@@ -198,8 +198,10 @@ const monthNames = [
 const monthName = computed(() => monthNames[currentMonth.value]);
 const gameList = computed(() => Object.keys(scheduleData.value));
 
+const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
 const canGoPrev = computed(() =>
-    !(currentYear.value === today.getFullYear() && currentMonth.value === today.getMonth())
+    new Date(currentYear.value, currentMonth.value, 1) > minDate
 );
 
 const canGoNext = computed(() => {
@@ -218,7 +220,7 @@ const isPortraitTooltip = (event) => {
     const abbvs = Object.values(GAME_CONFIG.value).map(game => game.abbr);
     const label = event?.label ?? '';
 
-    if (/release/i.test(label)) return true;
+    if (/release/i.test(label) && label.includes('-')) return true;
 
     if (/trailer/i.test(label) && !abbvs.some(abbr => label.includes(abbr))) {
         return true;
@@ -259,7 +261,7 @@ const hoveredCountdown = computed(() => {
 });
 
 const getLoadingSticker = () =>
-    new URL(`../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
+    new URL(`../../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
 
 const getGameSlug = (name) =>
     name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');

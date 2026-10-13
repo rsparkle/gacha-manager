@@ -13,10 +13,14 @@ import {
   completeAutomaticDailies
 } from './accountHelper.js';
 
+import { resolveInside } from './safePath.js';
+import { createResetProcessor } from '../shared/resetProcessor';
+
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { execFile } from 'node:child_process';
 import Store from 'electron-store';
-import { exec } from 'node:child_process';
 
 const { autoUpdater } = require('electron-updater');
 
@@ -36,12 +40,22 @@ const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-as
 
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
 
+const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
+
+const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
+const NETWORK_RETRY_MS = 60 * 1000;
+
 let GAME_CONFIG = null;
 let GAME_TASKS = null;
 let mainWindow;
 let monitorInterval = null;
+let checkingProcesses = false;
 let tray = null;
 let hidingToTray = false;
+
+const missingAssets = new Map();
+const pendingDownloads = new Map();
+
 app.setAppUserModelId('com.electron.gacha-manager');
 
 protocol.registerSchemesAsPrivileged([
@@ -74,39 +88,77 @@ async function fetchWithTimeout(url, ms = 5000) {
   }
 }
 
-export async function loadGameFile(base, cache) {
+async function fetchJson(url) {
+  const response = await fetchWithTimeout(url);
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function readJson(file) {
+  return JSON.parse(await fs.readFile(file, 'utf-8'));
+}
+
+async function writeJson(file, data) {
+  await fs.mkdir(path.dirname(file), { recursive: true });
+
+  const tempFile = `${file}.tmp`;
+
+  await fs.writeFile(tempFile, JSON.stringify(data, null, 2));
+  await fs.rename(tempFile, file);
+}
+
+function validateGameData(config, tasks) {
   try {
-    const response = await fetchWithTimeout(base);
-    if (response.ok) {
-      const data = await response.json();
+    createResetProcessor(config, tasks);
+  } catch (err) {
+    err.isInvalidData = true;
+    throw err;
+  }
+}
 
-      await fs.mkdir(path.dirname(cache), { recursive: true });
+async function loadGameData() {
+  let remoteError;
 
-      await fs.writeFile(
-        cache,
-        JSON.stringify(data, null, 2)
-      );
+  try {
+    const [config, tasks] = await Promise.all([
+      fetchJson(CONFIG_BASE),
+      fetchJson(TASKS_BASE)
+    ]);
 
-      return data;
+    validateGameData(config, tasks);
+
+    try {
+      await Promise.all([
+        writeJson(CONFIG_CACHE, config),
+        writeJson(TASKS_CACHE, tasks)
+      ]);
+    } catch (cacheError) {
+      console.error('Failed to cache game data:', cacheError);
     }
-  } catch (networkError) {
-    // Fall back to the cached configuration
+
+    return { config, tasks, remoteError: null };
+  } catch (err) {
+    remoteError = err;
   }
 
   try {
-    const cached = await fs.readFile(
-      cache,
-      'utf-8'
-    );
+    const [config, tasks] = await Promise.all([
+      readJson(CONFIG_CACHE),
+      readJson(TASKS_CACHE)
+    ]);
 
-    return JSON.parse(cached);
+    validateGameData(config, tasks);
+    return { config, tasks, remoteError };
   } catch (cacheError) {
-    // Report the combined failure below
+    throw new Error(
+      `Failed to load game data.\n\nOnline: ${remoteError.message}\nCached: ${cacheError.message}`,
+      { cause: cacheError }
+    );
   }
-
-  throw new Error(
-    'Critical: Failed to load game configuration from all sources.'
-  );
 }
 
 function handleGameDetected(gameName) {
@@ -125,26 +177,63 @@ function handleGameDetected(gameName) {
   }
 }
 
+function getRunningProcesses() {
+  return new Promise((resolve, reject) => {
+    execFile(
+      'tasklist',
+      ['/FO', 'CSV', '/NH'],
+      { windowsHide: true, maxBuffer: 10 * 1024 * 1024 },
+      (error, stdout) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        const names = new Set();
+
+        for (const line of stdout.split(/\r?\n/)) {
+          const match = line.match(/^"([^"]+)"/);
+
+          if (match) names.add(match[1].toLowerCase());
+        }
+
+        resolve(names);
+      }
+    );
+  });
+}
+
+async function checkProcesses() {
+  if (checkingProcesses) return;
+
+  const automaticDailies = store.get('automaticDailies', {});
+  const gamesToCheck = Object.entries(GAME_CONFIG)
+    .filter(([gameName]) => automaticDailies[gameName]?.length > 0);
+
+  if (gamesToCheck.length === 0) return;
+
+  checkingProcesses = true;
+
+  try {
+    const running = await getRunningProcesses();
+
+    for (const [gameName, gameConfig] of gamesToCheck) {
+      if (
+        typeof gameConfig.process === 'string' &&
+        running.has(gameConfig.process.toLowerCase())
+      ) {
+        handleGameDetected(gameName);
+      }
+    }
+  } catch (err) {
+    console.error('Process check failed:', err);
+  } finally {
+    checkingProcesses = false;
+  }
+}
+
 function startMonitoring() {
   if (monitorInterval) return;
-
-  function checkProcesses() {
-    const automaticDailies = store.get('automaticDailies', {});
-    const gamesToCheck = Object.entries(GAME_CONFIG)
-      .filter(([gameName]) => automaticDailies[gameName]?.length > 0);
-
-    if (gamesToCheck.length === 0) return;
-
-    exec('tasklist', (error, stdout) => {
-      if (error) return;
-
-      for (const [gameName, gameConfig] of gamesToCheck) {
-        if (stdout.includes(gameConfig.process)) {
-          handleGameDetected(gameName);
-        }
-      }
-    });
-  }
 
   checkProcesses();
 
@@ -207,6 +296,88 @@ async function deleteCacheFiles(months = 4) {
   await cleanDirectory(ASSETS_CACHE);
 }
 
+function encodePath(relativePath) {
+  return relativePath.split('/').map(encodeURIComponent).join('/');
+}
+
+async function downloadAsset(filename, localPath) {
+  const retryAt = missingAssets.get(filename);
+
+  if (retryAt && Date.now() < retryAt) return;
+
+  try {
+    const response = await fetchWithTimeout(`${ASSETS_BASE}/${encodePath(filename)}`, 10000);
+
+    if (!response.ok) {
+      missingAssets.set(filename, Date.now() + MISSING_ASSET_RETRY_MS);
+      return;
+    }
+
+    await fs.mkdir(path.dirname(localPath), { recursive: true });
+
+    const tempPath = `${localPath}.tmp`;
+
+    await fs.writeFile(tempPath, Buffer.from(await response.arrayBuffer()));
+    await fs.rename(tempPath, localPath);
+
+    missingAssets.delete(filename);
+  } catch {
+    missingAssets.set(filename, Date.now() + NETWORK_RETRY_MS);
+  }
+}
+
+function registerProtocols() {
+  protocol.handle('app', request => {
+    let relativePath;
+
+    try {
+      relativePath = decodeURIComponent(new URL(request.url).pathname);
+    } catch {
+      return new Response(null, { status: 400 });
+    }
+
+    const filePath = resolveInside(RENDERER_ROOT, relativePath);
+
+    if (!filePath) {
+      return new Response(null, { status: 403 });
+    }
+
+    return net.fetch(pathToFileURL(filePath).toString());
+  });
+
+  protocol.handle('asset', request => {
+    let relativePath;
+
+    try {
+      relativePath = decodeURIComponent(new URL(request.url).pathname);
+    } catch {
+      return new Response(null, { status: 400 });
+    }
+
+    const filePath = resolveInside(ASSETS_CACHE, relativePath);
+
+    if (!filePath) {
+      return new Response(null, { status: 403 });
+    }
+
+    return net
+      .fetch(pathToFileURL(filePath).toString())
+      .catch(() => new Response(null, { status: 404 }));
+  });
+}
+
+function setupAutoUpdates() {
+  if (!app.isPackaged || !store.get('automaticUpdates', false)) return;
+
+  autoUpdater.on('error', err => {
+    console.error('Auto update failed:', err);
+  });
+
+  autoUpdater.checkForUpdatesAndNotify().catch(err => {
+    console.error('Update check failed:', err);
+  });
+}
+
 // --- Window Management ---
 
 const ICON_PATH = app.isPackaged
@@ -223,9 +394,13 @@ const createMainWindow = () => {
     minHeight: 550,
     show: false,
     icon: ICON_PATH,
+    autoHideMenuBar: true,
 
     webPreferences: {
-      preload: PRELOAD_PATH
+      preload: PRELOAD_PATH,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
     }
   });
 
@@ -242,16 +417,13 @@ const createMainWindow = () => {
     mainWindow.show();
   });
 
-  mainWindow.on('minimize', event => {
+  mainWindow.on('minimize', () => {
     hidingToTray = true;
     mainWindow.close();
-  })
+  });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
-    setTimeout(() => {
-      console.log(app.getAppMetrics().map(m => `${m.type}: ${Math.round(m.memory.workingSetSize / 1024)} MB`));
-    }, 3000);
   });
 };
 
@@ -278,227 +450,136 @@ function createTray() {
 
 // --- IPC Handlers ---
 
+function handle(channel, handler) {
+  ipcMain.handle(channel, async (_event, payload) => {
+    try {
+      return { success: true, ...(await handler(payload)) };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  });
+}
+
 ipcMain.handle('getGameConfig', () => GAME_CONFIG);
 
 ipcMain.handle('getGameTasks', () => GAME_TASKS);
 
-ipcMain.handle('cacheImage', async (_event, filename) => {
-  const resolved = path.resolve(
-    ASSETS_CACHE,
-    filename
-  );
-
-  if (
-    !resolved.startsWith(
-      path.resolve(ASSETS_CACHE) + path.sep
-    )
-  ) {
-    throw new Error('Invalid filename');
-  }
-
-  const localPath = resolved;
-
-  try {
-    await fs.access(localPath);
-  } catch {
-    await fs.mkdir(path.dirname(localPath), {
-      recursive: true
-    });
-
-    const response = await fetch(
-      `${ASSETS_BASE}/${filename}`
-    );
-
-    if (response.ok) {
-      await fs.writeFile(
-        localPath,
-        Buffer.from(
-          await response.arrayBuffer()
-        )
-      );
-    }
-  }
-
-  return `asset://${localPath.replace(
-    /\\/g,
-    '/'
-  )}`;
-});
+ipcMain.handle('getGroupedAccounts', () => getGroupedAccounts());
 
 ipcMain.handle('getGamesWithoutAccounts', () => {
   const accounts = getAccounts();
 
   return Object.keys(GAME_CONFIG).filter(
-    gameName =>
-      !accounts[gameName]?.length
+    gameName => !accounts[gameName]?.length
   );
 });
 
-ipcMain.handle('getGroupedAccounts', () => getGroupedAccounts());
-
-ipcMain.handle('insertAccounts', (_event, gameList) => {
-  try {
-    const createdAccounts =
-      insertAccounts(gameList);
-
-    return {
-      success: true,
-      data: createdAccounts
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
+ipcMain.handle('cacheImage', async (_event, filename) => {
+  if (typeof filename !== 'string') {
+    throw new Error('Invalid filename');
   }
+
+  const localPath = resolveInside(ASSETS_CACHE, filename);
+
+  if (!localPath) {
+    throw new Error('Invalid filename');
+  }
+
+  try {
+    await fs.access(localPath);
+  } catch {
+    if (!pendingDownloads.has(filename)) {
+      const download = downloadAsset(filename, localPath)
+        .finally(() => pendingDownloads.delete(filename));
+
+      pendingDownloads.set(filename, download);
+    }
+
+    await pendingDownloads.get(filename);
+  }
+
+  const relativePath = path.relative(ASSETS_CACHE, localPath).split(path.sep).join('/');
+
+  return `asset://cache/${encodePath(relativePath)}`;
 });
 
-ipcMain.handle('updateAccount', (_event, accountData) => {
-  try {
-    updateAccount(
-      accountData.gameName,
-      accountData.id,
-      {
-        server: accountData.server,
-        uid: accountData.uid,
-        label: accountData.label,
-        ...(accountData.monthlySubRemaining !== undefined && {
-          monthlySubRemaining: accountData.monthlySubRemaining
-        })
-      }
-    );
+handle('insertAccounts', gameList => ({
+  data: insertAccounts(gameList)
+}));
 
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
+handle('updateAccount', accountData => {
+  updateAccount(accountData.gameName, accountData.id, accountData);
 });
 
-ipcMain.handle('deleteAccount', (_event, accountData) => {
-  try {
-    deleteAccount(
-      accountData.gameName,
-      accountData.id
-    );
-
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
+handle('deleteAccount', accountData => {
+  deleteAccount(accountData.gameName, accountData.id);
 });
 
-ipcMain.handle('updateTaskLog', (_event, taskLogData) => {
-  try {
-    const result = updateTaskLog(
-      taskLogData.gameName,
-      taskLogData.taskId,
-      taskLogData.accountId,
-      taskLogData.completed,
-    );
+handle('updateTaskLog', taskLogData => updateTaskLog(
+  taskLogData.gameName,
+  taskLogData.taskId,
+  taskLogData.accountId,
+  taskLogData.wasCompleted
+));
 
-    return {
-      success: true,
-      ...result
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
+handle('loadSettings', () => ({
+  data: store.store
+}));
+
+handle('saveSettings', settings => {
+  store.set(settings);
+
+  if (settings.checkGachaProcesses) {
+    startMonitoring();
+  } else {
+    stopMonitoring();
   }
+
+  updateNextNotification();
 });
 
-ipcMain.handle('loadSettings', () => {
-  try {
-    return {
-      success: true,
-      data: store.store
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
+handle('deleteCacheAssets', async () => {
+  await deleteCacheFiles(0);
 });
 
-ipcMain.handle('saveSettings', (_event, settings) => {
-  try {
-    store.set(settings);
-
-    settings.checkGachaProcesses
-      ? startMonitoring()
-      : stopMonitoring();
-
-    updateNextNotification();
-
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
-
-ipcMain.handle('deleteCacheAssets', async () => {
-  try {
-    await deleteCacheFiles(0);
-
-    return {
-      success: true
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.message
-    };
-  }
-});
-
-ipcMain.handle('syncCalendarMonthlySubs', () => {
-  try {
-    return {
-      success: true, changed: syncCalendarMonthlySubs()
-    };
-  } catch (err) {
-    return {
-      success: false, error: err.message
-    };
-  }
-});
+handle('syncCalendarMonthlySubs', () => ({
+  changed: syncCalendarMonthlySubs()
+}));
 
 // --- App Entry Point ---
 
-app.whenReady().then(async () => {
+async function startApp() {
   await deleteCacheFiles();
 
+  let gameData;
+
   try {
-    GAME_CONFIG = await loadGameFile(CONFIG_BASE, CONFIG_CACHE);
-    GAME_TASKS = await loadGameFile(TASKS_BASE, TASKS_CACHE);
+    gameData = await loadGameData();
   } catch (err) {
     dialog.showErrorBox('Startup failed', err.message);
     app.quit();
     return;
   }
 
+  GAME_CONFIG = gameData.config;
+  GAME_TASKS = gameData.tasks;
+
   try {
     initializeAccounts({ tasks: GAME_TASKS, config: GAME_CONFIG, settingsStore: store });
-  } catch {
+  } catch (err) {
+    if (!err.userDeclined) {
+      dialog.showErrorBox('Startup failed', err.message);
+    }
+
     app.quit();
     return;
+  }
+
+  if (gameData.remoteError?.isInvalidData) {
+    new Notification({
+      title: 'Game data update skipped',
+      body: 'The latest game data was invalid, so the last working version is being used.'
+    }).show();
   }
 
   powerMonitor.on('resume', () => {
@@ -508,59 +589,29 @@ app.whenReady().then(async () => {
 
   syncCalendarMonthlySubs();
 
-  if (app.isPackaged && store.get('automaticUpdates', false)) {
-    autoUpdater.setFeedURL({
-      provider: 'github',
-      owner: 'rsparkle',
-      repo: 'gacha-manager'
-    });
+  setupAutoUpdates();
 
-    autoUpdater.checkForUpdatesAndNotify();
-  }
-
-  protocol.handle('app', request => {
-    const url = request.url.replace(
-      'app://',
-      ''
-    );
-
-    const filePath = path
-      .join(
-        __dirname,
-        '../renderer/main_window',
-        url
-      )
-      .replace(/\\/g, '/');
-
-    return net.fetch(`file://${filePath}`);
-  });
-
-  protocol.handle('asset', request => {
-    const url = request.url.replace(
-      'asset://',
-      ''
-    );
-
-    const filePath = url.replace(
-      /^([a-z])\//,
-      '$1:/'
-    );
-
-    return net.fetch(`file:///${filePath}`);
-  });
-
-  if (!app.requestSingleInstanceLock()) {
-    app.quit()
-  };
+  registerProtocols();
 
   createMainWindow();
 
   createTray();
 
   if (store.store.checkGachaProcesses) {
-    startMonitoring()
+    startMonitoring();
   }
-});
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on('second-instance', showWindow);
+
+  app.whenReady().then(startApp).catch(err => {
+    dialog.showErrorBox('Startup failed', err.message);
+    app.quit();
+  });
+}
 
 app.on('window-all-closed', () => {
   if (hidingToTray) return;
@@ -571,5 +622,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-app.on('second-instance', showWindow);

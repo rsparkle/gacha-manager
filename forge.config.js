@@ -104,18 +104,6 @@ module.exports = {
       name: '@electron-addons/electron-forge-maker-nsis',
       config: { outFileName: 'gacha-manager-Setup-${version}.exe' },
     },
-    {
-      name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
-    },
-    {
-      name: '@electron-forge/maker-deb',
-      config: {},
-    },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
-    },
   ],
   plugins: [
     {

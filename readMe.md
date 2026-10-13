@@ -3,12 +3,13 @@
 A desktop task manager built for people who play multiple gacha games at once. Tracks dailies, resets and deadlines across games and accounts so nothing expires while you're busy playing a different one.
 
 **Built with:** Electron + Vue 3 + Vite
+**Platform:** Windows only
 
 ---
 
 ## Project Status
-- **Current Version:** `v1.0.6`
-- **Status:** Active Development. Core logic is functional; game data is actively being expanded.
+![Latest release](https://img.shields.io/github/v/release/rsparkle/gacha-manager)
+- **Status:** Actively maintained. Task tracking, server-aware resets, notifications and the event schedule are stable
 
 ## Preview
 **Setup**
@@ -41,23 +42,13 @@ https://github.com/user-attachments/assets/01ea2122-92d0-4f5a-bdce-edd0de8c71fc
 - **Smart Cleanup:** Removing the last account for a game automatically cleans up your sidebar.
 - **Schedule & Event Tracking:** Visual calendar of patch releases, banners and livestreams with countdown timers and server-aware timing.
 
-## Roadmap
-- [ ] **Hoyolab Integration:** Track your stamina in real time.
-- [ ] **Expanded Library:** Support for additional games and themes.
-
 ## Installation & Building
-
-> [!IMPORTANT]
-> **Asset Notice:** Official game assets are **not** included in the source code. Pre-built releases bundle these assets automatically. If building from source, you will need to provide your own assets.
-
 ```bash
 # Clone the repo
-git clone https://github.com/rsparkle/GachaManager.git
+git clone https://github.com/rsparkle/gacha-manager.git
 
 # Install dependencies
 npm install
-
-# Add game assets to src/renderer/assets/
 
 # Run or Build
 npm start

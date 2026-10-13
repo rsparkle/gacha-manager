@@ -1,5 +1,13 @@
 import {contextBridge, ipcRenderer} from 'electron';
 
+const subscribe = channel => callback => {
+    const listener = () => callback();
+
+    ipcRenderer.on(channel, listener);
+
+    return () => ipcRenderer.removeListener(channel, listener);
+};
+
 contextBridge.exposeInMainWorld('api', {
     getGameConfig: () => ipcRenderer.invoke('getGameConfig'),
 
@@ -27,7 +35,5 @@ contextBridge.exposeInMainWorld('api', {
 
     syncCalendarMonthlySubs: () => ipcRenderer.invoke('syncCalendarMonthlySubs'),
 
-    on: (channel, callback) => ipcRenderer.on(channel, callback),
-
-    removeAllListeners: channel => ipcRenderer.removeAllListeners(channel)
+    onDailiesCompleted: subscribe('dailies-completed')
 });

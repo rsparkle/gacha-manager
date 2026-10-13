@@ -93,6 +93,3 @@ out/
 
 # Local database
 *.db
-
-# Game assets (official HoYoverse imagery, excluded for copyright and file size reasons)
-src/assets/

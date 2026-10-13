@@ -1,70 +1,124 @@
+import {
+  DAY,
+  HOUR,
+  MINUTE,
+  addDays,
+  compileGameClock,
+  localDate,
+  mod,
+  parseClock,
+  secondPhaseDay,
+  shiftDate,
+  toDateKey,
+  zonedInstant,
+} from "./serverTime.js";
+
+const LITERAL_TIME = /^(\d{1,2}:\d{2})@(server|global)$/;
+const PATCH_DATE = /^(patchStart|secondPhaseStart|patchEnd)([+-]\d+)?$/;
+const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const TIMES = ['dailyReset', 'maintenanceStart', 'maintenanceEnd', 'secondPhase', 'eventStart', 'eventEnd'];
+const CONFIG_KEYS = { eventStart: 'event_start', eventEnd: 'event_end' };
+
+const KIND_FIELDS = {
+  daily: [],
+  weekly: ['weekday'],
+  monthly: ['monthDays'],
+  interval: ['anchor', 'intervalDays', 'startTime', 'patchCollision'],
+  window: ['startDate', 'endDate', 'startTime', 'endTime'],
+};
+
 export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
-  const MS_IN_DAY = 86_400_000;
+  const CLOCKS = new Map();
 
-  function addDays(date, days) {
-    return new Date(date.getTime() + days * MS_IN_DAY);
+  function literalTime(time) {
+    const match = LITERAL_TIME.exec(time);
+
+    return match ? { minutes: parseClock(match[1], 'time'), scope: match[2] } : null;
   }
 
-  function getTime(time, gameConfig, resetHour) {
-    if (time === 'dailyReset') return [resetHour, 0];
+  function clockFor(time, { clock, server }) {
+    const scoped = spec => ({
+      minutes: spec.minutes,
+      offset: spec.scope === 'server' ? server.offset : clock.globalOffset,
+    });
 
-    if (time === 'maintenanceStart') {
-      return gameConfig.maintenance_start;
+    const literal = literalTime(time);
+
+    if (literal) return scoped(literal);
+
+    const maintenance = clock.maintenance.first_phase;
+
+    switch (time) {
+      case 'maintenanceStart':
+        return { minutes: maintenance.startMinutes, offset: clock.globalOffset };
+      case 'maintenanceEnd':
+        return { minutes: maintenance.startMinutes + maintenance.durationMinutes, offset: clock.globalOffset };
+      case 'secondPhase':
+        return scoped(clock.secondPhase);
+      case 'eventStart':
+        return scoped(clock.eventStart);
+      case 'eventEnd':
+        return scoped(clock.eventEnd);
+      default:
+        return { minutes: server.resetMinutes, offset: server.offset };
     }
-
-    if (time === 'maintenanceEnd') {
-      const [hour, minute] = gameConfig.maintenance_start;
-      const [durationHours, durationMinutes] = gameConfig.maintenance_duration;
-      const totalMinutes = hour * 60 + minute + durationHours * 60 + durationMinutes;
-
-      return [
-        Math.floor(totalMinutes / 60) % 24,
-        totalMinutes % 60
-      ];
-    }
-
-    // Fall back to daily reset for unknown values in external config
-    return [resetHour, 0];
   }
 
-  function atTime(date, time, context) {
-    const result = new Date(date);
+  function atLabel(label, time, context) {
+    const { minutes, offset } = clockFor(time, context);
 
-    if (time === "anchorTime") {
-      return result;
-    }
-
-    const [hour, minute] = getTime(time, context.gameConfig, context.resetHour);
-
-    result.setUTCHours(hour, minute, 0, 0);
-
-    return result;
+    return zonedInstant(toDateKey(label), minutes, offset);
   }
 
-  function getLastDailyReset(now, resetHour) {
-    const last = new Date(now);
-    last.setUTCHours(resetHour, 0, 0, 0);
+  function resolveDate(value, { gameConfig }) {
+    const match = PATCH_DATE.exec(value);
 
-    return last > now ? addDays(last, -1) : last;
+    if (!match) return value;
+
+    const patch = gameConfig.current;
+    const patchStart = toDateKey(patch.version_start);
+    const base = {
+      patchStart,
+      secondPhaseStart: shiftDate(patchStart, secondPhaseDay(patch)),
+      patchEnd: shiftDate(patchStart, patch.version_duration),
+    }[match[1]];
+
+    return shiftDate(base, Number(match[2] ?? 0));
   }
 
-  function getWeeklyWindow({ lastDailyReset, resetDate, reset }) {
-    const daysSinceReset = (resetDate.getUTCDay() - reset.weekday + 7) % 7;
-    const last = addDays(lastDailyReset, -daysSinceReset);
+  function getNextPatchMaintenanceStart(context) {
+    return atLabel(resolveDate('patchEnd', context), 'maintenanceStart', context);
+  }
+
+  function getLastDailyReset(now, server) {
+    const offsetMs = server.offset * HOUR;
+    const localDayStart = Math.floor((now.getTime() + offsetMs) / DAY) * DAY;
+    const reset = localDayStart + server.resetMinutes * MINUTE - offsetMs;
+
+    return new Date(reset > now.getTime() ? reset - DAY : reset);
+  }
+
+  function getWeeklyWindow({ gameConfig, lastDailyReset, server, reset }) {
+    const weekday = reset.weekday ?? gameConfig.weekly_reset_weekday;
+    const serverWeekday = localDate(lastDailyReset, server.offset).getUTCDay();
+    const last = addDays(lastDailyReset, -mod(serverWeekday - weekday, 7));
+
     return { last, next: addDays(last, 7) };
   }
 
-  function getCalendarWindow({ now, resetHour, resetDate, dayShift }, days) {
+  function getMonthlyWindow({ now, server, lastDailyReset, reset }) {
+    const local = localDate(lastDailyReset, server.offset);
+    const year = local.getUTCFullYear();
+    const month = local.getUTCMonth();
     const boundaries = [];
-    const year = resetDate.getUTCFullYear();
-    const month = resetDate.getUTCMonth();
 
     for (const offset of [-1, 0, 1]) {
       const monthLength = new Date(Date.UTC(year, month + offset + 1, 0)).getUTCDate();
 
-      for (const day of days) {
+      for (const day of reset.monthDays) {
         boundaries.push(new Date(
-          Date.UTC(year, month + offset, Math.min(day, monthLength), resetHour) - dayShift * MS_IN_DAY
+          Date.UTC(year, month + offset, Math.min(day, monthLength), 0, server.resetMinutes) - server.offset * HOUR
         ));
       }
     }
@@ -75,54 +129,25 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
 
     return {
       last: boundaries[nextIndex - 1],
-      next: boundaries[nextIndex]
+      next: boundaries[nextIndex],
     };
-  }
-
-  function getNextPatchMaintenanceStart(context) {
-    const { gameConfig } = context;
-
-    const currentPatchStart = new Date(
-      `${gameConfig.current.version_start}T00:00:00Z`
-    );
-
-    const nextPatchStart = addDays(
-      currentPatchStart,
-      gameConfig.current.version_duration
-    );
-
-    return atTime(
-      addDays(nextPatchStart, -1),
-      'maintenanceStart',
-      context
-    );
   }
 
   function getIntervalWindow(context) {
     const { now, reset } = context;
 
-    const startTime = reset.startTime ?? 'dailyReset';
-    const endTime = reset.endTime ?? startTime;
-
-    const anchor = atLabel(reset.anchor, startTime, context);
-    const intervalMs = reset.intervalDays * MS_IN_DAY;
+    const anchor = atLabel(reset.anchor, reset.startTime ?? 'dailyReset', context);
+    const intervalMs = reset.intervalDays * DAY;
     const cycles = Math.floor((now - anchor) / intervalMs);
 
-    const last = new Date(
-      anchor.getTime() + cycles * intervalMs
-    );
+    const last = new Date(anchor.getTime() + cycles * intervalMs);
 
-    const nextStart = addDays(last, reset.intervalDays);
-    let next = atTime(nextStart, endTime, context);
+    let next = addDays(last, reset.intervalDays);
 
-    if (reset.patchCollision === 'maintenanceStart') {
-      const maintenanceStart =
-        getNextPatchMaintenanceStart(context);
+    if (reset.patchCollision) {
+      const maintenanceStart = getNextPatchMaintenanceStart(context);
 
-      const collisionDistance =
-        Math.abs(next.getTime() - maintenanceStart.getTime());
-
-      if (collisionDistance <= MS_IN_DAY) {
+      if (Math.abs(next.getTime() - maintenanceStart.getTime()) <= DAY) {
         next = maintenanceStart;
       }
     }
@@ -130,93 +155,106 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     return { last, next, isDisabled: now >= next };
   }
 
-  function getPatchWindow(context) {
-    const { gameConfig, reset, now } = context;
-    const patchStart = new Date(`${gameConfig.current.version_start}T00:00:00Z`);
+  function getWindow(context) {
+    const { now, reset } = context;
 
-    const last = atLabel(addDays(patchStart, reset.startOffsetDays), reset.startTime ?? 'dailyReset', context);
-    const next = atLabel(addDays(patchStart, gameConfig.current.version_duration + reset.endOffsetDays), reset.endTime ?? 'dailyReset', context);
-
-    return { last, next, isDisabled: now < last || now >= next };
-  }
-
-  function getSeasonalWindow({ reset, now }) {
-    const last = new Date(reset.currentStart);
-    const next = reset.nextStart ? new Date(reset.nextStart) : null;
+    const last = atLabel(resolveDate(reset.startDate, context), reset.startTime ?? 'eventStart', context);
+    const next = reset.endDate
+      ? atLabel(resolveDate(reset.endDate, context), reset.endTime ?? 'eventEnd', context)
+      : null;
 
     return {
       last,
       next,
-      isDisabled: now < last || (next !== null && now >= next)
+      isDisabled: now < last || (next !== null && now >= next),
     };
   }
 
   const RESET_HANDLERS = {
     daily: ({ lastDailyReset }) => ({
       last: lastDailyReset,
-      next: addDays(lastDailyReset, 1)
+      next: addDays(lastDailyReset, 1),
     }),
     weekly: getWeeklyWindow,
-    monthly: context => getCalendarWindow(context, [context.reset.day]),
-    semiMonthly: context => getCalendarWindow(context, context.reset.days),
+    monthly: getMonthlyWindow,
     interval: getIntervalWindow,
-    patchWindow: getPatchWindow,
-    seasonal: getSeasonalWindow,
+    window: getWindow,
   };
 
-  function validateReset(reset, taskId) {
+  function validateTime(time, taskId, clock) {
+    if (LITERAL_TIME.test(time)) {
+      try {
+        literalTime(time);
+      } catch {
+        throw new Error(`Invalid time "${time}" for task: ${taskId}`);
+      }
+
+      return;
+    }
+
+    if (!TIMES.includes(time)) {
+      throw new Error(`Invalid time "${time}" for task: ${taskId}`);
+    }
+
+    if (CONFIG_KEYS[time] && !clock[time]) {
+      throw new Error(`Task ${taskId} uses ${time}, but the game has no ${CONFIG_KEYS[time]} setting`);
+    }
+  }
+
+  function validateReset(reset, taskId, clock, gameConfig) {
     const fail = () => {
       throw new Error(`Invalid reset configuration for task: ${taskId}`);
     };
 
-    if (!reset || !RESET_HANDLERS[reset.kind]) fail();
+    if (!reset || !Object.hasOwn(RESET_HANDLERS, reset.kind)) fail();
 
-    if (
-      reset.kind === 'weekly' &&
-      (!Number.isInteger(reset.weekday) || reset.weekday < 0 || reset.weekday > 6)
-    ) {
-      fail();
+    for (const key of Object.keys(reset)) {
+      if (key !== 'kind' && !KIND_FIELDS[reset.kind].includes(key)) {
+        throw new Error(`Task ${taskId}: "${key}" is not used by kind "${reset.kind}"`);
+      }
     }
 
+    const validWeekday = value => Number.isInteger(value) && value >= 0 && value <= 6;
     const validDay = day => Number.isInteger(day) && day >= 1 && day <= 31;
+    const validDate = value => typeof value === 'string' && PLAIN_DATE.test(value) && Number.isFinite(Date.parse(value));
+    const validWindowDate = value => typeof value === 'string' && (PATCH_DATE.test(value) || validDate(value));
 
-    if (reset.kind === 'monthly' && !validDay(reset.day)) fail();
+    if (reset.kind === 'weekly') {
+      if (reset.weekday === undefined && gameConfig.weekly_reset_weekday === undefined) {
+        throw new Error(`Task ${taskId} has no weekday and the game has no weekly_reset_weekday setting`);
+      }
+
+      if (!validWeekday(reset.weekday ?? gameConfig.weekly_reset_weekday)) fail();
+    }
 
     if (
-      reset.kind === 'semiMonthly' &&
-      (!Array.isArray(reset.days) || !reset.days.length || !reset.days.every(validDay))
+      reset.kind === 'monthly' &&
+      (!Array.isArray(reset.monthDays) || !reset.monthDays.length || !reset.monthDays.every(validDay))
     ) {
       fail();
     }
 
-    if (
-      reset.kind === 'interval' &&
-      (
-        typeof reset.anchor !== 'string' ||
-        !Number.isFinite(Date.parse(reset.anchor)) ||
+    if (reset.kind === 'interval') {
+      if (
+        !validDate(reset.anchor) ||
         !Number.isInteger(reset.intervalDays) ||
-        reset.intervalDays <= 0
-      )
-    ) {
-      fail();
+        reset.intervalDays <= 0 ||
+        (reset.patchCollision !== undefined && typeof reset.patchCollision !== 'boolean')
+      ) {
+        fail();
+      }
+
+      validateTime(reset.startTime ?? 'dailyReset', taskId, clock);
     }
 
-    if (
-      reset.kind === 'patchWindow' &&
-      (
-        !Number.isInteger(reset.startOffsetDays) ||
-        !Number.isInteger(reset.endOffsetDays)
-      )
-    ) {
-      fail();
-    }
-  }
+    if (reset.kind === 'window') {
+      if (!validWindowDate(reset.startDate) || (reset.endDate != null && !validWindowDate(reset.endDate))) {
+        throw new Error(`Invalid window dates for task: ${taskId}`);
+      }
 
-  function atLabel(label, time, context) {
-    if (time !== 'dailyReset') return atTime(label, time, context);
-    const d = addDays(new Date(label), -context.dayShift);
-    d.setUTCHours(context.resetHour, 0, 0, 0);
-    return d;
+      validateTime(reset.startTime ?? 'eventStart', taskId, clock);
+      validateTime(reset.endTime ?? 'eventEnd', taskId, clock);
+    }
   }
 
   for (const gameName of Object.keys(GAME_TASKS)) {
@@ -225,10 +263,12 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     }
   }
 
-  for (const gameName of Object.keys(GAME_CONFIG)) {
+  for (const [gameName, gameConfig] of Object.entries(GAME_CONFIG)) {
     if (!GAME_TASKS[gameName]) {
       throw new Error(`Missing task configuration: ${gameName}`);
     }
+
+    CLOCKS.set(gameName, compileGameClock(gameName, gameConfig));
   }
 
   const tasksByGame = new Map();
@@ -241,7 +281,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         throw new Error(`Duplicate task ID: ${task.id}`);
       }
 
-      validateReset(task.reset, task.id);
+      validateReset(task.reset, task.id, CLOCKS.get(gameName), GAME_CONFIG[gameName]);
       tasks.set(task.id, task);
     }
 
@@ -250,19 +290,18 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
 
   function computeSingleAccountResetData(account, gameName, now = new Date()) {
     const gameConfig = GAME_CONFIG[gameName];
-    const resetHour = gameConfig?.servers[account.server]?.daily_reset;
+    const clock = CLOCKS.get(gameName);
+    const server = clock?.servers[account.server];
 
-    if (!Number.isInteger(resetHour) || resetHour < 0 || resetHour > 23) {
-      throw new Error(`Invalid reset hour for ${gameName} / ${account.server}`);
+    if (!server) {
+      throw new Error(`Unknown server for ${gameName} / ${account.server}`);
     }
 
     if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
       throw new Error('Invalid current date');
     }
 
-    const lastDailyReset = getLastDailyReset(now, resetHour);
-    const dayShift = gameConfig.servers[account.server].day_shift ?? 0;
-    const resetDate = addDays(lastDailyReset, dayShift);
+    const lastDailyReset = getLastDailyReset(now, server);
 
     Object.values(account.tasks).forEach(taskGroup => {
       taskGroup.forEach(task => {
@@ -273,7 +312,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         }
 
         const reset = definition.reset;
-        const resetWindow = RESET_HANDLERS[reset.kind]({ now, gameConfig, resetHour, lastDailyReset, resetDate, dayShift, reset });
+        const resetWindow = RESET_HANDLERS[reset.kind]({ now, gameConfig, clock, server, lastDailyReset, reset });
 
         const { last, next } = resetWindow;
 
@@ -331,5 +370,15 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     return gameGroups;
   }
 
-  return { computeTaskResetData, computeSingleAccountResetData };
+  function getLastDailyResetFor(gameName, serverName, now = new Date()) {
+    const server = CLOCKS.get(gameName)?.servers[serverName];
+
+    if (!server) {
+      throw new Error(`Unknown server for ${gameName} / ${serverName}`);
+    }
+
+    return getLastDailyReset(now, server);
+  }
+
+  return { computeTaskResetData, computeSingleAccountResetData, getLastDailyReset: getLastDailyResetFor };
 }

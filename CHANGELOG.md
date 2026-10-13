@@ -1,5 +1,26 @@
 # Changelog
 
+# [1.1.0] - 2026-10-13
+### Added
+- Calendar navigation now includes the previous month
+- Game event tasks are now supported
+- A notification now appears when a game data update is invalid and the last working version is used instead
+- Clear error message shows when game data cannot be loaded on launch, instead of the app closing silently
+### Changed
+- Game data is now validated before it is saved, so a faulty update can no longer replace the last working version
+- Schedule images now load in parallel, and images that don't exist are no longer requested again on every refresh
+- Seasonal task dates and server time zones in game data are now checked on launch
+- Removed the unused Linux and macOS packages
+### Fixed
+- A faulty game data update could make the app close on launch with no message
+- Opening a second copy of the app now exits immediately instead of briefly opening a window
+- Editing an account could clear its server or UID in some cases
+- A task update that failed halfway could still be saved later with the next change
+- accounts.json is now written safely; a crash or power loss while saving can no longer corrupt it
+- Automatic dailies now detect the game by its exact process name
+- The app's internal file protocols can no longer read files outside the app's own folders
+- Tooltip portrait event detection should work properly now
+
 ## [1.0.6] - 2026-10-08
 ### Added
 - App icon

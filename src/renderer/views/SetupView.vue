@@ -58,8 +58,8 @@ import {
     onMounted
 } from 'vue';
 
-import { useNotification } from './composables/useNotification.js';
-import { useSettings } from './composables/useSettings.js';
+import { useNotification } from '.././composables/useNotification.js';
+import { useSettings } from '.././composables/useSettings.js';
 
 const props = defineProps({
     gameConfig: {
@@ -88,7 +88,7 @@ const bgStyle = computed(() => ({
     backgroundImage: settings.value.theme
         ? `url(${
             new URL(
-                `../assets/themes/${settings.value.theme}/setup_background.webp`,
+                `../../assets/themes/${settings.value.theme}/setup_background.webp`,
                 import.meta.url
             ).href
         })`

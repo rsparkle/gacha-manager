@@ -1,7 +1,7 @@
 {
   "name": "gacha-manager",
   "productName": "Gacha Manager",
-  "version": "1.0.6",
+  "version": "1.1.0",
   "description": "A calendar and task manager for gacha game dailies, resets and schedules",
   "main": ".vite/build/main.js",
   "private": true,
@@ -17,27 +17,10 @@
     "name": "rsparkle",
     "email": "ricardomagid50@gmail.com"
   },
-  "build": {
-    "publish": {
-      "provider": "github",
-      "owner": "rsparkle",
-      "repo": "gacha-manager"
-    },
-    "win": {
-      "icon": "src/assets/icon.ico"
-    },
-    "nsis": {
-      "installerIcon": "src/assets/icon.ico",
-      "uninstallerIcon": "src/assets/icon.ico"
-    }
-  },
   "license": "MIT",
   "devDependencies": {
     "@electron-addons/electron-forge-maker-nsis": "^7.0.2",
     "@electron-forge/cli": "^7.11.1",
-    "@electron-forge/maker-deb": "^7.11.1",
-    "@electron-forge/maker-rpm": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron-forge/plugin-vite": "^7.11.1",

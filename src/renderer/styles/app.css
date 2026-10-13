@@ -62,7 +62,7 @@ input {
 
 [data-theme="sparkle"],
 .sparkle {
-    --bg: #140b0d;
+    --bg: #200b12;
     --panel: #2b1018;
     --panel-hover: #461623;
     --panel-selected: #651c2d;
@@ -91,7 +91,7 @@ input {
 
     --scrollbar-thumb: #ff526e;
     --scrollbar-thumb-hover: #ff7188;
-    --scrollbar-track: #140b0d;
+    --scrollbar-track: #200b12;
 
     --done: #63b878;
     --urgent: #f2a541;

@@ -4,8 +4,6 @@ const notifications = ref([]);
 const currentTheme = ref('');
 let nextId = 0;
 
-const ICON_TYPES = ['notification_success', 'notification_error', 'notification_waiting'];
-
 export function getStickerUrl(theme, type) {
     const themeKey = theme || 'default';
     try {

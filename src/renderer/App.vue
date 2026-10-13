@@ -52,11 +52,11 @@
 <script setup>
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
 
-import '../styles/app.css';
-import SetupView from './SetupView.vue'
-import TasksView from './TasksView.vue'
-import ScheduleView from './ScheduleView.vue'
-import AppFooter from './AppFooter.vue'
+import './styles/app.css';
+import SetupView from './views/SetupView.vue'
+import TasksView from './views/TasksView.vue'
+import ScheduleView from './views/ScheduleView.vue'
+import AppFooter from './components/AppFooter.vue'
 import NotificationCenter from './components/NotificationCenter.vue'
 import ConfirmDialogue from './components/ConfirmDialogue.vue'
 import AppSettings from './components/AppSettings.vue'
@@ -74,6 +74,7 @@ const accountsPerGame = ref([])
 const hideSetup = ref(false)
 const currentView = ref(null)
 let taskTimer = null
+let stopDailiesListener = null
 
 const loadData = async () => {
     const groupedAccounts = await window.api.getGroupedAccounts()
@@ -156,12 +157,12 @@ onMounted(async () => {
     currentView.value = hideSetup.value ? 'tasks' : 'setup';
     scheduleUpdate();
 
-    window.api.on('dailies-completed', onDailiesCompleted)
+    stopDailiesListener = window.api.onDailiesCompleted(onDailiesCompleted)
 })
 
 onUnmounted(() => {
     clearTimeout(taskTimer);
     document.documentElement.classList.remove(settings.value.theme);
-    window.api.removeAllListeners('dailies-completed');
+    if (stopDailiesListener) stopDailiesListener();
 })
 </script>
