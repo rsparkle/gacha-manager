@@ -181,12 +181,7 @@
                             </div>
 
                             <div v-if="!hoveredEvent.confirmed" class="schedule-event-tooltip-estimated">
-                                <img
-                                    v-if="settings.theme && settings.theme !== 'default'"
-                                    :src="getEstimatedSticker()"
-                                    class="estimated-sticker"
-                                    alt=""
-                                />
+                                <img v-if="estimatedSticker" :src="estimatedSticker" class="estimated-sticker" alt="" />
                                 <span class="estimated-label">Estimated</span>
                             </div>
                         </div>
@@ -213,6 +208,7 @@ import { createScheduleProcessor } from '../lib/scheduleProcessor.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { slugify, formatCountdown } from '../../shared/format.js';
+import { themeAsset } from '../themes.js';
 
 const { settings, saveSettings } = useSettings();
 const { gameConfig, gamesWithAccounts } = useAccounts();
@@ -301,15 +297,20 @@ const hoveredCountdown = computed(() => {
     };
 });
 
-const getEstimatedSticker = () =>
-    new URL(`../../assets/themes/${settings.value.theme}/estimated.webp`, import.meta.url).href;
+const estimatedSticker = computed(() => themeAsset(settings.value.theme, 'estimated'));
 
 const loadGameIcons = () =>
     Promise.all(
         gameList.value
             .filter((game) => !gameIcons[game])
             .map(async (game) => {
-                gameIcons[game] = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
+                try {
+                    const url = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
+
+                    if (url) gameIcons[game] = url;
+                } catch (err) {
+                    console.error(`Failed to load ${game} icon:`, err);
+                }
             }),
     );
 
@@ -325,7 +326,9 @@ const loadEventImages = () => {
             .filter((file) => !imageUrls[file])
             .map(async (file) => {
                 try {
-                    imageUrls[file] = await window.api.cacheImage(file);
+                    const url = await window.api.cacheImage(file);
+
+                    if (url) imageUrls[file] = url;
                 } catch (err) {
                     console.error(`Failed to load ${file}:`, err);
                 }

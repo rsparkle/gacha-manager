@@ -43,7 +43,7 @@
             </div>
 
             <div class="game-grid-empty" v-else>
-                <img v-if="settings.theme" :src="getLoadingSticker()" class="loading-sticker" alt="" />
+                <img v-if="loadingSticker" :src="loadingSticker" class="loading-sticker" alt="" />
                 <div v-else class="empty-spinner"></div>
                 <p>Loading games…</p>
             </div>
@@ -64,6 +64,7 @@ import { useNotification } from '../composables/useNotification.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { slugify } from '../../shared/format.js';
+import { themeAsset } from '../themes.js';
 
 const emit = defineEmits(['done']);
 
@@ -80,11 +81,11 @@ const submitting = ref(false);
 const isLoading = ref(true);
 
 const hasSelection = computed(() => Object.keys(selectedGames.value).length > 0);
+const setupBackground = computed(() => themeAsset(settings.value.theme, 'setup_background'));
+const loadingSticker = computed(() => themeAsset(settings.value.theme, 'loading'));
 
 const bgStyle = computed(() => ({
-    backgroundImage: settings.value.theme
-        ? `url(${new URL(`../../assets/themes/${settings.value.theme}/setup_background.webp`, import.meta.url).href})`
-        : '',
+    backgroundImage: setupBackground.value ? `url(${setupBackground.value})` : '',
 }));
 
 const toggleGame = (game) => {

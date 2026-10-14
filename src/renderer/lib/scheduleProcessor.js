@@ -32,6 +32,10 @@ export function createScheduleProcessor(GAME_CONFIG) {
         return `games/${slugify(game)}_${version}_livestream.webp`;
     }
 
+    function patchImgs(game, gameData, version) {
+        return [...new Set([gameImg(game, version), gameImg(game, gameData.current.version), defaultImg(game)])];
+    }
+
     function getPhaseCharacters(patchData, phase) {
         return (patchData.phase_characters?.[phase] ?? []).filter(Boolean);
     }
@@ -116,7 +120,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                 portrait: true,
                 label,
                 title: label,
-                imgFiles: [characterImg(characters[0]), gameImg(game, gameData.current.version), defaultImg(game)],
+                imgFiles: [characterImg(characters[0]), ...patchImgs(game, gameData, patchData.version)],
                 confirmed: false,
             };
         }
@@ -175,7 +179,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                         portrait: true,
                         label: `${character} Release`,
                         title: `${character}`,
-                        imgFiles: [characterImg(character), gameImg(game, patchData.version), defaultImg(game)],
+                        imgFiles: [characterImg(character), ...patchImgs(game, gameData, patchData.version)],
                         confirmed,
                     };
                 }
@@ -189,7 +193,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                         ? `${gameData.abbr} ${version} - ${character} Release`
                         : `${gameData.abbr} ${version} 2nd Phase - ${character} Release`,
                     title: isPhase1 ? `${gameData.abbr} ${version}` : `${gameData.abbr} ${version} 2nd Phase`,
-                    imgFiles: [characterImg(character), gameImg(game, patchData.version), defaultImg(game)],
+                    imgFiles: [characterImg(character), ...patchImgs(game, gameData, patchData.version)],
                     confirmed,
                 };
             } else {
@@ -226,7 +230,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                 portrait: false,
                 label: `${gameData.abbr} ${gameData.next.version} Trailer`,
                 title: `${gameData.abbr} ${gameData.next.version} Trailer`,
-                imgFiles: [gameImg(game, gameData.current.version), defaultImg(game)],
+                imgFiles: [gameImg(game, gameData.next.version), defaultImg(game)],
                 confirmed: true,
             },
         };
@@ -270,7 +274,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                     portrait: false,
                     label: `${gameData.abbr} ${versionNumber} 5★ Drip Marketing`,
                     title: `${gameData.abbr} ${versionNumber} Drip`,
-                    imgFiles: [gameImg(game, gameData.current.version), defaultImg(game)],
+                    imgFiles: [gameImg(game, gameData.next.version), defaultImg(game)],
                     confirmed: true,
                 };
             }

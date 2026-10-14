@@ -35,37 +35,14 @@
                 <div class="theme-group">
                     <span class="app-bar-label">Theme</span>
                     <button
+                        v-for="theme in THEMES"
+                        :key="theme.id"
                         class="theme-btn"
-                        :class="{ active: settings.theme === '' }"
-                        @click="
-                            settings.theme = '';
-                            saveSettings(true);
-                        "
+                        :class="{ active: settings.theme === theme.id }"
+                        @click="selectTheme(theme.id)"
                     >
-                        <span class="theme-swatch default"></span>
-                        <span>Default</span>
-                    </button>
-                    <button
-                        class="theme-btn"
-                        :class="{ active: settings.theme === 'furina' }"
-                        @click="
-                            settings.theme = 'furina';
-                            saveSettings(true);
-                        "
-                    >
-                        <span class="theme-swatch furina"></span>
-                        <span>Furina</span>
-                    </button>
-                    <button
-                        class="theme-btn"
-                        :class="{ active: settings.theme === 'sparkle' }"
-                        @click="
-                            settings.theme = 'sparkle';
-                            saveSettings(true);
-                        "
-                    >
-                        <span class="theme-swatch sparkle"></span>
-                        <span>Sparkle</span>
+                        <span class="theme-swatch" :class="theme.id || 'default'"></span>
+                        <span>{{ theme.name }}</span>
                     </button>
                 </div>
                 <button class="settings-btn" @click="showSettings = !showSettings">
@@ -95,6 +72,7 @@ import AppSettings from './components/AppSettings.vue';
 import { useNotification } from './composables/useNotification.js';
 import { useSettings } from './composables/useSettings.js';
 import { useAccounts } from './composables/useAccounts.js';
+import { THEMES } from './themes.js';
 
 const { createNotification, setTheme } = useNotification();
 const { settings, showSettings, saveSettings } = useSettings();
@@ -105,6 +83,11 @@ const currentView = ref(null);
 let taskTimer = null;
 let stopDailiesListener = null;
 let stopGameDataListener = null;
+
+const selectTheme = (theme) => {
+    settings.value.theme = theme;
+    saveSettings(true);
+};
 
 const onSetupDone = () => {
     currentView.value = 'tasks';

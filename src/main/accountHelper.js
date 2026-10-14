@@ -16,6 +16,7 @@ let store;
 let notificationTimeout;
 const notifiedKeys = new Set();
 const TIMER_BUFFER_MS = 1000;
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
 const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'windowsNotifications'];
 
@@ -461,9 +462,10 @@ export function updateNextNotification() {
         showDeadlineNotification(fresh);
     }
 
-    if (Number.isFinite(nextWake)) {
-        notificationTimeout = setTimeout(updateNextNotification, Math.max(nextWake - nowMs, 0) + TIMER_BUFFER_MS);
-    }
+    notificationTimeout = setTimeout(
+        updateNextNotification,
+        Math.min(Math.max(nextWake - nowMs, 0) + TIMER_BUFFER_MS, MAX_TIMEOUT_MS),
+    );
 }
 
 export function completeAutomaticDailies(gameName, accountIds) {

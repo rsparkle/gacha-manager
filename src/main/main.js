@@ -72,6 +72,7 @@ let monitorInterval = null;
 let checkingProcesses = false;
 let tray = null;
 let hidingToTray = false;
+let rejectedGameData = null;
 
 const missingAssets = new Map();
 const pendingDownloads = new Map();
@@ -131,29 +132,23 @@ async function writeJson(file, data) {
     await fs.rename(tempFile, file);
 }
 
-function validateGameData(config, tasks) {
-    try {
-        createResetProcessor(config, tasks);
-    } catch (err) {
-        err.isInvalidData = true;
-        throw err;
-    }
+function validateGameData({ config, tasks }) {
+    createResetProcessor(config, tasks);
 }
 
 async function fetchGameData() {
     const [config, tasks] = await Promise.all([fetchJson(CONFIG_BASE), fetchJson(TASKS_BASE)]);
-
-    validateGameData(config, tasks);
 
     return { config, tasks };
 }
 
 async function readCachedGameData() {
     const [config, tasks] = await Promise.all([readJson(CONFIG_CACHE), readJson(TASKS_CACHE)]);
+    const data = { config, tasks };
 
-    validateGameData(config, tasks);
+    validateGameData(data);
 
-    return { config, tasks };
+    return data;
 }
 
 async function cacheGameData({ config, tasks }) {
@@ -171,6 +166,7 @@ async function loadGameData() {
         try {
             const data = await fetchGameData();
 
+            validateGameData(data);
             await cacheGameData(data);
 
             return { ...data, fromCache: false };
@@ -200,19 +196,28 @@ async function updateGameData() {
     try {
         data = await fetchGameData();
     } catch (err) {
-        if (err.isInvalidData) {
-            new Notification({
-                title: 'Game data update skipped',
-                body: 'The latest game data was invalid, so the last working version is being used.',
-            }).show();
-        } else {
-            console.error('Game data refresh failed:', err);
-        }
-
+        console.error('Game data refresh failed:', err);
         return;
     }
 
     if (isDeepStrictEqual(data, { config: GAME_CONFIG, tasks: GAME_TASKS })) return;
+    if (isDeepStrictEqual(data, rejectedGameData)) return;
+
+    try {
+        validateGameData(data);
+    } catch (err) {
+        rejectedGameData = data;
+        console.error('Game data update rejected:', err);
+
+        new Notification({
+            title: 'Game data update skipped',
+            body: 'The latest game data was invalid, so the last working version is being used.',
+        }).show();
+
+        return;
+    }
+
+    rejectedGameData = null;
 
     await cacheGameData(data);
 
@@ -573,6 +578,12 @@ ipcMain.handle('cacheImage', async (_event, filename) => {
         }
 
         await pendingDownloads.get(filename);
+
+        try {
+            await fs.access(localPath);
+        } catch {
+            return null;
+        }
     }
 
     const relativePath = path.relative(ASSETS_CACHE, localPath).split(path.sep).join('/');
@@ -633,8 +644,6 @@ handle('syncCalendarMonthlySubs', () => ({
 // --- App Entry Point ---
 
 async function startApp() {
-    await deleteCacheFiles();
-
     let gameData;
 
     try {
@@ -674,6 +683,8 @@ async function startApp() {
     createMainWindow();
 
     createTray();
+
+    deleteCacheFiles();
 
     if (store.store.checkGachaProcesses) {
         startMonitoring();

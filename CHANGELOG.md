@@ -1,5 +1,15 @@
 # Changelog
 
+# [1.1.2] - 2026-10-14
+### Changed
+- Schedule events for the next patch now show that patch's art when it's available, falling back to the default art
+- Old cached images are now cleaned up in the background, which will make the app start faster
+### Fixed
+- Task completion percentage counted inactive tasks as done, so progress could look higher than it was and show the "all done" sticker too early
+- Images that failed to download (for example when starting offline) stayed broken until the app was restarted; they now load once the connection is back
+- The "Game data update skipped" notification repeated every few hours while the online data stayed invalid; it now shows once per update
+- Deadline notification checks could run constantly in the background in rare cases
+
 # [1.1.1] - 2026-10-14
 ### Added
 - Furina theme

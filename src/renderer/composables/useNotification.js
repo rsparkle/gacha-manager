@@ -1,17 +1,9 @@
 import { ref } from 'vue';
+import { themeAsset } from '../themes.js';
 
 const notifications = ref([]);
 const currentTheme = ref('');
 let nextId = 0;
-
-export function getStickerUrl(theme, type) {
-    const themeKey = theme || 'default';
-    try {
-        return new URL(`../../assets/themes/${themeKey}/${type}.webp`, import.meta.url).href;
-    } catch {
-        return null;
-    }
-}
 
 export function useNotification() {
     function setTheme(theme) {
@@ -20,7 +12,7 @@ export function useNotification() {
 
     function createNotification(type, message, duration = 0) {
         const id = ++nextId;
-        const icon = getStickerUrl(currentTheme.value, `notification_${type}`);
+        const icon = themeAsset(currentTheme.value, `notification_${type}`);
         const createdAt = duration > 0 ? Date.now() : null;
 
         notifications.value.push({ id, type, message, duration, icon, createdAt, exiting: false });

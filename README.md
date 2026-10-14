@@ -38,7 +38,7 @@ https://github.com/user-attachments/assets/01ea2122-92d0-4f5a-bdce-edd0de8c71fc
 - **Per-Game Task Tracking:** Real-time completion tracking with instant UI updates.
 - **Server-Aware Reset Timers:** UID prefix auto-detection handles region-specific resets (NA/EU/Asia).
 - **Multi-Account Support:** Seamlessly switch between main and alt accounts.
-- **Dynamic Themes:** Includes a default sleek dark mode and a specialized **HSR Sparkle** theme.
+- **Dynamic Themes:** A sleek default dark mode plus character themes for a few characters.
 - **Smart Cleanup:** Removing the last account for a game automatically cleans up your sidebar.
 - **Schedule & Event Tracking:** Visual calendar of patch releases, banners and livestreams with countdown timers and server-aware timing.
 

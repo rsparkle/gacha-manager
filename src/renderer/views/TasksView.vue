@@ -38,7 +38,7 @@
         <div class="main">
             <div class="main-inner" v-if="selectedGame && selectedAccount">
                 <div class="hero">
-                    <img v-if="settings.theme" :src="getCharacterThemeImage()" class="hero-img" />
+                    <img v-if="heroImage" :src="heroImage" class="hero-img" />
                     <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
 
                     <div class="hero-bottom">
@@ -95,8 +95,8 @@
                                 >{{ completionPercentage }}% Completed</span
                             >
                             <img
-                                v-if="completionPercentage === 100 && settings.theme"
-                                :src="getCompletionSticker()"
+                                v-if="completionPercentage === 100 && completionSticker"
+                                :src="completionSticker"
                                 class="complete-sticker"
                             />
                         </div>
@@ -258,6 +258,7 @@ import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { taskProgress, isUrgent } from '../../shared/tasks.js';
 import { slugify, formatCountdown } from '../../shared/format.js';
+import { themeAsset } from '../themes.js';
 
 const { settings, saveSettings, toggleSetting } = useSettings();
 const { confirm } = useConfirm();
@@ -316,6 +317,9 @@ const notificationsEnabled = computed(
     () => settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false,
 );
 
+const heroImage = computed(() => themeAsset(settings.value.theme, 'game_theme'));
+const completionSticker = computed(() => themeAsset(settings.value.theme, 'tasks_completed'));
+
 const hasUrgentTasks = (gameName) =>
     accountsPerGame.value
         .find((g) => g.name === gameName)
@@ -337,11 +341,11 @@ const selectGame = (gameGroup) => {
 };
 
 const completionPercentage = computed(() => {
-    const tasks = selectedAccount.value?.tasks ?? {};
-    const allTasks = Object.values(tasks).flat();
-    const completedTasks = allTasks.filter((task) => task.isCompleted || task.isDisabled).length;
+    const allTasks = Object.values(selectedAccount.value?.tasks ?? {}).flat();
+    const active = allTasks.filter((task) => !task.isDisabled);
+    const done = active.filter((task) => task.isCompleted).length;
 
-    return allTasks.length > 0 ? Math.floor((completedTasks / allTasks.length) * 100) : 0;
+    return active.length > 0 ? Math.floor((done / active.length) * 100) : 0;
 });
 
 const run = async (action, successMessage) => {
@@ -546,10 +550,16 @@ const toggleAndSaveSetting = (map, gameName, accountId) => {
 };
 
 const loadGameImage = async (game) => {
-    const slug = slugify(game.name);
-    const filename = failedImages.value.has(game.name) ? `${slug}_default` : `${slug}_${game.game_version}`;
+    const usingDefault = failedImages.value.has(game.name);
+    const version = usingDefault ? 'default' : game.game_version;
+    const url = await window.api.cacheImage(`games/${slugify(game.name)}_${version}.webp`);
 
-    gameImages.value[game.name] = await window.api.cacheImage(`games/${filename}.webp`);
+    if (!url && !usingDefault) {
+        handleImageError(game);
+        return;
+    }
+
+    gameImages.value[game.name] = url;
 };
 
 const loadSidebarIcon = async (game) => {
@@ -559,14 +569,6 @@ const loadSidebarIcon = async (game) => {
 const getGameImageBackgroundUrl = (game) => {
     const src = gameImages.value[game.name];
     return src ? `url("${src}")` : '';
-};
-
-const getCharacterThemeImage = () => {
-    return new URL(`../../assets/themes/${settings.value.theme}/game_theme.webp`, import.meta.url).href;
-};
-
-const getCompletionSticker = () => {
-    return new URL(`../../assets/themes/${settings.value.theme}/tasks_completed.webp`, import.meta.url).href;
 };
 
 const handleImageError = (game) => {
@@ -584,8 +586,9 @@ watch(
         await Promise.all(
             games.flatMap((game) => {
                 const loads = [];
+                const versionChanged = loadedImageVersions[game.name] !== game.game_version;
 
-                if (loadedImageVersions[game.name] !== game.game_version) {
+                if (versionChanged || !gameImages.value[game.name]) {
                     loadedImageVersions[game.name] = game.game_version;
 
                     if (failedImages.value.has(game.name)) {
