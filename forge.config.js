@@ -7,17 +7,16 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: { unpack: '**/*.node' },
-    icon: './src/assets/icon',
-    extraResource: ['./src/assets/icon.ico'],
+    icon: './build/icon',
+    extraResource: ['./build/icon.ico'],
   },
   hooks: {
     packageAfterCopy: async (forgeConfig, buildPath) => {
       console.log('Building renderer...');
       const { build } = await import('vite');
       await build({
-        root: path.join(__dirname, 'src/renderer'),
+        configFile: path.join(__dirname, 'vite.renderer.config.mjs'),
         base: './',
-        plugins: [(await import('@vitejs/plugin-vue')).default()],
         build: {
           outDir: path.join(buildPath, '.vite', 'renderer', 'main_window'),
           emptyOutDir: true,

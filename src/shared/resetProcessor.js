@@ -288,77 +288,118 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     tasksByGame.set(gameName, tasks);
   }
 
-  function computeSingleAccountResetData(account, gameName, now = new Date()) {
-    const gameConfig = GAME_CONFIG[gameName];
+  function serverContext(gameName, serverName, now) {
     const clock = CLOCKS.get(gameName);
-    const server = clock?.servers[account.server];
+    const server = clock?.servers[serverName];
 
     if (!server) {
-      throw new Error(`Unknown server for ${gameName} / ${account.server}`);
+      throw new Error(`Unknown server for ${gameName} / ${serverName}`);
     }
 
+    return { now, gameConfig: GAME_CONFIG[gameName], clock, server, lastDailyReset: getLastDailyReset(now, server) };
+  }
+
+  function getResetWindow(gameName, taskId, context) {
+    const definition = tasksByGame.get(gameName)?.get(taskId);
+
+    if (!definition) {
+      throw new Error(`Unknown task: ${gameName} / ${taskId}`);
+    }
+
+    const reset = definition.reset;
+    const resetWindow = RESET_HANDLERS[reset.kind]({ ...context, reset });
+    const { last, next } = resetWindow;
+
+    if (!Number.isFinite(last?.getTime())) {
+      throw new Error(`Invalid reset start for task: ${taskId}`);
+    }
+
+    if (next !== null && (!Number.isFinite(next?.getTime()) || next <= last)) {
+      throw new Error(`Invalid reset end for task: ${taskId}`);
+    }
+
+    return resetWindow;
+  }
+
+  function disableTask(task) {
+    task.isDisabled = true;
+    task.duration = 0;
+    task.nextReset = 0;
+    task.isCompleted = false;
+  }
+
+  function applyResetWindow(task, { last, next, isDisabled }, now) {
+    task.isDisabled = Boolean(isDisabled);
+
+    task.duration = task.isDisabled
+      ? 0
+      : next
+        ? next - last
+        : null;
+
+    task.nextReset = task.isDisabled
+      ? 0
+      : next
+        ? next - now
+        : null;
+
+    const completedAt = task.last_completed == null
+      ? NaN
+      : new Date(task.last_completed).getTime();
+
+    task.isCompleted =
+      !task.isDisabled &&
+      Number.isFinite(completedAt) &&
+      completedAt >= last.getTime() &&
+      (next === null || completedAt < next.getTime()) &&
+      completedAt <= now.getTime();
+  }
+
+  function assertValidNow(now) {
     if (!(now instanceof Date) || !Number.isFinite(now.getTime())) {
       throw new Error('Invalid current date');
     }
+  }
 
-    const lastDailyReset = getLastDailyReset(now, server);
+  function computeSingleAccountResetData(account, gameName, now = new Date()) {
+    assertValidNow(now);
 
-    Object.values(account.tasks).forEach(taskGroup => {
-      taskGroup.forEach(task => {
-        const definition = tasksByGame.get(gameName)?.get(task.id);
+    const tasks = Object.values(account.tasks).flat();
+    let context;
 
-        if (!definition) {
-          throw new Error(`Unknown task: ${gameName} / ${task.id}`);
-        }
+    try {
+      context = serverContext(gameName, account.server, now);
+    } catch (err) {
+      console.error(err.message);
+      tasks.forEach(disableTask);
+      return account;
+    }
 
-        const reset = definition.reset;
-        const resetWindow = RESET_HANDLERS[reset.kind]({ now, gameConfig, clock, server, lastDailyReset, reset });
-
-        const { last, next } = resetWindow;
-
-        if (!Number.isFinite(last?.getTime())) {
-          throw new Error(`Invalid reset start for task: ${task.id}`);
-        }
-
-        if (
-          next !== null &&
-          (
-            !Number.isFinite(next?.getTime()) ||
-            next <= last
-          )
-        ) {
-          throw new Error(`Invalid reset end for task: ${task.id}`);
-        }
-
-        task.isDisabled = Boolean(resetWindow.isDisabled);
-
-        task.duration = task.isDisabled
-          ? 0
-          : next
-            ? next - last
-            : null;
-
-        task.nextReset = task.isDisabled
-          ? 0
-          : next
-            ? next - now
-            : null;
-
-        const completedAt = task.last_completed == null
-          ? NaN
-          : new Date(task.last_completed).getTime();
-
-        task.isCompleted =
-          !task.isDisabled &&
-          Number.isFinite(completedAt) &&
-          completedAt >= last.getTime() &&
-          (next === null || completedAt < next.getTime()) &&
-          completedAt <= now.getTime();
-      });
-    });
+    for (const task of tasks) {
+      try {
+        applyResetWindow(task, getResetWindow(gameName, task.id, context), now);
+      } catch (err) {
+        console.error(err.message);
+        disableTask(task);
+      }
+    }
 
     return account;
   }
+
+  function dryRun(now = new Date()) {
+    for (const [gameName, tasks] of tasksByGame) {
+      for (const serverName of Object.keys(CLOCKS.get(gameName).servers)) {
+        const context = serverContext(gameName, serverName, now);
+
+        for (const taskId of tasks.keys()) {
+          getResetWindow(gameName, taskId, context);
+        }
+      }
+    }
+  }
+
+  dryRun();
 
   function computeTaskResetData(gameGroups, now = new Date()) {
     gameGroups.forEach(gameGroup => {

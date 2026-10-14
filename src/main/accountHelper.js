@@ -3,38 +3,42 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { app, dialog, Notification } from 'electron';
 import { createResetProcessor } from '../shared/resetProcessor';
+import { URGENT_PROGRESS, isUrgent } from '../shared/tasks.js';
 
 let accounts = {};
 let accountPath;
 let gameTasks;
 let gameConfig;
 let computeTaskResetData;
+let computeSingleAccountResetData;
 let getLastDailyReset;
 let store;
 let notificationTimeout;
 const notifiedKeys = new Set();
 const TIMER_BUFFER_MS = 1000;
-const URGENT_PROGRESS = 80;
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
+const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'windowsNotifications'];
 
-const taskProgress = (task) =>
-  Math.max(0, Math.floor(((task.duration - task.nextReset) / task.duration) * 100));
-
-const isUrgent = (task) => taskProgress(task) > URGENT_PROGRESS;
+export function getAccountIds(key, gameName) {
+  return Object.values(store.get(key, {})[gameName] ?? {});
+}
 
 function getMonthlySubCheck() {
   return store.get('monthlySubCheck', 'calendar');
 }
 
 export function initializeAccounts({ tasks, config, settingsStore }) {
+  store = settingsStore;
+  accountPath = path.join(app.getPath('userData'), 'accounts.json');
+  accounts = loadStoredAccounts();
+
+  setGameData({ tasks, config });
+}
+
+export function setGameData({ tasks, config }) {
+  ({ computeTaskResetData, computeSingleAccountResetData, getLastDailyReset } = createResetProcessor(config, tasks));
   gameTasks = tasks;
   gameConfig = config;
-  store = settingsStore;
-  ({ computeTaskResetData, getLastDailyReset } = createResetProcessor(gameConfig, gameTasks));
-
-  accountPath = path.join(app.getPath('userData'), 'accounts.json');
-
-  accounts = loadStoredAccounts();
 
   updateNextNotification();
 }
@@ -112,13 +116,27 @@ export function getAccounts() {
 }
 
 export function insertAccounts(gameList) {
+  if (!Array.isArray(gameList) || gameList.length === 0) {
+    throw new Error('No games selected');
+  }
+
+  for (const game of gameList) {
+    if (!Object.hasOwn(gameConfig, game?.name)) {
+      throw new Error(`Unknown game: ${game?.name}`);
+    }
+
+    if (!Object.hasOwn(gameConfig[game.name].servers, game.server)) {
+      throw new Error(`Unknown server: ${game.server}`);
+    }
+  }
+
   const nextAccounts = { ...accounts };
   const createdAccounts = [];
 
   gameList.forEach(game => {
     const account = {
       id: randomUUID(),
-      uid: 0,
+      uid: '',
       server: game.server,
       label: game.label ?? '',
       tasks: {}
@@ -149,6 +167,14 @@ export function updateAccount(gameName, accountId, changes) {
   for (const field of EDITABLE_ACCOUNT_FIELDS) {
     if (changes[field] !== undefined) {
       sanitized[field] = changes[field];
+    }
+  }
+
+  if (sanitized.uid !== undefined) {
+    sanitized.uid = String(sanitized.uid);
+
+    if (!/^\d*$/.test(sanitized.uid)) {
+      throw new Error('UID can only contain digits');
     }
   }
 
@@ -184,6 +210,8 @@ export function updateAccount(gameName, accountId, changes) {
   };
 
   saveAccounts(nextAccounts);
+
+  return getAccountForUI(gameName, accountId);
 }
 
 export function deleteAccount(gameName, accountId) {
@@ -205,40 +233,66 @@ export function deleteAccount(gameName, accountId) {
   };
 
   saveAccounts(nextAccounts);
-
-  return deletedAccount;
+  removeAccountSettings(gameName, accountId);
 }
 
-export function updateTaskLog(gameName, taskId, accountId, wasCompleted) {
-  const gameAccounts = accounts[gameName] ?? [];
+function removeAccountSettings(gameName, accountId) {
+  for (const key of PER_ACCOUNT_SETTINGS) {
+    const map = store.get(key, {});
 
-  const account = gameAccounts.find(
-    account => account.id === accountId
-  );
+    if (!map[gameName]) continue;
+
+    store.set(key, {
+      ...map,
+      [gameName]: getAccountIds(key, gameName).filter(id => id !== accountId)
+    });
+  }
+
+  updateNextNotification();
+}
+
+function findAccount(gameName, accountId) {
+  const account = accounts[gameName]?.find(account => account.id === accountId);
 
   if (!account) {
     throw new Error('Account not found');
   }
 
+  return account;
+}
+
+export function setTaskCompleted(gameName, taskId, accountId, completed) {
+  const account = findAccount(gameName, accountId);
+  const definition = gameTasks[gameName]?.tasks.find(task => task.id === taskId);
+
+  if (!definition) {
+    throw new Error(`Unknown task: ${taskId}`);
+  }
+
+  const now = new Date();
+  const current = Object.values(
+    computeSingleAccountResetData(toUIAccount(gameName, account), gameName, now).tasks
+  ).flat().find(task => task.id === taskId);
+
+  if (current.isDisabled) {
+    throw new Error('This task is not active right now');
+  }
+
+  if (current.isCompleted === Boolean(completed)) {
+    return toUIAccount(gameName, account);
+  }
+
   const tasks = { ...account.tasks };
   const nextAccount = { ...account, tasks };
 
-  if (wasCompleted) {
-    if (!Object.hasOwn(tasks, taskId)) {
-      return { monthlySubRemaining: account.monthlySubRemaining ?? null };
-    }
-
-    delete tasks[taskId];
-  } else {
-    const now = new Date();
+  if (completed) {
     tasks[taskId] = now.toISOString();
 
-    const task = gameTasks[gameName]?.tasks.find(task => task.id === taskId);
     const remaining = Number(account.monthlySubRemaining ?? 0);
 
     if (
       getMonthlySubCheck() === 'dailyTask' &&
-      task?.type === 'Daily' &&
+      definition.type === 'Daily' &&
       remaining > 0
     ) {
       const lastCountedAt = Date.parse(account.lastMonthlySubEditedDay ?? '');
@@ -251,28 +305,18 @@ export function updateTaskLog(gameName, taskId, accountId, wasCompleted) {
         nextAccount.lastMonthlySubEditedDay = now.toISOString();
       }
     }
+  } else {
+    delete tasks[taskId];
   }
 
   saveAccounts({
     ...accounts,
-    [gameName]: gameAccounts.map(account =>
-      account.id === accountId ? nextAccount : account
+    [gameName]: accounts[gameName].map(stored =>
+      stored.id === accountId ? nextAccount : stored
     )
   });
 
-  return { monthlySubRemaining: nextAccount.monthlySubRemaining ?? null };
-}
-
-export function getTasksForAccount(gameName, accountId) {
-  const account = accounts[gameName]?.find(
-    account => account.id === accountId
-  );
-
-  if (!account) {
-    throw new Error('Account not found');
-  }
-
-  return structuredClone(account.tasks);
+  return toUIAccount(gameName, nextAccount);
 }
 
 export function syncCalendarMonthlySubs() {
@@ -322,6 +366,25 @@ export function syncCalendarMonthlySubs() {
   return changed;
 }
 
+export function restartMonthlySubCount() {
+  const now = new Date().toISOString();
+  let changed = false;
+
+  const nextAccounts = Object.fromEntries(
+    Object.entries(accounts).map(([gameName, gameAccounts]) => [
+      gameName,
+      gameAccounts.map(account => {
+        if (account.monthlySubRemaining == null) return account;
+
+        changed = true;
+        return { ...account, lastMonthlySubEditedDay: now };
+      })
+    ])
+  );
+
+  if (changed) saveAccounts(nextAccounts);
+}
+
 function getTasksForUI(gameName, account) {
   return gameTasks[gameName].tasks.reduce((groupedTasks, task) => {
     const formattedTask = {
@@ -335,16 +398,22 @@ function getTasksForUI(gameName, account) {
   }, {});
 }
 
-export function getGroupedAccounts() {
-  const stored = getAccounts();
+function toUIAccount(gameName, account) {
+  return {
+    ...structuredClone(account),
+    tasks: getTasksForUI(gameName, account)
+  };
+}
 
+function getAccountForUI(gameName, accountId) {
+  return toUIAccount(gameName, findAccount(gameName, accountId));
+}
+
+export function getGroupedAccounts() {
   return Object.entries(gameConfig).map(([gameName, config]) => ({
     name: gameName,
     game_version: config.current.version,
-    accounts: (stored[gameName] ?? []).map(account => ({
-      ...account,
-      tasks: getTasksForUI(gameName, account)
-    }))
+    accounts: (accounts[gameName] ?? []).map(account => toUIAccount(gameName, account))
   }));
 }
 
@@ -368,7 +437,6 @@ export function updateNextNotification() {
 
   const now = new Date();
   const nowMs = now.getTime();
-  const enabled = store.get('windowsNotifications') ?? {};
 
   let groups;
   try {
@@ -382,7 +450,7 @@ export function updateNextNotification() {
   let nextWake = Infinity;
 
   for (const group of groups) {
-    const enabledIds = enabled[group.name] ?? [];
+    const enabledIds = getAccountIds('windowsNotifications', group.name);
 
     for (const account of group.accounts) {
       if (!enabledIds.includes(account.id)) continue;
@@ -434,9 +502,9 @@ export function completeAutomaticDailies(gameName, accountIds) {
     if (!accountIds.includes(account.id)) continue;
 
     const task = account.tasks.Daily?.[0];
-    if (!task || task.isCompleted) continue;
+    if (!task || task.isCompleted || task.isDisabled) continue;
 
-    updateTaskLog(gameName, task.id, account.id, false);
+    setTaskCompleted(gameName, task.id, account.id, true);
     changed = true;
   }
 

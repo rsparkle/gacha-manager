@@ -9,32 +9,27 @@ import {
   zonedInstant,
 } from "../../shared/serverTime.js";
 
+import { slugify } from "../../shared/format.js";
+
 export function createScheduleProcessor(GAME_CONFIG) {
   const CLOCKS = Object.fromEntries(
     Object.entries(GAME_CONFIG).map(([game, data]) => [game, compileGameClock(game, data)])
   );
 
-  function slugify(name) {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "_")
-      .replace(/^_|_$/g, "");
+  function defaultImg(game) {
+    return `games/${slugify(game)}_default.webp`;
   }
 
-  async function defaultImg(game) {
-    return await window.api.cacheImage(`games/${slugify(game)}_default.webp`);
+  function characterImg(name) {
+    return `characters/${slugify(name)}.webp`;
   }
 
-  async function characterImg(name) {
-    return await window.api.cacheImage(`characters/${slugify(name)}.webp`);
+  function gameImg(game, version) {
+    return `games/${slugify(game)}_${version}.webp`;
   }
 
-  async function gameImg(game, version) {
-    return await window.api.cacheImage(`games/${slugify(game)}_${version}.webp`);
-  }
-
-  async function livestreamImg(game, version) {
-    return await window.api.cacheImage(`games/${slugify(game)}_${version}_livestream.webp`);
+  function livestreamImg(game, version) {
+    return `games/${slugify(game)}_${version}_livestream.webp`;
   }
 
   function getPhaseCharacters(patchData, phase) {
@@ -98,7 +93,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return new Date(instant.getTime() - (day === 0 ? 6 : day - 1) * DAY);
   }
 
-  async function buildCharacterTrailers(game, gameData, clock, timeline) {
+  function buildCharacterTrailers(game, gameData, clock, timeline) {
     const { dates, globalAt } = timeline;
 
     const trailerEntries = [
@@ -118,10 +113,11 @@ export function createScheduleProcessor(GAME_CONFIG) {
 
       characterTrailers[`trailer_${phaseKey}`] = {
         date: globalAt(shiftDate(date, -gameData.character_trailer.distance), clock.trailerMinutes),
+        type: "trailer",
+        portrait: true,
         label,
         title: label,
-        img: await characterImg(characters[0]),
-        fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+        imgFiles: [characterImg(characters[0]), gameImg(game, gameData.current.version), defaultImg(game)],
         confirmed: false,
       };
     }
@@ -129,7 +125,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return characterTrailers;
   }
 
-  async function buildPhaseReleaseEvents(game, gameData, timeline) {
+  function buildPhaseReleaseEvents(game, gameData, timeline) {
     const { phases } = timeline;
     const now = Date.now();
     const currentConfirmed = gameData.current.is_version_duration_confirmed;
@@ -176,10 +172,11 @@ export function createScheduleProcessor(GAME_CONFIG) {
         for (const character of characters) {
           releaseEvents[`${baseKey}_${slugify(character)}`] = {
             date: phaseDate,
+            type: "release",
+            portrait: true,
             label: `${character} Release`,
             title: `${character}`,
-            img: await characterImg(character),
-            fallbackImgs: [await gameImg(game, patchData.version), await defaultImg(game)],
+            imgFiles: [characterImg(character), gameImg(game, patchData.version), defaultImg(game)],
             confirmed,
           };
         }
@@ -187,23 +184,25 @@ export function createScheduleProcessor(GAME_CONFIG) {
         const [character] = characters;
         releaseEvents[baseKey] = {
           date: phaseDate,
+          type: "release",
+          portrait: true,
           label: isPhase1
             ? `${gameData.abbr} ${version} - ${character} Release`
             : `${gameData.abbr} ${version} 2nd Phase - ${character} Release`,
           title: isPhase1
             ? `${gameData.abbr} ${version}`
             : `${gameData.abbr} ${version} 2nd Phase`,
-          img: await characterImg(character),
-          fallbackImgs: [await gameImg(game, patchData.version), await defaultImg(game)],
+          imgFiles: [characterImg(character), gameImg(game, patchData.version), defaultImg(game)],
           confirmed,
         };
       } else {
         releaseEvents[baseKey] = {
           date: phaseDate,
+          type: isPhase1 ? "release" : "phase",
+          portrait: false,
           label: `${gameData.abbr} ${version}${isPhase1 ? " Release" : " Second Phase"}`,
           title: `${gameData.abbr} ${version}${isPhase1 ? "" : " 2nd Phase"}`,
-          img: await gameImg(game, patchData.version),
-          fallbackImgs: [await defaultImg(game)],
+          imgFiles: [gameImg(game, patchData.version), defaultImg(game)],
           confirmed,
         };
       }
@@ -212,7 +211,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return releaseEvents;
   }
 
-  async function buildPatchTrailers(game, gameData, clock, timeline) {
+  function buildPatchTrailers(game, gameData, clock, timeline) {
     const hasPatchTrailerDistance = !!gameData.patch_trailer_distance;
     const needsPatchTrailer = !gameData.livestream.is_predictable || !gameData.livestream.date;
 
@@ -226,16 +225,17 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return {
       nextPatchTrailer: {
         date: timeline.globalAt(trailerDay, clock.trailerMinutes),
+        type: "trailer",
+        portrait: false,
         label: `${gameData.abbr} ${gameData.next.version} Trailer`,
         title: `${gameData.abbr} ${gameData.next.version} Trailer`,
-        img: await gameImg(game, gameData.current.version),
-        fallbackImgs: [await defaultImg(game)],
+        imgFiles: [gameImg(game, gameData.current.version), defaultImg(game)],
         confirmed: true,
       },
     };
   }
 
-  async function buildDripMarketing(game, gameData, clock, timeline, livestreamDate, nextLivestreamDate) {
+  function buildDripMarketing(game, gameData, clock, timeline, livestreamDate, nextLivestreamDate) {
     const dripMarketingDates = {};
 
     const dripMarketingEntries = [
@@ -269,10 +269,11 @@ export function createScheduleProcessor(GAME_CONFIG) {
       for (let dayOffset = 0; dayOffset < 2; dayOffset++) {
         dripMarketingDates[`${key}DripMarketing_day${dayOffset + 1}`] = {
           date: new Date(base.getTime() + dayOffset * DAY),
+          type: "drip",
+          portrait: false,
           label: `${gameData.abbr} ${versionNumber} 5★ Drip Marketing`,
           title: `${gameData.abbr} ${versionNumber} Drip`,
-          img: await gameImg(game, gameData.current.version),
-          fallbackImgs: [await defaultImg(game)],
+          imgFiles: [gameImg(game, gameData.current.version), defaultImg(game)],
           confirmed: true,
         };
       }
@@ -281,8 +282,8 @@ export function createScheduleProcessor(GAME_CONFIG) {
     return dripMarketingDates;
   }
 
-  async function computeScheduleData(server) {
-    const entries = await Promise.all(Object.entries(GAME_CONFIG).map(async ([game, gameData]) => {
+  function computeScheduleData(server) {
+    const entries = Object.entries(GAME_CONFIG).map(([game, gameData]) => {
       const clock = CLOCKS[game];
 
       if (clock.secondPhase.scope === "server" && !clock.servers[server]) {
@@ -304,12 +305,10 @@ export function createScheduleProcessor(GAME_CONFIG) {
         ? getLivestreamDate(gameData, clock, anchorNext)
         : null;
 
-      const [characterTrailers, patchTrailers, releaseEvents, dripMarketingDates] = await Promise.all([
-        buildCharacterTrailers(game, gameData, clock, timeline),
-        buildPatchTrailers(game, gameData, clock, timeline),
-        buildPhaseReleaseEvents(game, gameData, timeline),
-        buildDripMarketing(game, gameData, clock, timeline, livestreamDate, nextLivestreamDate),
-      ]);
+      const characterTrailers = buildCharacterTrailers(game, gameData, clock, timeline);
+      const patchTrailers = buildPatchTrailers(game, gameData, clock, timeline);
+      const releaseEvents = buildPhaseReleaseEvents(game, gameData, timeline);
+      const dripMarketingDates = buildDripMarketing(game, gameData, clock, timeline, livestreamDate, nextLivestreamDate);
 
       const bothConfirmed = gameData.current.is_version_duration_confirmed
         && gameData.next.is_version_duration_confirmed;
@@ -318,20 +317,22 @@ export function createScheduleProcessor(GAME_CONFIG) {
         ...(livestreamDate ? {
           livestream: {
             date: livestreamDate,
+            type: "livestream",
+            portrait: false,
             label: `${gameData.abbr} ${gameData.next.version} Livestream`,
             title: `${gameData.abbr} ${gameData.next.version} Livestream`,
-            img: await livestreamImg(game, gameData.next.version),
-            fallbackImgs: [await gameImg(game, gameData.current.version), await defaultImg(game)],
+            imgFiles: [livestreamImg(game, gameData.next.version), gameImg(game, gameData.current.version), defaultImg(game)],
             confirmed: (livestreamDate.getTime() - Date.now()) <= (3 * DAY),
           },
         } : {}),
         ...(bothConfirmed && nextLivestreamDate ? {
           nextLivestream: {
             date: nextLivestreamDate,
+            type: "livestream",
+            portrait: false,
             label: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
             title: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
-            img: await livestreamImg(game, gameData.next.future_livestream_version),
-            fallbackImgs: [await gameImg(game, gameData.next.version), await gameImg(game, gameData.current.version), await defaultImg(game)],
+            imgFiles: [livestreamImg(game, gameData.next.future_livestream_version), gameImg(game, gameData.next.version), gameImg(game, gameData.current.version), defaultImg(game)],
             confirmed: false,
           },
         } : {}),
@@ -344,7 +345,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
         ...dripMarketingDates,
         ...livestreamEvents,
       }];
-    }));
+    });
 
     return Object.fromEntries(entries);
   }

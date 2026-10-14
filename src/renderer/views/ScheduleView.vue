@@ -36,15 +36,7 @@
             </div>
         </div>
 
-        <div v-if="isLoading" class="schedule-loading">
-            <img v-if="settings.theme && settings.theme !== 'default'" :src="getLoadingSticker()"
-                class="loading-sticker" alt="Loading schedule..." />
-            <div class="loading-bar-wrapper">
-                <div class="loading-bar" />
-            </div>
-        </div>
-
-        <div v-else class="schedule-body">
+        <div class="schedule-body">
             <div class="calendar-grid">
                 <div class="week-header">
                     <div class="header-cell" v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
@@ -82,7 +74,7 @@
                                         <button v-for="(event, ei) in day.events"
                                             :key="`${event.game}-${event.label}-${event.date.getTime()}-${ei}`"
                                             type="button" class="event" :style="{ '--gc': event.color }"
-                                            :class="{ unconfirmed: !event.confirmed }"
+                                            :class="{ estimated: !event.confirmed }"
                                             :aria-label="`${event.label}, ${formatEventTime(event)}`"
                                             @mouseenter="showEventTooltip(event, $event)" @mouseleave="hideEventTooltip"
                                             @focus="showEventTooltip(event, $event)" @blur="hideEventTooltip">
@@ -133,8 +125,10 @@
                                 {{ formatEventTime(hoveredEvent) }}
                             </div>
 
-                            <div v-if="!hoveredEvent.confirmed" class="schedule-event-tooltip-unconfirmed">
-                                Estimated
+                            <div v-if="!hoveredEvent.confirmed" class="schedule-event-tooltip-estimated">
+                                <img v-if="settings.theme && settings.theme !== 'default'" :src="getEstimatedSticker()"
+                                    class="estimated-sticker" alt="" />
+                                <span class="estimated-label">Estimated</span>
                             </div>
                         </div>
 
@@ -157,22 +151,16 @@
 import '../styles/schedule.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { createScheduleProcessor } from '../lib/scheduleProcessor.js';
-import { useSettings } from '.././composables/useSettings.js';
+import { useSettings } from '../composables/useSettings.js';
+import { useAccounts } from '../composables/useAccounts.js';
+import { slugify, formatCountdown } from '../../shared/format.js';
 
-const props = defineProps({
-    gameConfig: Object,
-    gamesWithAccounts: Array
-});
-const GAME_CONFIG = computed(() => props.gameConfig ?? {});
 const { settings, saveSettings } = useSettings();
+const { gameConfig, gamesWithAccounts } = useAccounts();
+const GAME_CONFIG = computed(() => gameConfig.value ?? {});
 
 let computeScheduleData;
 let clockTimer;
-let requestId = 0;
-
-const MS_IN_MIN = 60_000;
-const MS_IN_HOUR = 3_600_000;
-const MS_IN_DAY = 86_400_000;
 
 const today = new Date();
 const now = ref(new Date());
@@ -181,11 +169,11 @@ const currentMonth = ref(today.getMonth());
 
 const servers = ['America', 'Europe', 'Asia'];
 const selectedServer = ref(settings.value?.server ?? 'America');
-const isLoading = ref(true);
 
 const scheduleData = ref({});
 const selectedGames = ref([]);
 const gameIcons = reactive({});
+const imageUrls = reactive({});
 
 const hoveredEvent = ref(null);
 const tooltipPosition = ref({ left: 0, top: 0, placement: 'above' });
@@ -213,21 +201,10 @@ const canGoNext = computed(() => {
 
 const hoveredEventHasImage = computed(() => {
     if (!hoveredEvent.value) return false;
-    return Boolean(hoveredEvent.value.img || hoveredEvent.value.fallbackImgs?.length);
+    return Boolean(hoveredEvent.value.imgFiles?.length);
 });
 
-const isPortraitTooltip = (event) => {
-    const abbvs = Object.values(GAME_CONFIG.value).map(game => game.abbr);
-    const label = event?.label ?? '';
-
-    if (/release/i.test(label) && label.includes('-')) return true;
-
-    if (/trailer/i.test(label) && !abbvs.some(abbr => label.includes(abbr))) {
-        return true;
-    }
-
-    return false;
-};
+const isPortraitTooltip = (event) => Boolean(event?.portrait);
 
 const hoveredEventIsPortrait = computed(() =>
     isPortraitTooltip(hoveredEvent.value)
@@ -250,35 +227,52 @@ const hoveredCountdown = computed(() => {
     if (diff > 0) {
         return {
             prefix: 'starts in',
-            value: countdownFormat(diff)
+            value: formatCountdown(diff)
         };
     }
 
     return {
         prefix: 'started',
-        value: `${countdownFormat(Math.abs(diff))} ago`
+        value: `${formatCountdown(Math.abs(diff))} ago`
     };
 });
 
-const getLoadingSticker = () =>
-    new URL(`../../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
+const getEstimatedSticker = () =>
+    new URL(`../../assets/themes/${settings.value.theme}/estimated.webp`, import.meta.url).href;
 
-const getGameSlug = (name) =>
-    name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+const loadGameIcons = () => Promise.all(
+    gameList.value
+        .filter(game => !gameIcons[game])
+        .map(async game => {
+            gameIcons[game] = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
+        })
+);
 
-const loadGameIcons = async () => {
-    for (const game of gameList.value) {
-        if (gameIcons[game]) continue;
+const loadEventImages = () => {
+    const files = new Set(
+        Object.values(scheduleData.value)
+            .flatMap(events => Object.values(events))
+            .flatMap(event => event.imgFiles ?? [])
+    );
 
-        const slug = getGameSlug(game);
-        gameIcons[game] = await window.api.cacheImage(`games/${slug}_icon.webp`);
-    }
+    return Promise.all(
+        [...files]
+            .filter(file => !imageUrls[file])
+            .map(async file => {
+                try {
+                    imageUrls[file] = await window.api.cacheImage(file);
+                } catch (err) {
+                    console.error(`Failed to load ${file}:`, err);
+                }
+            })
+    );
 };
 
-const getBackgroundImageWithFallbacks = (event) => {
-    const allImages = [event?.img, ...(event?.fallbackImgs || [])].filter(Boolean);
-    return allImages.map((imgSrc) => `url('${imgSrc}')`).join(', ');
-};
+const getBackgroundImageWithFallbacks = (event) => (event?.imgFiles ?? [])
+    .map(file => imageUrls[file])
+    .filter(Boolean)
+    .map(url => `url('${url}')`)
+    .join(', ');
 
 const isToday = (date) => {
     const current = now.value;
@@ -334,8 +328,8 @@ const weeks = computed(() => {
         const events = eventsByDay.value[date.toDateString()] ?? [];
         const releases = events.filter(
             (event) =>
-                /release/i.test(event.label)
-                && (event.img || event.fallbackImgs?.length)
+                event.type === 'release'
+                && event.imgFiles?.length
         );
         days.push({ date, events, releases });
     }
@@ -390,14 +384,6 @@ const formatEventDate = (event) =>
         day: 'numeric'
     });
 
-const countdownFormat = (ms) => {
-    const d = Math.floor(ms / MS_IN_DAY);
-    const h = Math.floor((ms % MS_IN_DAY) / MS_IN_HOUR);
-    const m = Math.floor((ms % MS_IN_HOUR) / MS_IN_MIN);
-
-    return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`;
-};
-
 const showEventTooltip = (event, domEvent) => {
     const target = domEvent.currentTarget;
     const rect = target?.getBoundingClientRect?.();
@@ -414,7 +400,7 @@ const showEventTooltip = (event, domEvent) => {
         window.innerWidth - tooltipHalfWidth - viewportPadding
     );
 
-    const hasImage = Boolean(event.img || event.fallbackImgs?.length);
+    const hasImage = Boolean(event.imgFiles?.length);
 
     const estimatedHeight = hasImage
         ? portrait
@@ -442,38 +428,41 @@ const hideEventTooltip = () => {
     hoveredEvent.value = null;
 };
 
-watch(() => props.gameConfig, (config) => {
-    if (config) {
-        ({ computeScheduleData } = createScheduleProcessor(config));
-    }
-}, { immediate: true });
-
-watch(selectedServer, async (server) => {
+const loadSchedule = () => {
     if (!computeScheduleData) return;
 
-    const id = ++requestId;
     hideEventTooltip();
-    isLoading.value = true;
-
-    settings.value.server = server;
-    saveSettings(true);
 
     try {
-        const data = await computeScheduleData(server)
-        if (id !== requestId) return
-        scheduleData.value = data
-        await loadGameIcons();
-    } finally {
-        if (id === requestId) isLoading.value = false;
+        scheduleData.value = computeScheduleData(selectedServer.value);
+    } catch (err) {
+        console.error('Failed to build schedule:', err);
+        return;
     }
+
+    loadGameIcons();
+    loadEventImages();
+};
+
+watch(gameConfig, (config) => {
+    if (!config) return;
+
+    ({ computeScheduleData } = createScheduleProcessor(config));
+    loadSchedule();
 }, { immediate: true });
+
+watch(selectedServer, (server) => {
+    settings.value.server = server;
+    saveSettings(true);
+    loadSchedule();
+});
 
 onMounted(() => {
     clockTimer = window.setInterval(() => {
         now.value = new Date();
     }, 30_000);
 
-    selectedGames.value.push(...props.gamesWithAccounts);
+    selectedGames.value.push(...gamesWithAccounts.value);
 });
 
 onBeforeUnmount(() => {

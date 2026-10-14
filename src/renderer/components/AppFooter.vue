@@ -56,12 +56,4 @@
     color: var(--muted2);
     font-weight: 600;
 }
-
-.footer-copy {
-    font-size: 10px;
-    color: var(--muted);
-    margin: 4px 0 0;
-    letter-spacing: 0.03em;
-    opacity: 0.7;
-}
 </style>

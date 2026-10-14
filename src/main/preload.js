@@ -1,4 +1,4 @@
-import {contextBridge, ipcRenderer} from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 const subscribe = channel => callback => {
     const listener = () => callback();
@@ -27,7 +27,7 @@ contextBridge.exposeInMainWorld('api', {
 
     getGroupedAccounts: () => ipcRenderer.invoke('getGroupedAccounts'),
 
-    updateTaskLog: taskLogData => ipcRenderer.invoke('updateTaskLog', taskLogData),
+    setTaskCompleted: taskData => ipcRenderer.invoke('setTaskCompleted', taskData),
 
     loadSettings: () => ipcRenderer.invoke('loadSettings'),
 
@@ -35,5 +35,7 @@ contextBridge.exposeInMainWorld('api', {
 
     syncCalendarMonthlySubs: () => ipcRenderer.invoke('syncCalendarMonthlySubs'),
 
-    onDailiesCompleted: subscribe('dailies-completed')
+    onDailiesCompleted: subscribe('dailies-completed'),
+
+    onGameDataUpdated: subscribe('game-data-updated')
 });

@@ -54,7 +54,7 @@
                             </div>
                             <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{ selectedAccount?.uid
                                 || 0
-                                }}</span>
+                            }}</span>
                             <input class="account-uid account-uid-input" v-else type="text" v-model="editUidValue"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)" @keyup.escape="cancelUidEdit"
@@ -69,7 +69,7 @@
                         </div>
                         <div class="hero-actions">
                             <button class="btn-edit" v-if="!editingUid" @click="startUidEdit">Edit UID</button>
-                            <button class="btn-edit" v-else @mousedown.prevent="cancelLabelEdit"
+                            <button class="btn-edit" v-else @mousedown.prevent="cancelUidEdit"
                                 @click="cancelUidEdit">Cancel</button>
                             <button class="btn-delete" @click="deleteAccount">Delete Account</button>
                             <button class="btn-bell" :class="{ active: notificationsEnabled }"
@@ -101,7 +101,7 @@
                                 @keyup.enter="commitLabelEdit" @keyup.escape="cancelLabelEdit"
                                 @keydown.tab.prevent="commitAndMoveToNext(account)" @blur="commitLabelEdit"
                                 ref="labelInput"
-                                :style="{ width: ((editLabelValue?.length || account.uid?.length) * 7) + 'px' }" />
+                                :style="{ width: (Math.max(editLabelValue?.length ?? 0, 4) * 7) + 'px' }" />
                         </div>
 
                         <div class="account-tab-add" @click="insertAccount">+</div>
@@ -132,7 +132,7 @@
                         <div class="task-list">
                             <div class="task" v-for="task in tasks" :key="task.id"
                                 :class="{ done: task.isCompleted, disabled: task.isDisabled }"
-                                @click="manageTaskLog(task)">
+                                @click="toggleTask(task)">
                                 <div class="task-check">
                                     <span v-if="task.isCompleted">✓</span>
                                     <span v-if="task.isDisabled">✗</span>
@@ -141,9 +141,10 @@
                                 <div class="task-completion" v-if="!task.isDisabled">
                                     <span class="task-countdown"
                                         :class="{ urgent: !task.isCompleted && isUrgent(task) }">
-                                        {{ task.isCompleted ? 'Done' : countdownFormat(task.nextReset) }}
+                                        {{ task.isCompleted ? 'Done' : task.nextReset === null ? 'Ongoing' :
+                                            formatCountdown(task.nextReset) }}
                                     </span>
-                                    <div class="task-countdown-bar" v-if="!task.isCompleted">
+                                    <div class="task-countdown-bar" v-if="!task.isCompleted && task.nextReset !== null">
                                         <div class="task-progress" :style="{ width: taskProgress(task) + '%' }">
                                         </div>
                                     </div>
@@ -160,34 +161,28 @@
 </template>
 
 <script setup>
-const MS_IN_DAY = 1000 * 60 * 60 * 24
-const MS_IN_HOUR = 1000 * 60 * 60
-const MS_IN_MIN = 1000 * 60
-
 import '../styles/tasks.css';
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
-import { useNotification } from '.././composables/useNotification.js'
-import { useConfirm } from '.././composables/useConfirm.js'
-import { useSettings } from '.././composables/useSettings.js'
-const { settings, saveSettings, toggleSetting } = useSettings()
+import { useNotification } from '../composables/useNotification.js'
+import { useConfirm } from '../composables/useConfirm.js'
+import { useSettings } from '../composables/useSettings.js'
+import { useAccounts } from '../composables/useAccounts.js'
+import { taskProgress, isUrgent } from '../../shared/tasks.js'
+import { slugify, formatCountdown } from '../../shared/format.js'
 
+const { settings, saveSettings, toggleSetting } = useSettings()
 const { confirm } = useConfirm()
 const { createNotification } = useNotification()
+const {
+    gameConfig,
+    accountsPerGame,
+    insertAccounts,
+    updateAccount,
+    deleteAccount: removeAccount,
+    setTaskCompleted
+} = useAccounts()
 
-const props = defineProps({
-    accountsPerGame: {
-        type: Array,
-        default: () => []
-    },
-    gameConfig: {
-        type: Object,
-        default: () => ({})
-    }
-})
-
-const GAME_CONFIG = props.gameConfig;
-
-const emit = defineEmits(['refreshAccount', 'refresh'])
+const defaultServer = (gameName) => Object.keys(gameConfig.value?.[gameName]?.servers ?? {})[0];
 
 const gameImages = ref({})
 const sidebarIcons = ref({})
@@ -211,10 +206,10 @@ const editingMonthlySub = ref(false)
 const monthlySubValue = ref('')
 const monthlySubInput = ref(null)
 
-const currentGameConfig = computed(() => GAME_CONFIG[selectedGame.value?.name])
+const currentGameConfig = computed(() => gameConfig.value?.[selectedGame.value?.name])
 
 const trackedGames = computed(() =>
-    props.accountsPerGame.filter(game => game.accounts.length > 0)
+    accountsPerGame.value.filter(game => game.accounts.length > 0)
 )
 
 const selectedGame = computed(() =>
@@ -228,40 +223,19 @@ const selectedAccount = computed(() =>
 )
 
 const missingGames = computed(() =>
-    props.accountsPerGame.filter(g => g.accounts.length === 0)
+    accountsPerGame.value.filter(g => g.accounts.length === 0)
 )
-
 
 const notificationsEnabled = computed(() =>
     settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false
 )
 
-const taskProgress = (task) =>
-    Math.max(0, Math.floor(((task.duration - task.nextReset) / task.duration) * 100))
-
-const isUrgent = (task) => taskProgress(task) > 80
-
 const hasUrgentTasks = (gameName) =>
-    props.accountsPerGame
+    accountsPerGame.value
         .find(g => g.name === gameName)
         ?.accounts.some(account =>
             Object.values(account.tasks).flat().some(task => !task.isCompleted && isUrgent(task))
         ) ?? false
-
-const hasFinishedAllTasks = (gameName) => {
-    const game = props.accountsPerGame.find(
-        game => game.name === gameName
-    );
-
-    if (!game?.accounts.length) return false;
-
-    return game.accounts.every(account => {
-        const tasks = Object.values(account.tasks ?? {}).flat();
-
-        return tasks.length > 0 &&
-            tasks.every(task => task.isCompleted);
-    });
-};
 
 watch([selectedGameName, selectedAccountId], () => {
     cancelLabelEdit()
@@ -274,16 +248,6 @@ const selectGame = (gameGroup) => {
     selectedAccountId.value = gameGroup.accounts[0]?.id ?? null
 }
 
-const countdownFormat = (countdown) => {
-    const daysLeft = Math.floor(countdown / MS_IN_DAY)
-    const hoursLeft = Math.floor((countdown % MS_IN_DAY) / MS_IN_HOUR)
-    const minsLeft = Math.floor((countdown % MS_IN_HOUR) / MS_IN_MIN)
-
-    return daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h` :
-        hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` :
-            `00:${String(minsLeft).padStart(2, '0')}`
-}
-
 const completionPercentage = computed(() => {
     const tasks = selectedAccount.value?.tasks ?? {};
     const allTasks = Object.values(tasks).flat();
@@ -294,72 +258,49 @@ const completionPercentage = computed(() => {
         : 0;
 })
 
+const run = async (action, successMessage) => {
+    try {
+        await action()
+        createNotification('success', successMessage, 1000)
+        return true
+    } catch (err) {
+        createNotification('error', `Error: ${err.message}`, 2000)
+        return false
+    }
+}
+
 const insertAccount = async () => {
     const gameName = selectedGame.value.name;
+    const server = selectedAccount.value?.server ?? defaultServer(gameName);
 
-    await apiCall(
-        () => window.api.insertAccounts([{ name: gameName, server: 'America' }]),
-        () => {
-            createNotification("success", "Account created!", 1000);
-            emit('refresh');
-        }
-    )
+    await run(() => insertAccounts([{ name: gameName, server }]), 'Account created!')
 }
 
 const deleteAccount = async () => {
-    const ok = await confirm('Are you sure you want to delete this account?')
+    const ok = await confirm('Are you sure you want to delete this account?', { confirmText: 'Delete' })
     if (!ok) return
 
-    const accountId = selectedAccount.value.id
-    const gameName = selectedGame.value.name
-
-    await apiCall(
-        () => window.api.deleteAccount({ gameName, id: accountId }),
-        () => {
-            createNotification('success', 'Account deleted!', 1000)
-            settings.value.automaticDailies[gameName] = settings.value.automaticDailies[gameName]?.filter(id => id !== accountId)
-            settings.value.windowsNotifications[gameName] = settings.value.windowsNotifications[gameName]?.filter(id => id !== accountId)
-            saveSettings(true)
-            emit('refresh')
-        }
-    )
+    await run(() => removeAccount(selectedGame.value.name, selectedAccount.value.id), 'Account deleted!')
 }
 
 const addGame = async (game) => {
     showGamePicker.value = false;
 
-    await apiCall(
-        () => window.api.insertAccounts([{ name: game.name, server: 'America' }]),
-        () => {
-            createNotification('success', 'Account created!', 1000);
-            emit('refresh')
-        }
-    )
+    await run(() => insertAccounts([{ name: game.name, server: defaultServer(game.name) }]), 'Account created!')
 }
 
-const manageTaskLog = async (task) => {
+const toggleTask = async (task) => {
     if (task.isDisabled) return
 
-    const taskLogData = {
-        gameName: selectedGame.value.name,
-        taskId: task.id,
-        accountId: selectedAccount.value.id,
-        wasCompleted: task.isCompleted
-    };
-
-    await apiCall(
-        () => window.api.updateTaskLog(taskLogData),
-        (result) => {
-            createNotification('success', 'Task updated!', 1000)
-            task.last_completed = task.isCompleted ? null : new Date().toISOString()
-            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id, result.monthlySubRemaining)
-        }
+    await run(
+        () => setTaskCompleted(selectedGame.value.name, selectedAccount.value.id, task.id, !task.isCompleted),
+        'Task updated!'
     )
 }
 
 const startUidEdit = () => {
     editingUid.value = true
-    editUidValue.value = selectedAccount.value.uid
+    editUidValue.value = selectedAccount.value.uid ? String(selectedAccount.value.uid) : ''
     nextTick(() => {
         uidInput.value?.select()
     })
@@ -374,7 +315,6 @@ const commitUidEdit = async (accountId) => {
     }
 
     const newUid = editUidValue.value;
-    const id = selectedAccount.value.id
     let server;
 
     if (!newUid) {
@@ -382,13 +322,13 @@ const commitUidEdit = async (accountId) => {
         return
     }
 
-    if (newUid.toString().length !== currentGameConfig.value.uid_digits) {
+    if (newUid.length !== currentGameConfig.value.uid_digits) {
         createNotification("error", `Your UID should have ${currentGameConfig.value.uid_digits} digits!`, 2000);
         return
     }
 
     if (currentGameConfig.value.has_uid_pattern) {
-        const firstDigit = parseInt(newUid.toString()[0]);
+        const firstDigit = parseInt(newUid[0]);
         server = Object.entries(currentGameConfig.value.servers).find(([, s]) => s.uid_prefix === firstDigit)?.[0];
 
         if (!server) {
@@ -399,16 +339,12 @@ const commitUidEdit = async (accountId) => {
         server = selectedAccount.value.server;
     }
 
-    await apiCall(
-        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server, label: selectedAccount.value.label, uid: newUid }),
-        () => {
-            createNotification('success', 'Account updated!', 1000);
-            selectedAccount.value.server = server
-            selectedAccount.value.uid = newUid
-            editingUid.value = false
-            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
-        }
+    const saved = await run(
+        () => updateAccount(selectedGame.value.name, accountId, { uid: newUid, server }),
+        'Account updated!'
     )
+
+    if (saved) editingUid.value = false
 }
 
 const cancelUidEdit = () => {
@@ -437,21 +373,18 @@ const commitLabelEdit = async () => {
     if (!editingLabelId.value) return
 
     const newLabel = editLabelValue.value;
-    if (newLabel.toString().length === 0) {
+    if (newLabel.length === 0) {
         createNotification("error", "Your label can't be empty!", 2000);
         cancelLabelEdit();
         return
     }
-    const id = selectedAccount.value.id
 
-    await apiCall(
-        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server: selectedAccount.value.server, uid: selectedAccount.value.uid, label: newLabel }),
-        () => {
-            createNotification('success', 'Account updated!', 1000);
-            selectedAccount.value.label = newLabel
-            editingLabelId.value = null
-        }
+    const saved = await run(
+        () => updateAccount(selectedGame.value.name, selectedAccount.value.id, { label: newLabel }),
+        'Account updated!'
     )
+
+    if (saved) editingLabelId.value = null
 }
 
 const cancelLabelEdit = () => {
@@ -500,43 +433,23 @@ const saveMonthlySub = async () => {
     const account = selectedAccount.value
     if (monthlySubRemaining === Number(account.monthlySubRemaining ?? 0)) return
 
-    await apiCall(
-        () => window.api.updateAccount({
-            gameName: selectedGame.value.name,
-            id: account.id,
-            server: account.server,
-            uid: account.uid,
-            label: account.label,
-            monthlySubRemaining
-        }),
-        () => {
-            account.monthlySubRemaining = monthlySubRemaining;
-            account.lastMonthlySubEditedDay = new Date().toISOString()
-            createNotification('success', 'Subscription updated!', 1000);
-        }
+    await run(
+        () => updateAccount(selectedGame.value.name, account.id, { monthlySubRemaining }),
+        'Subscription updated!'
     )
 }
 
-const availableServers = computed(() => {
-    if (!selectedGame.value) return []
-    const config = GAME_CONFIG[selectedGame.value.name]
-    if (!config) return []
-    return Object.keys(config.servers)
-})
+const availableServers = computed(() =>
+    Object.keys(currentGameConfig.value?.servers ?? {})
+)
 
 const selectServer = async (server) => {
     editingServer.value = false
     if (server === selectedAccount.value.server) return
 
-    const { id, uid, label } = selectedAccount.value
-
-    await apiCall(
-        () => window.api.updateAccount({ gameName: selectedGame.value.name, id, server, uid, label }),
-        () => {
-            createNotification('success', 'Server updated!', 1000)
-            selectedAccount.value.server = server
-            emit('refreshAccount', selectedGame.value.name, selectedAccount.value.id)
-        }
+    await run(
+        () => updateAccount(selectedGame.value.name, selectedAccount.value.id, { server }),
+        'Server updated!'
     )
 }
 
@@ -552,7 +465,7 @@ const toggleAndSaveSetting = (map, gameName, accountId) => {
 }
 
 const loadGameImage = async (game) => {
-    const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    const slug = slugify(game.name);
     const filename = failedImages.value.has(game.name)
         ? `${slug}_default`
         : `${slug}_${game.game_version}`;
@@ -561,8 +474,7 @@ const loadGameImage = async (game) => {
 };
 
 const loadSidebarIcon = async (game) => {
-    const slug = game.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-    sidebarIcons.value[game.name] = await window.api.cacheImage(`games/${slug}_icon.webp`);
+    sidebarIcons.value[game.name] = await window.api.cacheImage(`games/${slugify(game.name)}_icon.webp`);
 };
 
 const getGameImageBackgroundUrl = (game) => {
@@ -585,31 +497,33 @@ const handleImageError = (game) => {
     loadGameImage(game);
 };
 
+const loadedImageVersions = {}
+
 watch(trackedGames, async (games) => {
-    for (const game of games) {
-        if (!gameImages.value[game.name]) {
-            await loadGameImage(game)
+    await Promise.all(games.flatMap(game => {
+        const loads = []
+
+        if (loadedImageVersions[game.name] !== game.game_version) {
+            loadedImageVersions[game.name] = game.game_version
+
+            if (failedImages.value.has(game.name)) {
+                const nextFailed = new Set(failedImages.value)
+                nextFailed.delete(game.name)
+                failedImages.value = nextFailed
+            }
+
+            loads.push(loadGameImage(game))
         }
+
         if (!sidebarIcons.value[game.name]) {
-            await loadSidebarIcon(game)
+            loads.push(loadSidebarIcon(game))
         }
-    }
+
+        return loads
+    }))
 }, { immediate: true })
 
-const apiCall = async (fn, onSuccess) => {
-    try {
-        const response = await fn()
-        if (response.success) {
-            onSuccess(response)
-        } else {
-            createNotification('error', `Error: ${response.error || 'Unknown error'}`, 2000)
-        }
-    } catch (err) {
-        createNotification('error', `Critical Error: ${err.message}`, 2000)
-    }
-}
-
-onMounted(async () => {
+onMounted(() => {
     document.addEventListener('mousedown', handleClickOutside);
 })
 

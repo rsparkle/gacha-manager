@@ -41,8 +41,11 @@ export function useSettings() {
                     createNotification('error', `Error: ${response.error || 'Unknown error'}`, 2000)
                 }
             }
+
+            return response
         } catch (err) {
             createNotification('error', `Critical Error: ${err.message}`, 2000)
+            return null
         }
     }
 

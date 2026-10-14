@@ -93,6 +93,26 @@
     }
 }
 
+.loading-sticker {
+    width: 120px;
+    height: auto;
+    object-fit: contain;
+    animation: sticker-pulse 2s ease-in-out infinite;
+}
+
+@keyframes sticker-pulse {
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(0.98);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 .game-card {
     position: relative;
     display: grid;

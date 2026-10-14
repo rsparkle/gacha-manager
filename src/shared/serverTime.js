@@ -83,6 +83,8 @@ export function compileGameClock(name, game) {
     }
   }
 
+  if (!maintenance.first_phase) fail("missing maintenance.first_phase");
+
   const trailerMinutes = game.character_trailer
     ? parseClock(game.character_trailer.time, `${name} trailer.time`)
     : parseClock(game.trailer_time, `${name} trailer_time`);
@@ -106,9 +108,9 @@ export function compileGameClock(name, game) {
 
   const secondPhaseClock = maintenance.second_phase
     ? {
-        minutes: maintenance.second_phase.startMinutes + maintenance.second_phase.durationMinutes,
-        scope: "global",
-      }
+      minutes: maintenance.second_phase.startMinutes + maintenance.second_phase.durationMinutes,
+      scope: "global",
+    }
     : { minutes: parseClock(secondPhase.time, `${name} second_phase.time`), scope: secondPhase.scope };
 
   const readScopedClock = key => {

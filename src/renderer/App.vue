@@ -1,7 +1,7 @@
 <template>
     <div :class="settings.theme" id="app">
         <NotificationCenter />
-        <AppSettings :accountsPerGame="accountsPerGame" />
+        <AppSettings />
         <ConfirmDialogue />
         <div class="app-bar">
             <div class="view-toggle" v-if="currentView !== 'setup'">
@@ -28,6 +28,11 @@
                         <span class="theme-swatch default"></span>
                         <span>Default</span>
                     </button>
+                    <button class="theme-btn" :class="{ active: settings.theme === 'furina' }"
+                        @click="settings.theme = 'furina'; saveSettings(true)">
+                        <span class="theme-swatch furina"></span>
+                        <span>Furina</span>
+                    </button>
                     <button class="theme-btn" :class="{ active: settings.theme === 'sparkle' }"
                         @click="settings.theme = 'sparkle'; saveSettings(true)">
                         <span class="theme-swatch sparkle"></span>
@@ -40,17 +45,15 @@
                 </button>
             </div>
         </div>
-        <SetupView v-if="currentView === 'setup'" @done="onSetupDone" :gameConfig="GAME_CONFIG" />
-        <TasksView v-else-if="currentView === 'tasks'" :accountsPerGame="accountsPerGame"
-            @refreshAccount="updateAccountTaskData" @refresh="loadData" :gameConfig="GAME_CONFIG" />
-        <ScheduleView v-else-if="currentView === 'schedule'" :gameConfig="GAME_CONFIG"
-            :gamesWithAccounts="gamesWithAccounts" />
+        <SetupView v-if="currentView === 'setup'" @done="onSetupDone" />
+        <TasksView v-else-if="currentView === 'tasks'" />
+        <ScheduleView v-else-if="currentView === 'schedule'" />
         <AppFooter />
     </div>
 </template>
 
 <script setup>
-import { watch, ref, computed, onMounted, onUnmounted } from 'vue'
+import { watch, ref, onMounted, onUnmounted } from 'vue'
 
 import './styles/app.css';
 import SetupView from './views/SetupView.vue'
@@ -62,43 +65,19 @@ import ConfirmDialogue from './components/ConfirmDialogue.vue'
 import AppSettings from './components/AppSettings.vue'
 import { useNotification } from './composables/useNotification.js'
 import { useSettings } from './composables/useSettings.js'
-import { createResetProcessor } from '../shared/resetProcessor';
-const GAME_CONFIG = ref(null);
-const GAME_TASKS = ref(null);
-let computeTaskResetData, computeSingleAccountResetData;
+import { useAccounts } from './composables/useAccounts.js'
 
 const { createNotification, setTheme } = useNotification()
 const { settings, showSettings, saveSettings } = useSettings()
+const { gamesWithAccounts, loadGameData, loadAccounts, recompute } = useAccounts()
 
-const accountsPerGame = ref([])
 const hideSetup = ref(false)
 const currentView = ref(null)
 let taskTimer = null
 let stopDailiesListener = null
+let stopGameDataListener = null
 
-const loadData = async () => {
-    const groupedAccounts = await window.api.getGroupedAccounts()
-    accountsPerGame.value = computeTaskResetData(groupedAccounts)
-}
-
-const gamesWithAccounts = computed(() => {
-    return accountsPerGame.value.filter(game => game.accounts.length > 0).map(game => game.name)
-})
-
-const updateAccountTaskData = (gameName, accountId, monthlySubRemaining) => {
-    const game = accountsPerGame.value.find(game => game.name === gameName);
-    const account = game?.accounts.find(account => account.id === accountId);
-    if (!account) return;
-
-    if (monthlySubRemaining !== undefined) {
-        account.monthlySubRemaining = monthlySubRemaining;
-    }
-
-    computeSingleAccountResetData(account, gameName);
-};
-
-const onSetupDone = async () => {
-    await loadData()
+const onSetupDone = () => {
     currentView.value = 'tasks'
     hideSetup.value = true
 }
@@ -112,9 +91,9 @@ const scheduleUpdate = () => {
             const res = await window.api.syncCalendarMonthlySubs()
 
             if (res?.changed) {
-                await loadData()
+                await loadAccounts()
             } else {
-                accountsPerGame.value = computeTaskResetData(accountsPerGame.value)
+                recompute()
             }
         } catch (err) {
             console.error('Minute tick failed:', err)
@@ -125,7 +104,16 @@ const scheduleUpdate = () => {
 
 const onDailiesCompleted = async () => {
     createNotification('success', 'Daily completed!', 1000)
-    await loadData()
+    await loadAccounts()
+}
+
+const onGameDataUpdated = async () => {
+    try {
+        await loadGameData()
+        await loadAccounts()
+    } catch (err) {
+        console.error('Game data update failed:', err)
+    }
 }
 
 watch(
@@ -145,15 +133,12 @@ watch(
 );
 
 onMounted(async () => {
-    GAME_CONFIG.value = await window.api.getGameConfig();
-    GAME_TASKS.value = await window.api.getGameTasks();
-    ({ computeTaskResetData, computeSingleAccountResetData } = createResetProcessor(GAME_CONFIG.value, GAME_TASKS.value));
+    stopGameDataListener = window.api.onGameDataUpdated(onGameDataUpdated)
 
-    await loadData();
+    await loadGameData();
+    await loadAccounts();
 
-    hideSetup.value = accountsPerGame.value.some(
-        game => game.accounts.length > 0
-    );
+    hideSetup.value = gamesWithAccounts.value.length > 0;
     currentView.value = hideSetup.value ? 'tasks' : 'setup';
     scheduleUpdate();
 
@@ -162,7 +147,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
     clearTimeout(taskTimer);
-    document.documentElement.classList.remove(settings.value.theme);
+    if (settings.value.theme) document.documentElement.classList.remove(settings.value.theme);
     if (stopDailiesListener) stopDailiesListener();
+    if (stopGameDataListener) stopGameDataListener();
 })
 </script>

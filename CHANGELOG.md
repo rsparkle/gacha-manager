@@ -1,5 +1,28 @@
 # Changelog
 
+# [1.1.1] - 2026-10-14
+### Added
+- Furina theme
+- Themed loading sticker on the setup screen
+- Game data now refreshes in the background every 6 hours and when the PC wakes from sleep, and updates apply without restarting the app
+### Changed
+- The app now opens instantly using the last downloaded game data instead of waiting for the network
+- The schedule now appears instantly; images fill in as they load instead of showing a loading screen
+- Countdowns under an hour now show as "5m" instead of "00:05"
+- New accounts start on the same server as the account you're viewing, or the game's first server
+- Turning on automatic updates in Settings now takes effect right away instead of after a restart
+- Web links now open in your default browser, and the app window can no longer navigate to outside pages
+### Fixed
+- Installer and app now use a proper multi-size icon
+- Tasks without an end date showed "00:00" and a broken progress bar; they now show "Ongoing"
+- A single broken task in the game data could blank the whole Tasks view and stop notifications; now only that task is disabled
+- Game data with invalid task dates or missing maintenance times is now rejected before it is saved
+- Switching monthly sub tracking from "daily task" to "calendar" could subtract days retroactively
+- Deleting an account now also removes it from notification and automatic daily settings
+- Release tooltips for patches with two characters now use the portrait layout
+- Deadline notifications could fail with settings saved by older versions
+- Images still in use are no longer deleted by the cache cleanup
+
 # [1.1.0] - 2026-10-13
 ### Added
 - Calendar navigation now includes the previous month

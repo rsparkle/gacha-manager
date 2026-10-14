@@ -6,7 +6,7 @@
                 <p class="setup-subtitle">Choose which games you want to track (you can add more later).</p>
             </div>
 
-            <div class="game-grid" v-if="gameList.length">
+            <div class="game-grid" v-if="!isLoading">
                 <div class="game-card" v-for="game in gameList" :key="game.name"
                     :class="{ selected: selectedGames[game.name] }" @click="toggleGame(game)">
                     <img :src="gameImages[game.name]" :alt="game.name" />
@@ -36,7 +36,8 @@
             </div>
 
             <div class="game-grid-empty" v-else>
-                <div class="empty-spinner"></div>
+                <img v-if="settings.theme" :src="getLoadingSticker()" class="loading-sticker" alt="" />
+                <div v-else class="empty-spinner"></div>
                 <p>Loading games…</p>
             </div>
 
@@ -58,19 +59,15 @@ import {
     onMounted
 } from 'vue';
 
-import { useNotification } from '.././composables/useNotification.js';
-import { useSettings } from '.././composables/useSettings.js';
-
-const props = defineProps({
-    gameConfig: {
-        type: Object,
-        required: true
-    }
-});
+import { useNotification } from '../composables/useNotification.js';
+import { useSettings } from '../composables/useSettings.js';
+import { useAccounts } from '../composables/useAccounts.js';
+import { slugify } from '../../shared/format.js';
 
 const emit = defineEmits(['done']);
 
-const GAME_CONFIG = props.gameConfig;
+const { gameConfig, insertAccounts } = useAccounts();
+const GAME_CONFIG = gameConfig.value;
 
 const { createNotification } = useNotification();
 const { settings } = useSettings();
@@ -79,6 +76,7 @@ const gameList = ref([]);
 const selectedGames = ref({});
 const gameImages = ref({});
 const submitting = ref(false);
+const isLoading = ref(true);
 
 const hasSelection = computed(
     () => Object.keys(selectedGames.value).length > 0
@@ -86,11 +84,10 @@ const hasSelection = computed(
 
 const bgStyle = computed(() => ({
     backgroundImage: settings.value.theme
-        ? `url(${
-            new URL(
-                `../../assets/themes/${settings.value.theme}/setup_background.webp`,
-                import.meta.url
-            ).href
+        ? `url(${new URL(
+            `../../assets/themes/${settings.value.theme}/setup_background.webp`,
+            import.meta.url
+        ).href
         })`
         : ''
 }));
@@ -149,24 +146,12 @@ const submit = async () => {
             server: data.server
         }));
 
-        const response = await window.api.insertAccounts(
-            accountList
-        );
-
-        if (response.success) {
-            emit('done');
-            return;
-        }
-
-        createNotification(
-            'error',
-            `Error creating accounts: ${response.error}`,
-            2000
-        );
+        await insertAccounts(accountList);
+        emit('done');
     } catch (error) {
         createNotification(
             'error',
-            `Critical Error: ${error.message}`,
+            `Error creating accounts: ${error.message}`,
             2000
         );
     } finally {
@@ -174,7 +159,10 @@ const submit = async () => {
     }
 };
 
-onMounted(async () => {
+const getLoadingSticker = () =>
+    new URL(`../../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
+
+const loadGames = async () => {
     const gameNames =
         await window.api.getGamesWithoutAccounts();
 
@@ -186,16 +174,19 @@ onMounted(async () => {
 
     await Promise.all(
         gameList.value.map(async game => {
-            const slug = game.name
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_|_$/g, '');
-
             gameImages.value[game.name] =
                 await window.api.cacheImage(
-                    `games/${slug}_icon.webp`
+                    `games/${slugify(game.name)}_icon.webp`
                 );
         })
     );
+};
+
+onMounted(async () => {
+    try {
+        await loadGames();
+    } finally {
+        isLoading.value = false;
+    }
 });
 </script>

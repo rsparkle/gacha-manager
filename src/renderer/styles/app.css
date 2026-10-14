@@ -98,6 +98,44 @@ input {
     --danger: #ff8f8f;
 }
 
+[data-theme="furina"],
+.furina {
+    --bg: #0a1020;
+    --panel: #0f182c;
+    --panel-hover: #16233f;
+    --panel-selected: #1d3360;
+    --card-solid: #122038;
+    --card-solid-hover: #172946;
+    --task-bg: #0b1426;
+    --hero-bg: #102041;
+    --hero-fade: rgba(8, 13, 26, 0.74);
+    --tasks-overlay: rgba(5, 9, 18, 0.74);
+    --bar-bg: #060a14;
+
+    --border: #1f3561;
+    --border-hover: #3360a8;
+    --border-selected: #6cbcff;
+
+    --text: #eef6ff;
+    --muted: #8ea6c9;
+    --muted2: #bcd2ee;
+
+    --accent: #4ba2eb;
+    --accent-hover: #74baf5;
+    --accent-glow: rgba(75, 162, 235, 0.16);
+    --task-progress: #3d9cf0;
+    --check-fg: #08101f;
+    --pill-active-bg: #1d3360;
+
+    --scrollbar-thumb: #4ba2eb;
+    --scrollbar-thumb-hover: #74baf5;
+    --scrollbar-track: #0a1020;
+
+    --done: #5cc8a8;
+    --urgent: #e8c26a;
+    --danger: #ff8f9c;
+}
+
 .app-bar {
     position: fixed;
     inset: 0 0 auto;
@@ -210,6 +248,11 @@ input {
 .theme-swatch.sparkle {
     background: #ff526e;
 }
+
+.theme-swatch.furina {
+    background: #4ba2eb;
+}
+
 
 .settings-btn {
     display: flex;

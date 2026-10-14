@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, protocol, net, Notification, dialog, Tray, Menu, powerMonitor } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol, net, Notification, dialog, Tray, Menu, powerMonitor, shell } from 'electron';
 
 import {
   initializeAccounts,
@@ -6,11 +6,14 @@ import {
   insertAccounts,
   updateAccount,
   deleteAccount,
-  updateTaskLog,
+  setTaskCompleted,
   getGroupedAccounts,
   syncCalendarMonthlySubs,
   updateNextNotification,
-  completeAutomaticDailies
+  completeAutomaticDailies,
+  getAccountIds,
+  setGameData,
+  restartMonthlySubCount
 } from './accountHelper.js';
 
 import { resolveInside } from './safePath.js';
@@ -19,6 +22,7 @@ import { createResetProcessor } from '../shared/resetProcessor';
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { isDeepStrictEqual } from 'node:util';
 import { execFile } from 'node:child_process';
 import Store from 'electron-store';
 
@@ -44,9 +48,13 @@ const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
 
 const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
 const NETWORK_RETRY_MS = 60 * 1000;
+const GAME_DATA_REFRESH_MS = 6 * 60 * 60 * 1000;
+const CACHE_TOUCH_AFTER_MS = 24 * 60 * 60 * 1000;
 
 let GAME_CONFIG = null;
 let GAME_TASKS = null;
+let refreshingGameData = null;
+let autoUpdatesStarted = false;
 let mainWindow;
 let monitorInterval = null;
 let checkingProcesses = false;
@@ -120,50 +128,109 @@ function validateGameData(config, tasks) {
   }
 }
 
+async function fetchGameData() {
+  const [config, tasks] = await Promise.all([
+    fetchJson(CONFIG_BASE),
+    fetchJson(TASKS_BASE)
+  ]);
+
+  validateGameData(config, tasks);
+
+  return { config, tasks };
+}
+
+async function readCachedGameData() {
+  const [config, tasks] = await Promise.all([
+    readJson(CONFIG_CACHE),
+    readJson(TASKS_CACHE)
+  ]);
+
+  validateGameData(config, tasks);
+
+  return { config, tasks };
+}
+
+async function cacheGameData({ config, tasks }) {
+  try {
+    await Promise.all([
+      writeJson(CONFIG_CACHE, config),
+      writeJson(TASKS_CACHE, tasks)
+    ]);
+  } catch (err) {
+    console.error('Failed to cache game data:', err);
+  }
+}
+
 async function loadGameData() {
-  let remoteError;
+  try {
+    return { ...(await readCachedGameData()), fromCache: true };
+  } catch (cacheError) {
+    try {
+      const data = await fetchGameData();
+
+      await cacheGameData(data);
+
+      return { ...data, fromCache: false };
+    } catch (remoteError) {
+      throw new Error(
+        `Failed to load game data.\n\nOnline: ${remoteError.message}\nCached: ${cacheError.message}`,
+        { cause: remoteError }
+      );
+    }
+  }
+}
+
+function applyGameData({ config, tasks }) {
+  setGameData({ config, tasks });
+
+  GAME_CONFIG = config;
+  GAME_TASKS = tasks;
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('game-data-updated');
+  }
+}
+
+async function updateGameData() {
+  let data;
 
   try {
-    const [config, tasks] = await Promise.all([
-      fetchJson(CONFIG_BASE),
-      fetchJson(TASKS_BASE)
-    ]);
-
-    validateGameData(config, tasks);
-
-    try {
-      await Promise.all([
-        writeJson(CONFIG_CACHE, config),
-        writeJson(TASKS_CACHE, tasks)
-      ]);
-    } catch (cacheError) {
-      console.error('Failed to cache game data:', cacheError);
+    data = await fetchGameData();
+  } catch (err) {
+    if (err.isInvalidData) {
+      new Notification({
+        title: 'Game data update skipped',
+        body: 'The latest game data was invalid, so the last working version is being used.'
+      }).show();
+    } else {
+      console.error('Game data refresh failed:', err);
     }
 
-    return { config, tasks, remoteError: null };
-  } catch (err) {
-    remoteError = err;
+    return;
   }
+
+  if (isDeepStrictEqual(data, { config: GAME_CONFIG, tasks: GAME_TASKS })) return;
+
+  await cacheGameData(data);
 
   try {
-    const [config, tasks] = await Promise.all([
-      readJson(CONFIG_CACHE),
-      readJson(TASKS_CACHE)
-    ]);
-
-    validateGameData(config, tasks);
-    return { config, tasks, remoteError };
-  } catch (cacheError) {
-    throw new Error(
-      `Failed to load game data.\n\nOnline: ${remoteError.message}\nCached: ${cacheError.message}`,
-      { cause: cacheError }
-    );
+    applyGameData(data);
+  } catch (err) {
+    console.error('Failed to apply game data:', err);
   }
+}
+
+function refreshGameData() {
+  refreshingGameData ??= updateGameData().finally(() => {
+    refreshingGameData = null;
+  });
+
+  return refreshingGameData;
 }
 
 function handleGameDetected(gameName) {
   try {
-    const accountIds = store.get('automaticDailies', {})[gameName] ?? [];
+    const accountIds = getAccountIds('automaticDailies', gameName);
 
     const changed = completeAutomaticDailies(gameName, accountIds);
 
@@ -206,9 +273,8 @@ function getRunningProcesses() {
 async function checkProcesses() {
   if (checkingProcesses) return;
 
-  const automaticDailies = store.get('automaticDailies', {});
   const gamesToCheck = Object.entries(GAME_CONFIG)
-    .filter(([gameName]) => automaticDailies[gameName]?.length > 0);
+    .filter(([gameName]) => getAccountIds('automaticDailies', gameName).length > 0);
 
   if (gamesToCheck.length === 0) return;
 
@@ -367,7 +433,9 @@ function registerProtocols() {
 }
 
 function setupAutoUpdates() {
-  if (!app.isPackaged || !store.get('automaticUpdates', false)) return;
+  if (autoUpdatesStarted || !app.isPackaged || !store.get('automaticUpdates', false)) return;
+
+  autoUpdatesStarted = true;
 
   autoUpdater.on('error', err => {
     console.error('Auto update failed:', err);
@@ -382,7 +450,7 @@ function setupAutoUpdates() {
 
 const ICON_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'icon.ico')
-  : path.join(__dirname, '../../src/assets/icon.ico');
+  : path.join(__dirname, '../../build/icon.ico');
 
 const createMainWindow = () => {
   hidingToTray = false;
@@ -402,6 +470,20 @@ const createMainWindow = () => {
       nodeIntegration: false,
       sandbox: true
     }
+  });
+
+  const appOrigin = typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined'
+    ? new URL(MAIN_WINDOW_VITE_DEV_SERVER_URL).origin
+    : 'app://.';
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://')) shell.openExternal(url);
+
+    return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!url.startsWith(appOrigin)) event.preventDefault();
   });
 
   if (typeof MAIN_WINDOW_VITE_DEV_SERVER_URL !== 'undefined') {
@@ -486,7 +568,13 @@ ipcMain.handle('cacheImage', async (_event, filename) => {
   }
 
   try {
-    await fs.access(localPath);
+    const stats = await fs.stat(localPath);
+
+    if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
+      const now = new Date();
+
+      fs.utimes(localPath, now, now).catch(() => { });
+    }
   } catch {
     if (!pendingDownloads.has(filename)) {
       const download = downloadAsset(filename, localPath)
@@ -507,27 +595,32 @@ handle('insertAccounts', gameList => ({
   data: insertAccounts(gameList)
 }));
 
-handle('updateAccount', accountData => {
-  updateAccount(accountData.gameName, accountData.id, accountData);
+handle('updateAccount', ({ gameName, id, changes }) => ({
+  account: updateAccount(gameName, id, changes)
+}));
+
+handle('deleteAccount', ({ gameName, id }) => {
+  deleteAccount(gameName, id);
 });
 
-handle('deleteAccount', accountData => {
-  deleteAccount(accountData.gameName, accountData.id);
-});
-
-handle('updateTaskLog', taskLogData => updateTaskLog(
-  taskLogData.gameName,
-  taskLogData.taskId,
-  taskLogData.accountId,
-  taskLogData.wasCompleted
-));
+handle('setTaskCompleted', ({ gameName, taskId, accountId, completed }) => ({
+  account: setTaskCompleted(gameName, taskId, accountId, completed)
+}));
 
 handle('loadSettings', () => ({
   data: store.store
 }));
 
 handle('saveSettings', settings => {
+  const monthlySubModeChanged =
+    settings.monthlySubCheck !== undefined &&
+    settings.monthlySubCheck !== store.get('monthlySubCheck', 'calendar');
+
+  if (monthlySubModeChanged) syncCalendarMonthlySubs();
+
   store.set(settings);
+
+  if (monthlySubModeChanged) restartMonthlySubCount();
 
   if (settings.checkGachaProcesses) {
     startMonitoring();
@@ -536,6 +629,9 @@ handle('saveSettings', settings => {
   }
 
   updateNextNotification();
+  setupAutoUpdates();
+
+  return { accountsChanged: monthlySubModeChanged };
 });
 
 handle('deleteCacheAssets', async () => {
@@ -575,16 +671,10 @@ async function startApp() {
     return;
   }
 
-  if (gameData.remoteError?.isInvalidData) {
-    new Notification({
-      title: 'Game data update skipped',
-      body: 'The latest game data was invalid, so the last working version is being used.'
-    }).show();
-  }
-
   powerMonitor.on('resume', () => {
     syncCalendarMonthlySubs();
     updateNextNotification();
+    refreshGameData();
   });
 
   syncCalendarMonthlySubs();
@@ -600,6 +690,10 @@ async function startApp() {
   if (store.store.checkGachaProcesses) {
     startMonitoring();
   }
+
+  if (gameData.fromCache) refreshGameData();
+
+  setInterval(refreshGameData, GAME_DATA_REFRESH_MS);
 }
 
 if (!app.requestSingleInstanceLock()) {

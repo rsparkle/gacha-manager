@@ -83,11 +83,11 @@
                         <p class="settings-section-title">Account settings</p>
                         <p class="settings-section-desc">Configure automatic dailies and notifications per account</p>
                         <div class="game-groups">
-                            <div v-for="game in props.accountsPerGame" :key="game.name" class="game-group">
+                            <div v-for="game in accountsPerGame" :key="game.name" class="game-group">
                                 <p class="game-group-title">{{ game.name }}</p>
                                 <div class="account-grid">
                                     <div v-for="account in game.accounts" :key="account.id" class="account-chip-row">
-                                        <span class="account-chip-label">{{ account.label || account.uid }}</span>
+                                        <span class="account-chip-label">{{ account.label || account.uid || 'New Account' }}</span>
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
                                             <button type="button" class="text-toggle"
@@ -124,14 +124,12 @@
 import { ref, watch } from 'vue'
 import { useNotification } from '../composables/useNotification.js'
 import { useSettings } from '../composables/useSettings.js'
+import { useAccounts } from '../composables/useAccounts.js'
 
 const { settings, showSettings, toggleSetting, saveSettings } = useSettings()
 const { createNotification } = useNotification()
+const { accountsPerGame, loadAccounts } = useAccounts()
 const draft = ref(null)
-
-const props = defineProps({
-    accountsPerGame: { type: Array, default: () => [] }
-})
 
 watch(showSettings, (open) => {
     if (open) draft.value = JSON.parse(JSON.stringify(settings.value))
@@ -141,8 +139,10 @@ const closeSettings = () => { showSettings.value = false }
 
 const saveChanges = async () => {
     Object.assign(settings.value, draft.value)
-    await saveSettings()
+    const response = await saveSettings()
     showSettings.value = false
+
+    if (response?.accountsChanged) await loadAccounts()
 }
 
 const deleteCacheAssets = async () => {
