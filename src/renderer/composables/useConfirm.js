@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import { ref } from 'vue';
 
-const confirmState = ref(null)
+const confirmState = ref(null);
 
 export function useConfirm() {
     const confirm = (message, { confirmText = 'Confirm' } = {}) => {
@@ -8,11 +8,17 @@ export function useConfirm() {
             confirmState.value = {
                 message,
                 confirmText,
-                onConfirm: () => { confirmState.value = null; resolve(true) },
-                onCancel: () => { confirmState.value = null; resolve(false) }
-            }
-        })
-    }
+                onConfirm: () => {
+                    confirmState.value = null;
+                    resolve(true);
+                },
+                onCancel: () => {
+                    confirmState.value = null;
+                    resolve(false);
+                },
+            };
+        });
+    };
 
-    return { confirmState, confirm }
+    return { confirmState, confirm };
 }

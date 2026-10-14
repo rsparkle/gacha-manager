@@ -1,16 +1,30 @@
 <template>
     <div class="notif-center" aria-live="polite">
         <TransitionGroup name="notif">
-            <div v-for="notif in notifications" :key="notif.id" class="notif"
+            <div
+                v-for="notif in notifications"
+                :key="notif.id"
+                class="notif"
                 :class="[`notif--${notif.type}`, { 'notif--exiting': notif.exiting }]"
-                @click="deleteNotification(notif.id)">
-                <img v-if="notif.icon" class="notif-icon notif-icon--img" :src="notif.icon" :alt="notif.type"
-                    @error="notif.icon = null" />
+                @click="deleteNotification(notif.id)"
+            >
+                <img
+                    v-if="notif.icon"
+                    class="notif-icon notif-icon--img"
+                    :src="notif.icon"
+                    :alt="notif.type"
+                    @error="notif.icon = null"
+                />
                 <span v-else class="notif-icon">{{ icons[notif.type] }}</span>
                 <p class="notif-message">{{ notif.message }}</p>
-                <div v-if="notif.duration > 0" class="notif-progress"
-                    :style="{ animationDuration: `${notif.duration}ms`, animationDelay: `-${Date.now() - notif.createdAt}ms` }">
-                </div>
+                <div
+                    v-if="notif.duration > 0"
+                    class="notif-progress"
+                    :style="{
+                        animationDuration: `${notif.duration}ms`,
+                        animationDelay: `-${Date.now() - notif.createdAt}ms`,
+                    }"
+                ></div>
             </div>
         </TransitionGroup>
     </div>
@@ -64,7 +78,9 @@ const icons = {
     border: 1px solid var(--notif-border);
     background: var(--notif-bg);
     color: var(--notif-text);
-    box-shadow: 0 4px 24px var(--notif-shadow), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    box-shadow:
+        0 4px 24px var(--notif-shadow),
+        0 1px 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .notif-icon {
@@ -115,25 +131,25 @@ const icons = {
 
 .notif--success {
     --notif-bg: rgba(16, 38, 26, 0.88);
-    --notif-border: rgba(34, 197, 94, 0.30);
+    --notif-border: rgba(34, 197, 94, 0.3);
     --notif-text: #86efac;
     --notif-shadow: rgba(34, 197, 94, 0.12);
-    --notif-progress: rgba(34, 197, 94, 0.60);
+    --notif-progress: rgba(34, 197, 94, 0.6);
 }
 
 .notif--error {
     --notif-bg: rgba(38, 10, 10, 0.88);
-    --notif-border: rgba(248, 113, 113, 0.30);
+    --notif-border: rgba(248, 113, 113, 0.3);
     --notif-text: #fca5a5;
     --notif-shadow: rgba(248, 113, 113, 0.12);
-    --notif-progress: rgba(248, 113, 113, 0.60);
+    --notif-progress: rgba(248, 113, 113, 0.6);
 }
 
 .notif--waiting {
     --notif-bg: rgba(34, 24, 8, 0.88);
     --notif-border: rgba(251, 191, 36, 0.28);
     --notif-text: #fcd34d;
-    --notif-shadow: rgba(251, 191, 36, 0.10);
+    --notif-shadow: rgba(251, 191, 36, 0.1);
     --notif-progress: rgba(251, 191, 36, 0.55);
 }
 
@@ -153,7 +169,7 @@ const icons = {
 }
 
 .notif-leave-active {
-    transition: all 0.30s ease;
+    transition: all 0.3s ease;
     pointer-events: none;
 }
 

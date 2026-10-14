@@ -3,7 +3,7 @@ export const config = {
         checkGachaProcesses: false,
         automaticDailies: {},
         windowsNotifications: {},
-        theme: "",
-        server: null
-    }
-}
+        theme: '',
+        server: null,
+    },
+};

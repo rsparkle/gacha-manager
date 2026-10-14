@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-const subscribe = channel => callback => {
+const subscribe = (channel) => (callback) => {
     const listener = () => callback();
 
     ipcRenderer.on(channel, listener);
@@ -13,29 +13,29 @@ contextBridge.exposeInMainWorld('api', {
 
     getGameTasks: () => ipcRenderer.invoke('getGameTasks'),
 
-    cacheImage: filename => ipcRenderer.invoke('cacheImage', filename),
+    cacheImage: (filename) => ipcRenderer.invoke('cacheImage', filename),
 
     deleteCacheAssets: () => ipcRenderer.invoke('deleteCacheAssets'),
 
     getGamesWithoutAccounts: () => ipcRenderer.invoke('getGamesWithoutAccounts'),
 
-    insertAccounts: gameList => ipcRenderer.invoke('insertAccounts', gameList),
+    insertAccounts: (gameList) => ipcRenderer.invoke('insertAccounts', gameList),
 
-    updateAccount: accountData => ipcRenderer.invoke('updateAccount', accountData),
+    updateAccount: (accountData) => ipcRenderer.invoke('updateAccount', accountData),
 
-    deleteAccount: accountData => ipcRenderer.invoke('deleteAccount', accountData),
+    deleteAccount: (accountData) => ipcRenderer.invoke('deleteAccount', accountData),
 
     getGroupedAccounts: () => ipcRenderer.invoke('getGroupedAccounts'),
 
-    setTaskCompleted: taskData => ipcRenderer.invoke('setTaskCompleted', taskData),
+    setTaskCompleted: (taskData) => ipcRenderer.invoke('setTaskCompleted', taskData),
 
     loadSettings: () => ipcRenderer.invoke('loadSettings'),
 
-    saveSettings: settings => ipcRenderer.invoke('saveSettings', settings),
+    saveSettings: (settings) => ipcRenderer.invoke('saveSettings', settings),
 
     syncCalendarMonthlySubs: () => ipcRenderer.invoke('syncCalendarMonthlySubs'),
 
     onDailiesCompleted: subscribe('dailies-completed'),
 
-    onGameDataUpdated: subscribe('game-data-updated')
+    onGameDataUpdated: subscribe('game-data-updated'),
 });

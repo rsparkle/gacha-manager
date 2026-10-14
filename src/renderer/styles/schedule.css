@@ -63,7 +63,10 @@
     cursor: pointer;
     font-size: 14px;
     line-height: 1;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .nav-btn:hover {
@@ -93,7 +96,9 @@
     font-weight: 600;
     font-family: 'Sora', sans-serif;
     cursor: pointer;
-    transition: background-color 120ms ease, color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
 }
 
 .server-btn:hover {
@@ -123,7 +128,9 @@
     background: var(--panel);
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
 }
 
 .game-badge:hover {
@@ -231,7 +238,9 @@
     position: relative;
     border-right: 1px solid var(--border);
     background: var(--card-solid);
-    transition: background-color 120ms ease, box-shadow 120ms ease;
+    transition:
+        background-color 120ms ease,
+        box-shadow 120ms ease;
 }
 
 .cell:last-child {
@@ -289,10 +298,7 @@
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(to bottom,
-            transparent 48%,
-            rgba(0, 0, 0, 0.10) 64%,
-            rgba(0, 0, 0, 0.58) 100%);
+    background: linear-gradient(to bottom, transparent 48%, rgba(0, 0, 0, 0.1) 64%, rgba(0, 0, 0, 0.58) 100%);
 }
 
 .day-number {
@@ -368,7 +374,10 @@
     white-space: nowrap;
     overflow: hidden;
     cursor: default;
-    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease,
+        color 0.12s ease;
 }
 
 .event:hover,
@@ -480,10 +489,7 @@
     right: 0;
     bottom: -2px;
     pointer-events: none;
-    background: linear-gradient(to bottom,
-            transparent 55%,
-            rgba(0, 0, 0, 0.16) 72%,
-            rgba(0, 0, 0, 0.68) 100%);
+    background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.16) 72%, rgba(0, 0, 0, 0.68) 100%);
 }
 
 .schedule-event-tooltip-game {

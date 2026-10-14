@@ -30,7 +30,7 @@
 .game-item {
     display: grid;
     position: relative;
-    grid-template-areas: "name orb";
+    grid-template-areas: 'name orb';
     grid-template-columns: 1fr auto;
     align-items: center;
     min-height: 46px;
@@ -39,7 +39,9 @@
     border-left: 3px solid transparent;
     border-radius: 7px;
     cursor: pointer;
-    transition: background-color 120ms ease, border-color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease;
 }
 
 .game-item:hover {
@@ -112,9 +114,18 @@
 }
 
 @keyframes orb-pulse {
-    0%   { transform: scale(0.8); opacity: 0.35; }
-    60%  { transform: scale(2.2); opacity: 0; }
-    100% { transform: scale(2.2); opacity: 0; }
+    0% {
+        transform: scale(0.8);
+        opacity: 0.35;
+    }
+    60% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
 }
 
 .add-game-wrapper {
@@ -132,7 +143,10 @@
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .add-game:hover {
@@ -309,7 +323,10 @@
     cursor: pointer;
     font-size: 11px;
     font-weight: 600;
-    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .btn-bell {
@@ -382,7 +399,9 @@
 
 .popover-enter-active,
 .popover-leave-active {
-    transition: opacity 100ms ease, transform 100ms ease;
+    transition:
+        opacity 100ms ease,
+        transform 100ms ease;
 }
 
 .popover-enter-from,
@@ -400,7 +419,9 @@
     margin-left: -3px;
     padding: 2px 4px;
     cursor: pointer;
-    transition: color 120ms ease, border-color 120ms ease;
+    transition:
+        color 120ms ease,
+        border-color 120ms ease;
 }
 
 .server-clickable:hover {
@@ -534,7 +555,9 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     background: color-mix(in srgb, var(--card-solid) 94%, transparent);
-    box-shadow: 0 5px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+    box-shadow:
+        0 5px 16px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.02);
     transition: border-color 120ms ease;
 }
 
@@ -584,7 +607,9 @@
     color: var(--check-fg);
     font-size: 9px;
     font-weight: 800;
-    transition: background-color 120ms ease, border-color 120ms ease;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease;
 }
 
 .task.done .task-check {

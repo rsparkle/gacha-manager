@@ -5,7 +5,9 @@
                 <p class="confirm-message">{{ confirmState.message }}</p>
                 <div class="confirm-actions">
                     <button class="confirm-btn confirm-btn--cancel" @click="confirmState.onCancel()">Cancel</button>
-                    <button class="confirm-btn confirm-btn--danger" @click="confirmState.onConfirm()">{{ confirmState.confirmText }}</button>
+                    <button class="confirm-btn confirm-btn--danger" @click="confirmState.onConfirm()">
+                        {{ confirmState.confirmText }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -13,8 +15,8 @@
 </template>
 
 <script setup>
-import { useConfirm } from '../composables/useConfirm.js'
-const { confirmState } = useConfirm()
+import { useConfirm } from '../composables/useConfirm.js';
+const { confirmState } = useConfirm();
 </script>
 
 <style scoped>

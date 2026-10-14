@@ -2,14 +2,12 @@
     <Transition name="confirm">
         <div v-if="showSettings" class="settings-overlay" @click.self="closeSettings">
             <div class="settings-modal">
-
                 <div class="settings-header">
                     <h1 class="settings-title">Settings</h1>
                     <button class="settings-close" @click="closeSettings" aria-label="Close">×</button>
                 </div>
 
                 <div class="settings-body">
-
                     <div class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
@@ -17,11 +15,17 @@
                                 <small>Allow the app to look for updates</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="draft.automaticUpdates">
+                                <input type="checkbox" v-model="draft.automaticUpdates" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
-                                        <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
+                                        <path
+                                            d="M2 8.5L6 12L14 3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
                                     </svg>
                                 </span>
                             </label>
@@ -38,12 +42,22 @@
 
                         <div class="radio-group">
                             <label>
-                                <input type="radio" name="monthlySubCheck" value="calendar" v-model="draft.monthlySubCheck">
+                                <input
+                                    type="radio"
+                                    name="monthlySubCheck"
+                                    value="calendar"
+                                    v-model="draft.monthlySubCheck"
+                                />
                                 Count each calendar day even when the app is closed
                             </label>
 
                             <label>
-                                <input type="radio" name="monthlySubCheck" value="dailyTask" v-model="draft.monthlySubCheck">
+                                <input
+                                    type="radio"
+                                    name="monthlySubCheck"
+                                    value="dailyTask"
+                                    v-model="draft.monthlySubCheck"
+                                />
                                 Count a day only when its daily task is checked
                             </label>
                         </div>
@@ -56,11 +70,17 @@
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="draft.checkGachaProcesses">
+                                <input type="checkbox" v-model="draft.checkGachaProcesses" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
-                                        <path d="M2 8.5L6 12L14 3" fill="none" stroke="currentColor" stroke-width="2.2"
-                                            stroke-linecap="round" stroke-linejoin="round" />
+                                        <path
+                                            d="M2 8.5L6 12L14 3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
                                     </svg>
                                 </span>
                             </label>
@@ -87,18 +107,32 @@
                                 <p class="game-group-title">{{ game.name }}</p>
                                 <div class="account-grid">
                                     <div v-for="account in game.accounts" :key="account.id" class="account-chip-row">
-                                        <span class="account-chip-label">{{ account.label || account.uid || 'New Account' }}</span>
+                                        <span class="account-chip-label">{{
+                                            account.label || account.uid || 'New Account'
+                                        }}</span>
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
-                                            <button type="button" class="text-toggle"
-                                                :class="{ active: draft.automaticDailies[game.name]?.includes(account.id) }"
+                                            <button
+                                                type="button"
+                                                class="text-toggle"
+                                                :class="{
+                                                    active: draft.automaticDailies[game.name]?.includes(account.id),
+                                                }"
                                                 v-if="draft.checkGachaProcesses"
-                                                @click="toggleSetting(draft.automaticDailies, game.name, account.id)">
+                                                @click="toggleSetting(draft.automaticDailies, game.name, account.id)"
+                                            >
                                                 Auto
                                             </button>
-                                            <button type="button" class="text-toggle"
-                                                :class="{ active: draft.windowsNotifications[game.name]?.includes(account.id) }"
-                                                @click="toggleSetting(draft.windowsNotifications, game.name, account.id)">
+                                            <button
+                                                type="button"
+                                                class="text-toggle"
+                                                :class="{
+                                                    active: draft.windowsNotifications[game.name]?.includes(account.id),
+                                                }"
+                                                @click="
+                                                    toggleSetting(draft.windowsNotifications, game.name, account.id)
+                                                "
+                                            >
                                                 Notify
                                             </button>
                                         </div>
@@ -107,56 +141,60 @@
                             </div>
                         </div>
                     </div>
-
                 </div>
 
                 <div class="settings-footer">
                     <button class="cancel-btn" @click="closeSettings">Cancel</button>
                     <button class="apply-btn" @click="saveChanges">Apply changes</button>
                 </div>
-
             </div>
         </div>
     </Transition>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import { useNotification } from '../composables/useNotification.js'
-import { useSettings } from '../composables/useSettings.js'
-import { useAccounts } from '../composables/useAccounts.js'
+import { ref, watch } from 'vue';
+import { useNotification } from '../composables/useNotification.js';
+import { useSettings } from '../composables/useSettings.js';
+import { useAccounts } from '../composables/useAccounts.js';
 
-const { settings, showSettings, toggleSetting, saveSettings } = useSettings()
-const { createNotification } = useNotification()
-const { accountsPerGame, loadAccounts } = useAccounts()
-const draft = ref(null)
+const { settings, showSettings, toggleSetting, saveSettings } = useSettings();
+const { createNotification } = useNotification();
+const { accountsPerGame, loadAccounts } = useAccounts();
+const draft = ref(null);
 
-watch(showSettings, (open) => {
-    if (open) draft.value = JSON.parse(JSON.stringify(settings.value))
-}, { immediate: true })
+watch(
+    showSettings,
+    (open) => {
+        if (open) draft.value = JSON.parse(JSON.stringify(settings.value));
+    },
+    { immediate: true },
+);
 
-const closeSettings = () => { showSettings.value = false }
+const closeSettings = () => {
+    showSettings.value = false;
+};
 
 const saveChanges = async () => {
-    Object.assign(settings.value, draft.value)
-    const response = await saveSettings()
-    showSettings.value = false
+    Object.assign(settings.value, draft.value);
+    const response = await saveSettings();
+    showSettings.value = false;
 
-    if (response?.accountsChanged) await loadAccounts()
-}
+    if (response?.accountsChanged) await loadAccounts();
+};
 
 const deleteCacheAssets = async () => {
     try {
-        const response = await window.api.deleteCacheAssets()
+        const response = await window.api.deleteCacheAssets();
         if (response.success) {
-            createNotification('success', 'Cache deleted!', 1000)
+            createNotification('success', 'Cache deleted!', 1000);
         } else {
-            createNotification('error', `Error: ${response.error || 'Unknown error'}`, 2000)
+            createNotification('error', `Error: ${response.error || 'Unknown error'}`, 2000);
         }
     } catch (err) {
-        createNotification('error', `Critical Error: ${err.message}`, 2000)
+        createNotification('error', `Critical Error: ${err.message}`, 2000);
     }
-}
+};
 </script>
 
 <style scoped>
@@ -320,10 +358,13 @@ const deleteCacheAssets = async () => {
     align-items: center;
     justify-content: center;
     color: transparent;
-    transition: background 0.15s, border-color 0.15s, color 0.1s;
+    transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.1s;
 }
 
-.toggle input:checked+.toggle-box {
+.toggle input:checked + .toggle-box {
     background: var(--accent);
     border-color: var(--accent);
     color: #000;
@@ -334,7 +375,7 @@ const deleteCacheAssets = async () => {
     transition: transform 0.15s;
 }
 
-.toggle input:checked+.toggle-box .toggle-check {
+.toggle input:checked + .toggle-box .toggle-check {
     transform: scale(1);
 }
 
@@ -400,7 +441,9 @@ const deleteCacheAssets = async () => {
     color: var(--muted2);
     cursor: pointer;
     border-bottom: 1.5px solid transparent;
-    transition: color 0.15s, border-color 0.15s;
+    transition:
+        color 0.15s,
+        border-color 0.15s;
 }
 
 .text-toggle:hover {
@@ -478,7 +521,9 @@ const deleteCacheAssets = async () => {
 
 .confirm-enter-active,
 .confirm-leave-active {
-    transition: opacity 0.18s, transform 0.18s;
+    transition:
+        opacity 0.18s,
+        transform 0.18s;
 }
 
 .confirm-enter-from,

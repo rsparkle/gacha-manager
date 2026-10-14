@@ -2,8 +2,13 @@
     <div id="scheduleApp">
         <div class="schedule-header">
             <div class="schedule-month-nav">
-                <button class="nav-btn" type="button" aria-label="Previous month" @click="prevMonth"
-                    :style="{ visibility: canGoPrev ? 'visible' : 'hidden' }">
+                <button
+                    class="nav-btn"
+                    type="button"
+                    aria-label="Previous month"
+                    @click="prevMonth"
+                    :style="{ visibility: canGoPrev ? 'visible' : 'hidden' }"
+                >
                     &#8592;
                 </button>
 
@@ -12,24 +17,41 @@
                     <span class="year">{{ currentYear }}</span>
                 </div>
 
-                <button class="nav-btn" type="button" aria-label="Next month" @click="nextMonth"
-                    :style="{ visibility: canGoNext ? 'visible' : 'hidden' }">
+                <button
+                    class="nav-btn"
+                    type="button"
+                    aria-label="Next month"
+                    @click="nextMonth"
+                    :style="{ visibility: canGoNext ? 'visible' : 'hidden' }"
+                >
                     &#8594;
                 </button>
             </div>
 
             <div class="server-select">
-                <button v-for="server in servers" :key="server" type="button" class="server-btn"
-                    :class="{ active: selectedServer === server }" @click="selectedServer = server">
+                <button
+                    v-for="server in servers"
+                    :key="server"
+                    type="button"
+                    class="server-btn"
+                    :class="{ active: selectedServer === server }"
+                    @click="selectedServer = server"
+                >
                     {{ server }}
                 </button>
             </div>
 
             <div class="schedule-nav">
-                <button v-for="game in gameList" :key="game" type="button" class="game-badge"
+                <button
+                    v-for="game in gameList"
+                    :key="game"
+                    type="button"
+                    class="game-badge"
                     :style="{ '--gc': GAME_CONFIG[game]?.color }"
                     :class="{ 'game-badge--disabled': !selectedGames.includes(game) }"
-                    :aria-pressed="selectedGames.includes(game)" @click="toggleSelectedGames(game)">
+                    :aria-pressed="selectedGames.includes(game)"
+                    @click="toggleSelectedGames(game)"
+                >
                     <img :src="gameIcons[game]" :alt="game" class="game-badge-icon" />
                     <span class="game-badge-name">{{ GAME_CONFIG[game]?.abbr ?? game }}</span>
                 </button>
@@ -39,45 +61,67 @@
         <div class="schedule-body">
             <div class="calendar-grid">
                 <div class="week-header">
-                    <div class="header-cell" v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
-                        :key="day">
+                    <div
+                        class="header-cell"
+                        v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
+                        :key="day"
+                    >
                         {{ day }}
                     </div>
                 </div>
 
                 <div class="calendar-weeks">
                     <div v-for="(week, wi) in weeks" :key="wi" class="week">
-                        <div v-for="(day, di) in week" :key="di" class="cell" :class="{
-                            empty: !day,
-                            today: day && isToday(day.date),
-                            'cell--has-art': day && day.releases.length > 0
-                        }">
+                        <div
+                            v-for="(day, di) in week"
+                            :key="di"
+                            class="cell"
+                            :class="{
+                                empty: !day,
+                                today: day && isToday(day.date),
+                                'cell--has-art': day && day.releases.length > 0,
+                            }"
+                        >
                             <template v-if="day">
                                 <span class="day-number">{{ day.date.getDate() }}</span>
 
                                 <div class="cell-content">
                                     <div v-if="day.releases.length" class="cell-art">
                                         <div class="cell-art-images">
-                                            <div v-for="(release, ri) in day.releases"
-                                                :key="`${release.game}-${release.label}-${ri}`" class="cell-art-slice"
+                                            <div
+                                                v-for="(release, ri) in day.releases"
+                                                :key="`${release.game}-${release.label}-${ri}`"
+                                                class="cell-art-slice"
                                                 :style="{
                                                     width: `${100 / day.releases.length}%`,
-                                                    backgroundImage: getBackgroundImageWithFallbacks(release)
-                                                }" role="img" :aria-label="release.label" />
+                                                    backgroundImage: getBackgroundImageWithFallbacks(release),
+                                                }"
+                                                role="img"
+                                                :aria-label="release.label"
+                                            />
                                         </div>
 
                                         <div class="cell-art-shade" />
                                     </div>
 
-                                    <div v-if="day.events.length" class="events-list"
-                                        :class="{ 'events-list--over-art': day.releases.length }">
-                                        <button v-for="(event, ei) in day.events"
+                                    <div
+                                        v-if="day.events.length"
+                                        class="events-list"
+                                        :class="{ 'events-list--over-art': day.releases.length }"
+                                    >
+                                        <button
+                                            v-for="(event, ei) in day.events"
                                             :key="`${event.game}-${event.label}-${event.date.getTime()}-${ei}`"
-                                            type="button" class="event" :style="{ '--gc': event.color }"
+                                            type="button"
+                                            class="event"
+                                            :style="{ '--gc': event.color }"
                                             :class="{ estimated: !event.confirmed }"
                                             :aria-label="`${event.label}, ${formatEventTime(event)}`"
-                                            @mouseenter="showEventTooltip(event, $event)" @mouseleave="hideEventTooltip"
-                                            @focus="showEventTooltip(event, $event)" @blur="hideEventTooltip">
+                                            @mouseenter="showEventTooltip(event, $event)"
+                                            @mouseleave="hideEventTooltip"
+                                            @focus="showEventTooltip(event, $event)"
+                                            @blur="hideEventTooltip"
+                                        >
                                             <span class="event-dot" />
                                             <span class="event-short-label">{{ event.title }}</span>
                                         </button>
@@ -96,19 +140,30 @@
 
         <Teleport to="body">
             <Transition name="event-tooltip">
-                <div v-if="hoveredEvent" class="schedule-event-tooltip" :class="{
-                    'schedule-event-tooltip--portrait': hoveredEventIsPortrait,
-                    'schedule-event-tooltip--landscape': !hoveredEventIsPortrait
-                }" :style="tooltipStyle" role="tooltip">
-                    <div v-if="hoveredEventHasImage" class="schedule-event-tooltip-hero"
-                        :style="{ backgroundImage: getBackgroundImageWithFallbacks(hoveredEvent) }">
+                <div
+                    v-if="hoveredEvent"
+                    class="schedule-event-tooltip"
+                    :class="{
+                        'schedule-event-tooltip--portrait': hoveredEventIsPortrait,
+                        'schedule-event-tooltip--landscape': !hoveredEventIsPortrait,
+                    }"
+                    :style="tooltipStyle"
+                    role="tooltip"
+                >
+                    <div
+                        v-if="hoveredEventHasImage"
+                        class="schedule-event-tooltip-hero"
+                        :style="{ backgroundImage: getBackgroundImageWithFallbacks(hoveredEvent) }"
+                    >
                         <div class="schedule-event-tooltip-hero-shade" />
                     </div>
 
                     <div class="schedule-event-tooltip-body">
                         <div class="schedule-event-tooltip-topline">
-                            <span v-if="!hoveredEventHasImage"
-                                class="schedule-event-tooltip-game schedule-event-tooltip-game--inline">
+                            <span
+                                v-if="!hoveredEventHasImage"
+                                class="schedule-event-tooltip-game schedule-event-tooltip-game--inline"
+                            >
                                 {{ GAME_CONFIG[hoveredEvent.game]?.abbr ?? hoveredEvent.game }}
                             </span>
                             <span class="schedule-event-tooltip-date">
@@ -126,8 +181,12 @@
                             </div>
 
                             <div v-if="!hoveredEvent.confirmed" class="schedule-event-tooltip-estimated">
-                                <img v-if="settings.theme && settings.theme !== 'default'" :src="getEstimatedSticker()"
-                                    class="estimated-sticker" alt="" />
+                                <img
+                                    v-if="settings.theme && settings.theme !== 'default'"
+                                    :src="getEstimatedSticker()"
+                                    class="estimated-sticker"
+                                    alt=""
+                                />
                                 <span class="estimated-label">Estimated</span>
                             </div>
                         </div>
@@ -179,8 +238,18 @@ const hoveredEvent = ref(null);
 const tooltipPosition = ref({ left: 0, top: 0, placement: 'above' });
 
 const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
 ];
 
 const monthName = computed(() => monthNames[currentMonth.value]);
@@ -188,9 +257,7 @@ const gameList = computed(() => Object.keys(scheduleData.value));
 
 const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
-const canGoPrev = computed(() =>
-    new Date(currentYear.value, currentMonth.value, 1) > minDate
-);
+const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate);
 
 const canGoNext = computed(() => {
     const maxMonth = today.getMonth() === 11 ? 0 : today.getMonth() + 1;
@@ -206,17 +273,14 @@ const hoveredEventHasImage = computed(() => {
 
 const isPortraitTooltip = (event) => Boolean(event?.portrait);
 
-const hoveredEventIsPortrait = computed(() =>
-    isPortraitTooltip(hoveredEvent.value)
-);
+const hoveredEventIsPortrait = computed(() => isPortraitTooltip(hoveredEvent.value));
 
 const tooltipStyle = computed(() => ({
     '--gc': hoveredEvent.value?.color ?? 'var(--accent)',
     left: `${tooltipPosition.value.left}px`,
     top: `${tooltipPosition.value.top}px`,
-    transform: tooltipPosition.value.placement === 'above'
-        ? 'translate(-50%, calc(-100% - 10px))'
-        : 'translate(-50%, 10px)'
+    transform:
+        tooltipPosition.value.placement === 'above' ? 'translate(-50%, calc(-100% - 10px))' : 'translate(-50%, 10px)',
 }));
 
 const hoveredCountdown = computed(() => {
@@ -227,59 +291,63 @@ const hoveredCountdown = computed(() => {
     if (diff > 0) {
         return {
             prefix: 'starts in',
-            value: formatCountdown(diff)
+            value: formatCountdown(diff),
         };
     }
 
     return {
         prefix: 'started',
-        value: `${formatCountdown(Math.abs(diff))} ago`
+        value: `${formatCountdown(Math.abs(diff))} ago`,
     };
 });
 
 const getEstimatedSticker = () =>
     new URL(`../../assets/themes/${settings.value.theme}/estimated.webp`, import.meta.url).href;
 
-const loadGameIcons = () => Promise.all(
-    gameList.value
-        .filter(game => !gameIcons[game])
-        .map(async game => {
-            gameIcons[game] = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
-        })
-);
+const loadGameIcons = () =>
+    Promise.all(
+        gameList.value
+            .filter((game) => !gameIcons[game])
+            .map(async (game) => {
+                gameIcons[game] = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
+            }),
+    );
 
 const loadEventImages = () => {
     const files = new Set(
         Object.values(scheduleData.value)
-            .flatMap(events => Object.values(events))
-            .flatMap(event => event.imgFiles ?? [])
+            .flatMap((events) => Object.values(events))
+            .flatMap((event) => event.imgFiles ?? []),
     );
 
     return Promise.all(
         [...files]
-            .filter(file => !imageUrls[file])
-            .map(async file => {
+            .filter((file) => !imageUrls[file])
+            .map(async (file) => {
                 try {
                     imageUrls[file] = await window.api.cacheImage(file);
                 } catch (err) {
                     console.error(`Failed to load ${file}:`, err);
                 }
-            })
+            }),
     );
 };
 
-const getBackgroundImageWithFallbacks = (event) => (event?.imgFiles ?? [])
-    .map(file => imageUrls[file])
-    .filter(Boolean)
-    .map(url => `url('${url}')`)
-    .join(', ');
+const getBackgroundImageWithFallbacks = (event) =>
+    (event?.imgFiles ?? [])
+        .map((file) => imageUrls[file])
+        .filter(Boolean)
+        .map((url) => `url('${url}')`)
+        .join(', ');
 
 const isToday = (date) => {
     const current = now.value;
 
-    return date.getFullYear() === current.getFullYear()
-        && date.getMonth() === current.getMonth()
-        && date.getDate() === current.getDate();
+    return (
+        date.getFullYear() === current.getFullYear() &&
+        date.getMonth() === current.getMonth() &&
+        date.getDate() === current.getDate()
+    );
 };
 
 const toggleSelectedGames = (game) => {
@@ -292,8 +360,7 @@ const toggleSelectedGames = (game) => {
 
 const filteredScheduleData = computed(() => {
     return Object.fromEntries(
-        Object.entries(scheduleData.value)
-            .filter(([game]) => selectedGames.value.includes(game))
+        Object.entries(scheduleData.value).filter(([game]) => selectedGames.value.includes(game)),
     );
 });
 
@@ -326,11 +393,7 @@ const weeks = computed(() => {
     for (let d = 1; d <= end.getDate(); d++) {
         const date = new Date(currentYear.value, currentMonth.value, d);
         const events = eventsByDay.value[date.toDateString()] ?? [];
-        const releases = events.filter(
-            (event) =>
-                event.type === 'release'
-                && event.imgFiles?.length
-        );
+        const releases = events.filter((event) => event.type === 'release' && event.imgFiles?.length);
         days.push({ date, events, releases });
     }
 
@@ -374,14 +437,14 @@ const formatEventTime = (event) =>
     event.date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false
+        hour12: false,
     });
 
 const formatEventDate = (event) =>
     event.date.toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
     });
 
 const showEventTooltip = (event, domEvent) => {
@@ -397,28 +460,22 @@ const showEventTooltip = (event, domEvent) => {
     const centerX = rect.left + rect.width / 2;
     const clampedX = Math.min(
         Math.max(centerX, tooltipHalfWidth + viewportPadding),
-        window.innerWidth - tooltipHalfWidth - viewportPadding
+        window.innerWidth - tooltipHalfWidth - viewportPadding,
     );
 
     const hasImage = Boolean(event.imgFiles?.length);
 
-    const estimatedHeight = hasImage
-        ? portrait
-            ? 430
-            : 245
-        : 170;
+    const estimatedHeight = hasImage ? (portrait ? 430 : 245) : 170;
 
     const spaceAbove = rect.top;
     const spaceBelow = window.innerHeight - rect.bottom;
 
-    const placeAbove =
-        spaceAbove >= estimatedHeight ||
-        spaceAbove > spaceBelow;
+    const placeAbove = spaceAbove >= estimatedHeight || spaceAbove > spaceBelow;
 
     tooltipPosition.value = {
         left: clampedX,
         top: placeAbove ? rect.top : rect.bottom,
-        placement: placeAbove ? 'above' : 'below'
+        placement: placeAbove ? 'above' : 'below',
     };
 
     hoveredEvent.value = event;
@@ -444,12 +501,16 @@ const loadSchedule = () => {
     loadEventImages();
 };
 
-watch(gameConfig, (config) => {
-    if (!config) return;
+watch(
+    gameConfig,
+    (config) => {
+        if (!config) return;
 
-    ({ computeScheduleData } = createScheduleProcessor(config));
-    loadSchedule();
-}, { immediate: true });
+        ({ computeScheduleData } = createScheduleProcessor(config));
+        loadSchedule();
+    },
+    { immediate: true },
+);
 
 watch(selectedServer, (server) => {
     settings.value.server = server;

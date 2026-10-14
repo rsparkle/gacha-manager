@@ -2,22 +2,19 @@
     <footer class="app-footer">
         <div class="footer-inner">
             <p class="footer-main">
-                This is a non-commercial, unofficial, fan-made gacha companion app and is not affiliated with, endorsed by, or
-                associated with any of the game publishers listed below.
+                This is a non-commercial, unofficial, fan-made gacha companion app and is not affiliated with, endorsed
+                by, or associated with any of the game publishers listed below.
             </p>
             <p class="footer-owners">
                 All game assets, characters, names, and trademarks belong to their respective owners -
-                <span class="footer-company">HoYoverse</span>,
-                <span class="footer-company">Paper Games</span>,
-                <span class="footer-company">Perfect World Games (Hotta Studio)</span>,
-                and all other rights holders.
+                <span class="footer-company">HoYoverse</span>, <span class="footer-company">Paper Games</span>,
+                <span class="footer-company">Perfect World Games (Hotta Studio)</span>, and all other rights holders.
             </p>
         </div>
     </footer>
 </template>
 
-<script setup>
-</script>
+<script setup></script>
 
 <style scoped>
 .app-footer {
