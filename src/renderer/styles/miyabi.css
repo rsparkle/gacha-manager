@@ -1,0 +1,141 @@
+[data-theme='miyabi'],
+.miyabi {
+    --bg: #08090c;
+    --panel: #0f1014;
+    --panel-hover: #15171d;
+    --panel-selected: #0f2350;
+    --card-solid: #121318;
+    --card-solid-hover: #171920;
+    --task-bg: #0b0c10;
+    --hero-bg: #0a1530;
+    --hero-fade: rgba(8, 9, 12, 0.76);
+    --tasks-overlay: rgba(4, 5, 7, 0.76);
+    --bar-bg: #050608;
+
+    --border: #22242c;
+    --border-hover: #1f5fd6;
+    --border-selected: #2d8cff;
+
+    --text: #eef2f8;
+    --muted: #8a8f9c;
+    --muted2: #b9bfcc;
+
+    --accent: #2d8cff;
+    --accent-hover: #5cd6ff;
+    --accent-glow: rgba(45, 140, 255, 0.24);
+    --task-progress: #2d8cff;
+    --check-fg: #08090c;
+    --pill-active-bg: #0f2350;
+
+    --scrollbar-thumb: #1f6bff;
+    --scrollbar-thumb-hover: #5cd6ff;
+    --scrollbar-track: #08090c;
+
+    --titlebar-bg: #050608;
+    --titlebar-symbol: #b9bfcc;
+
+    --done: #5fd39a;
+    --urgent: #ff4d5e;
+    --danger: #ff6b78;
+
+    --orb: #5cd6ff;
+    --slash: #5cd6ff;
+}
+
+.theme-swatch.miyabi {
+    background: #2d8cff;
+}
+
+.miyabi .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(
+            158deg,
+            transparent 38%,
+            color-mix(in srgb, var(--slash) 55%, transparent) 38.25%,
+            transparent 38.6%
+        ),
+        linear-gradient(
+            172deg,
+            transparent 61%,
+            color-mix(in srgb, var(--accent) 45%, transparent) 61.2%,
+            transparent 61.5%
+        ),
+        linear-gradient(
+            118deg,
+            transparent 70%,
+            color-mix(in srgb, var(--slash) 30%, transparent) 70.15%,
+            transparent 70.4%
+        );
+}
+
+.miyabi .game-item.active::before {
+    width: 4px;
+    height: 22px;
+    border-radius: 0;
+    transform: translateY(-50%) skewX(-18deg);
+    background: var(--slash);
+}
+
+.miyabi .task-card {
+    border-radius: 3px;
+}
+
+.miyabi .task-card-title {
+    position: relative;
+    padding-left: 14px;
+}
+
+.miyabi .task-card-title::before {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 3px;
+    height: 13px;
+    background: var(--slash);
+    transform: skewX(-24deg);
+}
+
+.miyabi .task-countdown-bar {
+    transform: skewX(-24deg);
+    border-radius: 0;
+}
+
+.miyabi .task-check {
+    border-radius: 2px;
+}
+
+.miyabi .view-btn.active,
+.miyabi .theme-btn.active {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.miyabi .nav-btn,
+.miyabi .game-badge,
+.miyabi .server-select,
+.miyabi .server-btn,
+.miyabi .event {
+    border-radius: 2px;
+}
+
+.miyabi .server-btn.active {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.miyabi .calendar-grid {
+    border-radius: 3px;
+}
+
+.miyabi .cell.today .day-number {
+    min-width: 28px;
+    border-radius: 0;
+    clip-path: polygon(22% 0, 100% 0, 78% 100%, 0 100%);
+}
+
+.miyabi .schedule-event-tooltip {
+    border-radius: 3px;
+}

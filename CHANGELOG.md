@@ -1,5 +1,19 @@
 # Changelog
 
+# [1.1.3] - 2026-10-18
+### Added
+- Miyabi theme
+- "Background" button in the top bar that closes the window to save memory while the app keeps running
+- Clicking a deadline notification now opens the app
+- An in-app pill now tells when a new version is available, with a short summary of what changed and buttons to update or dismiss it
+- When an update finishes downloading, a "Restart" button installs it right away; otherwise it installs the next time the app is closed
+### Changed
+- Character themes now have their own small character-inspired decorations
+- The window's title bar now matches the selected theme
+- The app now always checks for updates. The "Automatic Updates" setting only decides whether they download and install on their own
+- The app also checks for updates every 6 hours while it's open, not only at launch
+- Minimizing the window now works normally instead of sending the app to the tray
+
 # [1.1.2] - 2026-10-14
 ### Changed
 - Schedule events for the next patch now show that patch's art when it's available, falling back to the default art

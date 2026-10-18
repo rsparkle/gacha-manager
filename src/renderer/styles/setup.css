@@ -4,7 +4,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: flex-start;
-    padding: 80px 56px 64px;
+    padding: calc(80px + var(--titlebar-h)) 56px 64px;
     overflow: hidden;
     background-color: var(--bg);
     background-repeat: no-repeat;
@@ -15,7 +15,7 @@
 #setupApp::before {
     content: '';
     position: fixed;
-    inset: 44px 0 0;
+    inset: calc(44px + var(--titlebar-h)) 0 0;
     z-index: 0;
     background: linear-gradient(
         90deg,

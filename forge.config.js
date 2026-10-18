@@ -3,6 +3,17 @@ const fs = require('fs');
 const yaml = require('js-yaml');
 const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
+const { execFileSync } = require('child_process');
+
+function releaseNotesFromCommit() {
+  const subject = execFileSync('git', ['log', '-1', '--format=%s'], { encoding: 'utf8' }).trim();
+
+  const notes = subject
+    .replace(/^\w+(\([^)]*\))?!?:\s*/, '')
+    .replace(/\s*\(\d+\.\d+\.\d+\)$/, '');
+
+  return notes.charAt(0).toUpperCase() + notes.slice(1);
+}
 
 module.exports = {
   packagerConfig: {
@@ -68,6 +79,7 @@ module.exports = {
             path: fileName,
             sha512: hash,
             releaseDate: new Date().toISOString(),
+            releaseNotes: releaseNotesFromCommit(),
           };
 
           const outDir = path.dirname(exePath);

@@ -62,11 +62,15 @@ const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
 const NETWORK_RETRY_MS = 60 * 1000;
 const GAME_DATA_REFRESH_MS = 6 * 60 * 60 * 1000;
 const CACHE_TOUCH_AFTER_MS = 24 * 60 * 60 * 1000;
+const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000;
 
 let GAME_CONFIG = null;
 let GAME_TASKS = null;
 let refreshingGameData = null;
-let autoUpdatesStarted = false;
+let updatesStarted = false;
+let updateState = { status: 'idle', version: null, notes: '', percent: 0, failed: false };
+let updateDismissed = false;
+let updateNotification = null;
 let mainWindow;
 let monitorInterval = null;
 let checkingProcesses = false;
@@ -428,18 +432,101 @@ function registerProtocols() {
     });
 }
 
-function setupAutoUpdates() {
-    if (autoUpdatesStarted || !app.isPackaged || !store.get('automaticUpdates', false)) return;
+function isAutomaticUpdates() {
+    return store.get('automaticUpdates', false);
+}
 
-    autoUpdatesStarted = true;
+function getUpdateState() {
+    return { ...updateState, auto: isAutomaticUpdates(), dismissed: updateDismissed };
+}
+
+function setUpdateState(changes) {
+    updateState = { ...updateState, ...changes };
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('update-state', getUpdateState());
+    }
+}
+
+function summarizeReleaseNotes(notes) {
+    return typeof notes === 'string' ? notes.trim() : '';
+}
+
+function checkForUpdates() {
+    if (updateState.status === 'downloading' || updateState.status === 'ready') return;
+
+    autoUpdater.checkForUpdates().catch((err) => {
+        console.error('Update check failed:', err);
+    });
+}
+
+function downloadUpdate() {
+    if (updateState.status !== 'available') return;
+
+    setUpdateState({ status: 'downloading', percent: 0, failed: false });
+
+    autoUpdater.downloadUpdate().catch((err) => {
+        console.error('Update download failed:', err);
+        setUpdateState({ status: 'available', failed: true });
+    });
+}
+
+function showUpdateReadyNotification(version) {
+    updateNotification = new Notification({
+        title: 'Update ready',
+        body: `Gacha Manager ${version} will be installed the next time you close the app.`,
+    });
+
+    updateNotification.on('click', showWindow);
+    updateNotification.show();
+}
+
+function setupAutoUpdates() {
+    autoUpdater.autoDownload = isAutomaticUpdates();
+
+    if (updatesStarted) {
+        if (autoUpdater.autoDownload) downloadUpdate();
+        setUpdateState({});
+        return;
+    }
+
+    if (!app.isPackaged) return;
+
+    updatesStarted = true;
+
+    autoUpdater.on('update-available', (info) => {
+        if (info.version !== updateState.version) updateDismissed = false;
+
+        setUpdateState({
+            status: autoUpdater.autoDownload ? 'downloading' : 'available',
+            version: info.version,
+            notes: summarizeReleaseNotes(info.releaseNotes),
+            percent: 0,
+            failed: false,
+        });
+    });
+
+    autoUpdater.on('download-progress', ({ percent }) => {
+        setUpdateState({ status: 'downloading', percent: Math.floor(percent) });
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+        updateDismissed = false;
+        setUpdateState({ status: 'ready', version: info.version, percent: 100 });
+
+        if (!mainWindow) showUpdateReadyNotification(info.version);
+    });
 
     autoUpdater.on('error', (err) => {
         console.error('Auto update failed:', err);
+
+        if (updateState.status === 'downloading') {
+            setUpdateState({ status: 'available', failed: true });
+        }
     });
 
-    autoUpdater.checkForUpdatesAndNotify().catch((err) => {
-        console.error('Update check failed:', err);
-    });
+    checkForUpdates();
+    setInterval(checkForUpdates, UPDATE_CHECK_MS);
 }
 
 // --- Window Management ---
@@ -459,6 +546,11 @@ const createMainWindow = () => {
         show: false,
         icon: ICON_PATH,
         autoHideMenuBar: true,
+
+        ...(process.platform !== 'darwin' && {
+            titleBarStyle: 'hidden',
+            titleBarOverlay: { color: '#09090a', symbolColor: '#b0b0b8', height: 32 },
+        }),
 
         webPreferences: {
             preload: PRELOAD_PATH,
@@ -494,11 +586,6 @@ const createMainWindow = () => {
         mainWindow.show();
     });
 
-    mainWindow.on('minimize', () => {
-        hidingToTray = true;
-        mainWindow.close();
-    });
-
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
@@ -513,6 +600,15 @@ const showWindow = () => {
     mainWindow.show();
     mainWindow.focus();
 };
+
+const hideToTray = () => {
+    if (!mainWindow) return;
+
+    hidingToTray = true;
+    mainWindow.close();
+};
+
+ipcMain.on('hideToTray', hideToTray);
 
 function createTray() {
     tray = new Tray(ICON_PATH);
@@ -538,6 +634,15 @@ function handle(channel, handler) {
         }
     });
 }
+
+ipcMain.on('setTitleBarColors', (_event, { color, symbolColor } = {}) => {
+    if (process.platform === 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
+
+    const isColor = (value) => typeof value === 'string' && /^#[0-9a-f]{3,8}$/i.test(value);
+    if (!isColor(color) || !isColor(symbolColor)) return;
+
+    mainWindow.setTitleBarOverlay({ color, symbolColor });
+});
 
 ipcMain.handle('getGameConfig', () => GAME_CONFIG);
 
@@ -641,6 +746,21 @@ handle('syncCalendarMonthlySubs', () => ({
     changed: syncCalendarMonthlySubs(),
 }));
 
+ipcMain.handle('getUpdateState', () => getUpdateState());
+
+ipcMain.handle('downloadUpdate', () => downloadUpdate());
+
+ipcMain.handle('installUpdate', () => {
+    if (updateState.status !== 'ready') return;
+
+    setImmediate(() => autoUpdater.quitAndInstall(true, true));
+});
+
+ipcMain.handle('dismissUpdate', () => {
+    updateDismissed = true;
+    setUpdateState({});
+});
+
 // --- App Entry Point ---
 
 async function startApp() {
@@ -658,7 +778,12 @@ async function startApp() {
     GAME_TASKS = gameData.tasks;
 
     try {
-        initializeAccounts({ tasks: GAME_TASKS, config: GAME_CONFIG, settingsStore: store });
+        initializeAccounts({
+            tasks: GAME_TASKS,
+            config: GAME_CONFIG,
+            settingsStore: store,
+            onNotificationClick: showWindow,
+        });
     } catch (err) {
         if (!err.userDeclined) {
             dialog.showErrorBox('Startup failed', err.message);
@@ -686,7 +811,7 @@ async function startApp() {
 
     deleteCacheFiles();
 
-    if (store.store.checkGachaProcesses) {
+    if (store.get('checkGachaProcesses', false)) {
         startMonitoring();
     }
 

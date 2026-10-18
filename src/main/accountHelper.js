@@ -14,6 +14,8 @@ let computeSingleAccountResetData;
 let getLastDailyReset;
 let store;
 let notificationTimeout;
+let onNotificationClick = () => {};
+let deadlineNotification = null;
 const notifiedKeys = new Set();
 const TIMER_BUFFER_MS = 1000;
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
@@ -28,8 +30,9 @@ function getMonthlySubCheck() {
     return store.get('monthlySubCheck', 'calendar');
 }
 
-export function initializeAccounts({ tasks, config, settingsStore }) {
+export function initializeAccounts({ tasks, config, settingsStore, onNotificationClick: onClick }) {
     store = settingsStore;
+    onNotificationClick = onClick ?? onNotificationClick;
     accountPath = path.join(app.getPath('userData'), 'accounts.json');
     accounts = loadStoredAccounts();
 
@@ -403,10 +406,13 @@ function showDeadlineNotification(entries) {
             ? `There is 1 task approaching its deadline in ${games}`
             : `There are ${entries.length} tasks approaching their deadlines in ${games}`;
 
-    new Notification({
+    deadlineNotification = new Notification({
         title: 'Some tasks are approaching their deadline!',
         body,
-    }).show();
+    });
+
+    deadlineNotification.on('click', onNotificationClick);
+    deadlineNotification.show();
 }
 
 export function updateNextNotification() {

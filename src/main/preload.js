@@ -38,4 +38,24 @@ contextBridge.exposeInMainWorld('api', {
     onDailiesCompleted: subscribe('dailies-completed'),
 
     onGameDataUpdated: subscribe('game-data-updated'),
+
+    hideToTray: () => ipcRenderer.send('hideToTray'),
+
+    getUpdateState: () => ipcRenderer.invoke('getUpdateState'),
+
+    downloadUpdate: () => ipcRenderer.invoke('downloadUpdate'),
+
+    installUpdate: () => ipcRenderer.invoke('installUpdate'),
+
+    dismissUpdate: () => ipcRenderer.invoke('dismissUpdate'),
+
+    onUpdateState: (callback) => {
+        const listener = (_event, state) => callback(state);
+
+        ipcRenderer.on('update-state', listener);
+
+        return () => ipcRenderer.removeListener('update-state', listener);
+    },
+
+    setTitleBarColors: (colors) => ipcRenderer.send('setTitleBarColors', colors),
 });

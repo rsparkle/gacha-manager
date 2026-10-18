@@ -1,0 +1,92 @@
+[data-theme='sparkle'],
+.sparkle {
+    --bg: #200b12;
+    --panel: #2b1018;
+    --panel-hover: #461623;
+    --panel-selected: #651c2d;
+    --card-solid: #38131f;
+    --card-solid-hover: #431827;
+    --task-bg: #1b0e10;
+    --hero-bg: #360d19;
+    --hero-fade: rgba(20, 11, 13, 0.74);
+    --tasks-overlay: rgba(14, 6, 8, 0.74);
+    --bar-bg: #0e0708;
+
+    --border: #652337;
+    --border-hover: #a53650;
+    --border-selected: #ff4764;
+
+    --text: #fff1f4;
+    --muted: #c194a0;
+    --muted2: #e6bcc7;
+
+    --accent: #ff526e;
+    --accent-hover: #ff7188;
+    --accent-glow: rgba(255, 82, 110, 0.14);
+    --task-progress: #ff3658;
+    --check-fg: #1a0a0d;
+    --pill-active-bg: #651c2d;
+
+    --scrollbar-thumb: #ff526e;
+    --scrollbar-thumb-hover: #ff7188;
+    --scrollbar-track: #200b12;
+
+    --titlebar-bg: #0e0708;
+    --titlebar-symbol: #e6bcc7;
+
+    --done: #63b878;
+    --urgent: #f2a541;
+    --danger: #ff8f8f;
+}
+
+.theme-swatch.sparkle {
+    background: #ff526e;
+}
+
+.sparkle .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: url('../../assets/themes/sparkle/seigaiha.svg') repeat left bottom / 48px 24px;
+    opacity: 0.22;
+    -webkit-mask-image: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.5) 30%, transparent 60%);
+    mask-image: linear-gradient(100deg, #000 0%, rgba(0, 0, 0, 0.5) 30%, transparent 60%);
+}
+
+.sparkle .task-card-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.sparkle .task-card-title::before {
+    content: '';
+    width: 17px;
+    height: 20px;
+    flex-shrink: 0;
+    background: url('../../assets/themes/sparkle/mask-1.webp') no-repeat center / contain;
+}
+
+.sparkle .task-card:nth-of-type(4n + 2) .task-card-title::before {
+    background-image: url('../../assets/themes/sparkle/mask-2.webp');
+}
+
+.sparkle .task-card:nth-of-type(4n + 3) .task-card-title::before {
+    background-image: url('../../assets/themes/sparkle/mask-3.webp');
+}
+
+.sparkle .task-card:nth-of-type(4n + 4) .task-card-title::before {
+    background-image: url('../../assets/themes/sparkle/mask-4.webp');
+}
+
+.sparkle .cell.today .day-number::before {
+    content: '';
+    position: absolute;
+    right: calc(100% + 4px);
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translateY(-50%) rotate(-12deg);
+    background: url('../../assets/themes/sparkle/mask-icon.webp') no-repeat center / contain;
+}

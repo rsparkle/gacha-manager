@@ -14,7 +14,7 @@ import {
 } from './serverTime.js';
 
 const LITERAL_TIME = /^(\d{1,2}:\d{2})@(server|global)$/;
-const PATCH_DATE = /^(patchStart|secondPhaseStart|patchEnd)([+-]\d+)?$/;
+const PATCH_DATE = /^(patchStart|secondPhase|patchEnd)([+-]\d+)?$/;
 const PLAIN_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 const TIMES = ['dailyReset', 'maintenanceStart', 'maintenanceEnd', 'secondPhase', 'eventStart', 'eventEnd'];
@@ -80,7 +80,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         const patchStart = toDateKey(patch.version_start);
         const base = {
             patchStart,
-            secondPhaseStart: shiftDate(patchStart, secondPhaseDay(patch)),
+            secondPhase: shiftDate(patchStart, secondPhaseDay(patch)),
             patchEnd: shiftDate(patchStart, patch.version_duration),
         }[match[1]];
 

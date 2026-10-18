@@ -1,7 +1,7 @@
 #tasksApp {
     display: flex;
     height: 100vh;
-    padding-top: 44px;
+    padding-top: calc(44px + var(--titlebar-h));
 }
 
 .sidebar {
@@ -97,8 +97,8 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--urgent);
-    box-shadow: 0 0 6px var(--urgent);
+    background: var(--orb, var(--urgent));
+    box-shadow: 0 0 6px var(--orb, var(--urgent));
     flex-shrink: 0;
     position: relative;
 }
@@ -108,7 +108,7 @@
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    background: var(--urgent);
+    background: var(--orb, var(--urgent));
     opacity: 0.25;
     animation: orb-pulse 1.8s ease-out infinite;
 }

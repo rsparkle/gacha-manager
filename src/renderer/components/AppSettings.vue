@@ -12,7 +12,7 @@
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Automatic Updates</span>
-                                <small>Allow the app to look for updates</small>
+                                <small>Download and install new versions automatically</small>
                             </div>
                             <label class="toggle">
                                 <input type="checkbox" v-model="draft.automaticUpdates" />

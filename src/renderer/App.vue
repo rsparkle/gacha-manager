@@ -3,6 +3,11 @@
         <NotificationCenter />
         <AppSettings />
         <ConfirmDialogue />
+        <UpdatePill />
+        <div class="title-bar">
+            <img :src="appIcon" alt="" class="title-bar-icon" />
+            <span>Gacha Manager</span>
+        </div>
         <div class="app-bar">
             <div class="view-toggle" v-if="currentView !== 'setup'">
                 <button
@@ -45,6 +50,14 @@
                         <span>{{ theme.name }}</span>
                     </button>
                 </div>
+                <button
+                    class="settings-btn"
+                    @click="hideToTray"
+                    title="Closes the window to save memory. The app keeps running in the tray."
+                >
+                    <span>Background</span>
+                    <span>▾</span>
+                </button>
                 <button class="settings-btn" @click="showSettings = !showSettings">
                     <span>⚙</span>
                     <span>Settings</span>
@@ -62,6 +75,9 @@
 import { watch, ref, onMounted, onUnmounted } from 'vue';
 
 import './styles/app.css';
+import './styles/sparkle.css';
+import './styles/furina.css';
+import './styles/miyabi.css';
 import SetupView from './views/SetupView.vue';
 import TasksView from './views/TasksView.vue';
 import ScheduleView from './views/ScheduleView.vue';
@@ -73,6 +89,8 @@ import { useNotification } from './composables/useNotification.js';
 import { useSettings } from './composables/useSettings.js';
 import { useAccounts } from './composables/useAccounts.js';
 import { THEMES } from './themes.js';
+import appIcon from '../assets/icon.png';
+import UpdatePill from './components/UpdatePill.vue';
 
 const { createNotification, setTheme } = useNotification();
 const { settings, showSettings, saveSettings } = useSettings();
@@ -128,6 +146,8 @@ const onGameDataUpdated = async () => {
     }
 };
 
+const hideToTray = () => window.api.hideToTray();
+
 watch(
     () => settings.value.theme,
     (theme, previousTheme) => {
@@ -140,6 +160,12 @@ watch(
         if (theme) {
             document.documentElement.classList.add(theme);
         }
+
+        const style = getComputedStyle(document.documentElement);
+        window.api.setTitleBarColors({
+            color: style.getPropertyValue('--titlebar-bg').trim(),
+            symbolColor: style.getPropertyValue('--titlebar-symbol').trim(),
+        });
     },
     { immediate: true },
 );

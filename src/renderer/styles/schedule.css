@@ -1,5 +1,5 @@
 #scheduleApp {
-    padding: 68px 24px 24px;
+    padding: calc(68px + var(--titlebar-h)) 24px 24px;
     height: 100vh;
     display: flex;
     flex-direction: column;

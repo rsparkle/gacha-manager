@@ -45,7 +45,7 @@ const icons = {
 <style scoped>
 .notif-center {
     position: fixed;
-    top: 14px;
+    top: calc(14px + var(--titlebar-h));
     left: 50%;
     transform: translateX(-50%);
     display: flex;

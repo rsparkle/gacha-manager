@@ -58,87 +58,36 @@ input {
     --done: #51bd7a;
     --urgent: #e16b6b;
     --danger: #e16b6b;
+
+    --titlebar-h: 32px;
+    --titlebar-bg: #09090a;
+    --titlebar-symbol: #b0b0b8;
 }
 
-[data-theme='sparkle'],
-.sparkle {
-    --bg: #200b12;
-    --panel: #2b1018;
-    --panel-hover: #461623;
-    --panel-selected: #651c2d;
-    --card-solid: #38131f;
-    --card-solid-hover: #431827;
-    --task-bg: #1b0e10;
-    --hero-bg: #360d19;
-    --hero-fade: rgba(20, 11, 13, 0.74);
-    --tasks-overlay: rgba(14, 6, 8, 0.74);
-    --bar-bg: #0e0708;
-
-    --border: #652337;
-    --border-hover: #a53650;
-    --border-selected: #ff4764;
-
-    --text: #fff1f4;
-    --muted: #c194a0;
-    --muted2: #e6bcc7;
-
-    --accent: #ff526e;
-    --accent-hover: #ff7188;
-    --accent-glow: rgba(255, 82, 110, 0.14);
-    --task-progress: #ff3658;
-    --check-fg: #1a0a0d;
-    --pill-active-bg: #651c2d;
-
-    --scrollbar-thumb: #ff526e;
-    --scrollbar-thumb-hover: #ff7188;
-    --scrollbar-track: #200b12;
-
-    --done: #63b878;
-    --urgent: #f2a541;
-    --danger: #ff8f8f;
+.title-bar {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 101;
+    height: var(--titlebar-h);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 10px;
+    background: var(--titlebar-bg);
+    color: var(--titlebar-symbol);
+    font-size: 12px;
+    user-select: none;
+    -webkit-app-region: drag;
 }
 
-[data-theme='furina'],
-.furina {
-    --bg: #0a1020;
-    --panel: #0f182c;
-    --panel-hover: #16233f;
-    --panel-selected: #1d3360;
-    --card-solid: #122038;
-    --card-solid-hover: #172946;
-    --task-bg: #0b1426;
-    --hero-bg: #102041;
-    --hero-fade: rgba(8, 13, 26, 0.74);
-    --tasks-overlay: rgba(5, 9, 18, 0.74);
-    --bar-bg: #060a14;
-
-    --border: #1f3561;
-    --border-hover: #3360a8;
-    --border-selected: #6cbcff;
-
-    --text: #eef6ff;
-    --muted: #8ea6c9;
-    --muted2: #bcd2ee;
-
-    --accent: #4ba2eb;
-    --accent-hover: #74baf5;
-    --accent-glow: rgba(75, 162, 235, 0.16);
-    --task-progress: #3d9cf0;
-    --check-fg: #08101f;
-    --pill-active-bg: #1d3360;
-
-    --scrollbar-thumb: #4ba2eb;
-    --scrollbar-thumb-hover: #74baf5;
-    --scrollbar-track: #0a1020;
-
-    --done: #5cc8a8;
-    --urgent: #e8c26a;
-    --danger: #ff8f9c;
+.title-bar-icon {
+    width: 16px;
+    height: 16px;
 }
 
 .app-bar {
     position: fixed;
-    inset: 0 0 auto;
+    inset: var(--titlebar-h) 0 auto;
     z-index: 100;
     height: 44px;
     display: flex;
@@ -247,14 +196,6 @@ input {
     background: #e4e4e7;
 }
 
-.theme-swatch.sparkle {
-    background: #ff526e;
-}
-
-.theme-swatch.furina {
-    background: #4ba2eb;
-}
-
 .settings-btn {
     display: flex;
     align-items: center;
@@ -272,7 +213,7 @@ input {
 
 #setupApp,
 #scheduleApp {
-    padding-top: 64px;
+    padding-top: calc(64px + var(--titlebar-h));
 }
 
 .hidden {

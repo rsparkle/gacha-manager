@@ -2,8 +2,8 @@
     <div id="setupApp" :style="bgStyle">
         <div class="setup-inner">
             <div class="setup-header">
-                <h1 class="setup-title">Select Your Games</h1>
-                <p class="setup-subtitle">Choose which games you want to track (you can add more later).</p>
+                <h1 class="setup-title">Choose Your Games</h1>
+                <p class="setup-subtitle">Select which games you want to track (you can add more later).</p>
             </div>
 
             <div class="game-grid" v-if="!isLoading">

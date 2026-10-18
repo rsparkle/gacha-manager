@@ -1,0 +1,250 @@
+[data-theme='furina'],
+.furina {
+    --bg: #0a1020;
+    --panel: #0f182c;
+    --panel-hover: #16233f;
+    --panel-selected: #1d3360;
+    --card-solid: #122038;
+    --card-solid-hover: #172946;
+    --task-bg: #0b1426;
+    --hero-bg: #102041;
+    --hero-fade: rgba(8, 13, 26, 0.74);
+    --tasks-overlay: rgba(5, 9, 18, 0.74);
+    --bar-bg: #060a14;
+
+    --border: #1f3561;
+    --border-hover: #3360a8;
+    --border-selected: #6cbcff;
+
+    --text: #eef6ff;
+    --muted: #8ea6c9;
+    --muted2: #bcd2ee;
+
+    --accent: #4ba2eb;
+    --accent-hover: #74baf5;
+    --accent-glow: rgba(75, 162, 235, 0.16);
+    --task-progress: #3d9cf0;
+    --check-fg: #08101f;
+    --pill-active-bg: #1d3360;
+
+    --scrollbar-thumb: #4ba2eb;
+    --scrollbar-thumb-hover: #74baf5;
+    --scrollbar-track: #0a1020;
+
+    --titlebar-bg: #060a14;
+    --titlebar-symbol: #bcd2ee;
+
+    --done: #5cc8a8;
+    --urgent: #e8c26a;
+    --danger: #ff8f9c;
+
+    --orb: #f0c75e;
+    --water-light: #9fdcff;
+}
+
+.theme-swatch.furina {
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, #ffffff 0, transparent 1.6px), #4ba2eb;
+}
+
+.furina .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        radial-gradient(
+            circle at 346px 92px,
+            transparent 8.8px,
+            color-mix(in srgb, var(--water-light) 26%, transparent) 10px,
+            transparent 11.2px
+        ),
+        radial-gradient(circle at 342.5px 88.5px, rgba(255, 255, 255, 0.4) 0, transparent 3px),
+        radial-gradient(
+            circle at 64px 52px,
+            transparent 10.9px,
+            color-mix(in srgb, var(--water-light) 26%, transparent) 12.1px,
+            transparent 13.3px
+        ),
+        radial-gradient(circle at 59.8px 47.8px, rgba(255, 255, 255, 0.4) 0, transparent 3.6px),
+        radial-gradient(
+            circle at 111px 202px,
+            transparent 9.7px,
+            color-mix(in srgb, var(--water-light) 26%, transparent) 10.9px,
+            transparent 12.1px
+        ),
+        radial-gradient(circle at 107.2px 198.2px, rgba(255, 255, 255, 0.4) 0, transparent 3.3px),
+        radial-gradient(
+            circle at 274px 124px,
+            transparent 2.9px,
+            color-mix(in srgb, var(--water-light) 34%, transparent) 4.1px,
+            transparent 5.3px
+        ),
+        radial-gradient(circle at 272.6px 122.6px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
+        radial-gradient(
+            circle at 237px 229px,
+            transparent 3px,
+            color-mix(in srgb, var(--water-light) 34%, transparent) 4.2px,
+            transparent 5.4px
+        ),
+        radial-gradient(circle at 235.5px 227.5px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
+        radial-gradient(
+            circle at 61px 232px,
+            transparent 3px,
+            color-mix(in srgb, var(--water-light) 34%, transparent) 4.2px,
+            transparent 5.4px
+        ),
+        radial-gradient(circle at 59.5px 230.5px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
+        radial-gradient(
+            circle at 304px 78px,
+            transparent 5.6px,
+            color-mix(in srgb, var(--water-light) 34%, transparent) 6.8px,
+            transparent 8px
+        ),
+        radial-gradient(circle at 301.6px 75.6px, rgba(255, 255, 255, 0.4) 0, transparent 2px),
+        radial-gradient(
+            circle at 46px 162px,
+            transparent 1.7px,
+            color-mix(in srgb, var(--water-light) 40%, transparent) 2.9px,
+            transparent 4.1px
+        ),
+        radial-gradient(
+            circle at 40px 71px,
+            transparent 0.9px,
+            color-mix(in srgb, var(--water-light) 40%, transparent) 2.1px,
+            transparent 3.3px
+        ),
+        radial-gradient(
+            circle at 83px 89px,
+            transparent 1.4px,
+            color-mix(in srgb, var(--water-light) 40%, transparent) 2.6px,
+            transparent 3.8px
+        ),
+        radial-gradient(
+            circle at 291px 45px,
+            transparent 1.7px,
+            color-mix(in srgb, var(--water-light) 40%, transparent) 2.9px,
+            transparent 4.1px
+        );
+    background-size:
+        571px 350px,
+        571px 350px,
+        571px 350px,
+        571px 350px,
+        571px 350px,
+        571px 350px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        433px 290px,
+        317px 230px,
+        317px 230px,
+        317px 230px,
+        317px 230px;
+    background-position: 0 0;
+}
+
+.furina .game-item {
+    border-radius: 12px;
+}
+
+.furina .game-item.active::before {
+    left: -9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid var(--water-light);
+    background:
+        radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.7) 0, transparent 1.6px),
+        color-mix(in srgb, var(--water-light) 15%, transparent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+.furina .account-tab {
+    border-radius: 10px 10px 0 0;
+}
+
+.furina .task-card {
+    border-radius: 14px;
+}
+
+.furina .task {
+    border-radius: 10px;
+}
+
+.furina .task-check {
+    border-radius: 50%;
+    border-color: color-mix(in srgb, var(--water-light) 55%, transparent);
+    background:
+        radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.45) 0, transparent 2.5px),
+        color-mix(in srgb, var(--water-light) 6%, transparent);
+}
+
+.furina .task.done .task-check {
+    border-color: var(--done);
+    background:
+        radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.6) 0, transparent 3px),
+        radial-gradient(circle, var(--done) 55%, color-mix(in srgb, var(--done) 65%, #ffffff) 100%);
+}
+
+.furina .task-countdown-bar {
+    height: 4px;
+    border-radius: 999px;
+}
+
+.furina .nav-btn,
+.furina .game-badge {
+    border-radius: 10px;
+}
+
+.furina .server-select,
+.furina .server-btn {
+    border-radius: 999px;
+}
+
+.furina .event {
+    border-radius: 8px;
+}
+
+.furina .calendar-grid {
+    border-radius: 14px;
+}
+
+.furina .schedule-event-tooltip {
+    border-radius: 12px;
+}
+
+.furina .cell.today {
+    box-shadow:
+        inset 0 0 0 1px var(--accent),
+        inset 0 0 16px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.furina .cell.today .day-number {
+    background: linear-gradient(135deg, var(--water-light), var(--accent));
+}
+
+.furina .cell.today .day-number::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1.5px solid var(--water-light);
+    border-radius: 50%;
+    animation: furina-ripple 2.4s ease-out infinite;
+}
+
+@keyframes furina-ripple {
+    0% {
+        transform: scale(1);
+        opacity: 0.7;
+    }
+    70%,
+    100% {
+        transform: scale(2.1);
+        opacity: 0;
+    }
+}
