@@ -112,8 +112,7 @@ module.exports = {
   ],
   makers: [
     {
-      name: '@electron-addons/electron-forge-maker-nsis',
-      config: { outFileName: 'gacha-manager-Setup-${version}.exe' },
+      name: '@electron-addons/electron-forge-maker-nsis'
     },
   ],
   plugins: [

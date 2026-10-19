@@ -39,16 +39,31 @@
             <div class="app-bar-right">
                 <div class="theme-group">
                     <span class="app-bar-label">Theme</span>
-                    <button
-                        v-for="theme in THEMES"
-                        :key="theme.id"
-                        class="theme-btn"
-                        :class="{ active: settings.theme === theme.id }"
-                        @click="selectTheme(theme.id)"
-                    >
-                        <span class="theme-swatch" :class="theme.id || 'default'"></span>
-                        <span>{{ theme.name }}</span>
-                    </button>
+                    <div class="theme-picker" ref="themePicker">
+                        <button
+                            class="theme-btn theme-picker-toggle"
+                            :aria-expanded="themeMenuOpen"
+                            @click="themeMenuOpen = !themeMenuOpen"
+                        >
+                            <span class="theme-swatch" :class="currentTheme.id || 'default'"></span>
+                            <span>{{ currentTheme.name }}</span>
+                            <span class="theme-picker-caret">▾</span>
+                        </button>
+                        <Transition name="theme-menu">
+                            <div v-if="themeMenuOpen" class="theme-menu">
+                                <button
+                                    v-for="theme in THEMES"
+                                    :key="theme.id"
+                                    class="theme-btn"
+                                    :class="{ active: settings.theme === theme.id }"
+                                    @click="selectTheme(theme.id)"
+                                >
+                                    <span class="theme-swatch" :class="theme.id || 'default'"></span>
+                                    <span>{{ theme.name }}</span>
+                                </button>
+                            </div>
+                        </Transition>
+                    </div>
                 </div>
                 <button
                     class="settings-btn"
@@ -72,12 +87,10 @@
 </template>
 
 <script setup>
-import { watch, ref, onMounted, onUnmounted } from 'vue';
+import { watch, ref, computed, onMounted, onUnmounted } from 'vue';
 
 import './styles/app.css';
-import './styles/sparkle.css';
-import './styles/furina.css';
-import './styles/miyabi.css';
+import.meta.glob('./styles/themes/*.css', { eager: true });
 import SetupView from './views/SetupView.vue';
 import TasksView from './views/TasksView.vue';
 import ScheduleView from './views/ScheduleView.vue';
@@ -98,13 +111,26 @@ const { gamesWithAccounts, loadGameData, loadAccounts, recompute } = useAccounts
 
 const hideSetup = ref(false);
 const currentView = ref(null);
+const themeMenuOpen = ref(false);
+const themePicker = ref(null);
 let taskTimer = null;
 let stopDailiesListener = null;
 let stopGameDataListener = null;
 
 const selectTheme = (theme) => {
+    themeMenuOpen.value = false;
     settings.value.theme = theme;
     saveSettings(true);
+};
+
+const currentTheme = computed(() => THEMES.find((theme) => theme.id === settings.value.theme) ?? THEMES[0]);
+
+const closeThemeMenuOnOutsideClick = (event) => {
+    if (themePicker.value && !themePicker.value.contains(event.target)) themeMenuOpen.value = false;
+};
+
+const closeThemeMenuOnEscape = (event) => {
+    if (event.key === 'Escape') themeMenuOpen.value = false;
 };
 
 const onSetupDone = () => {
@@ -171,6 +197,8 @@ watch(
 );
 
 onMounted(async () => {
+    document.addEventListener('mousedown', closeThemeMenuOnOutsideClick);
+    document.addEventListener('keydown', closeThemeMenuOnEscape);
     stopGameDataListener = window.api.onGameDataUpdated(onGameDataUpdated);
 
     await loadGameData();
@@ -184,6 +212,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+    document.removeEventListener('mousedown', closeThemeMenuOnOutsideClick);
+    document.removeEventListener('keydown', closeThemeMenuOnEscape);
     clearTimeout(taskTimer);
     if (settings.value.theme) document.documentElement.classList.remove(settings.value.theme);
     if (stopDailiesListener) stopDailiesListener();

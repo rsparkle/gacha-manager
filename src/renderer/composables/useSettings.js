@@ -30,9 +30,11 @@ async function loadSettings() {
 loadSettings();
 
 export function useSettings() {
-    async function saveSettings(silent = false) {
+    async function saveSettings(silent = false, nextSettings = settings.value) {
         try {
-            const response = await window.api.saveSettings(JSON.parse(JSON.stringify(settings.value)));
+            const response = await window.api.saveSettings(JSON.parse(JSON.stringify(nextSettings)));
+
+            if (response.success) Object.assign(settings.value, nextSettings);
 
             if (!silent) {
                 if (response.success) {

@@ -359,6 +359,9 @@ const toggleSelectedGames = (game) => {
     const index = selectedGames.value.indexOf(game);
     if (index > -1) selectedGames.value.splice(index, 1);
     else selectedGames.value.push(game);
+
+    settings.value.scheduleGames = [...selectedGames.value];
+    saveSettings(true);
 };
 
 const filteredScheduleData = computed(() => {
@@ -526,7 +529,9 @@ onMounted(() => {
         now.value = new Date();
     }, 30_000);
 
-    selectedGames.value.push(...gamesWithAccounts.value);
+    const saved = settings.value.scheduleGames;
+
+    selectedGames.value = Array.isArray(saved) ? [...saved] : [...gamesWithAccounts.value];
 });
 
 onBeforeUnmount(() => {

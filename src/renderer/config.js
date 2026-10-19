@@ -5,5 +5,7 @@ export const config = {
         windowsNotifications: {},
         theme: '',
         server: null,
+        hardwareAcceleration: false,
+        scheduleGames: null,
     },
 };

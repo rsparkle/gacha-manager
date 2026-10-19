@@ -4,7 +4,9 @@
             <div class="confirm-dialog">
                 <p class="confirm-message">{{ confirmState.message }}</p>
                 <div class="confirm-actions">
-                    <button class="confirm-btn confirm-btn--cancel" @click="confirmState.onCancel()">Cancel</button>
+                    <button class="confirm-btn confirm-btn--cancel" @click="confirmState.onCancel()">
+                        {{ confirmState.cancelText }}
+                    </button>
                     <button class="confirm-btn confirm-btn--danger" @click="confirmState.onConfirm()">
                         {{ confirmState.confirmText }}
                     </button>
@@ -24,9 +26,7 @@ const { confirmState } = useConfirm();
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.65);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,9 +42,7 @@ const { confirmState } = useConfirm();
     gap: 20px;
     min-width: 300px;
     max-width: 400px;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .confirm-message {
@@ -96,16 +94,11 @@ const { confirmState } = useConfirm();
 
 .confirm-enter-active,
 .confirm-leave-active {
-    transition: all 0.2s ease;
+    transition: opacity 0.12s;
 }
 
 .confirm-enter-from,
 .confirm-leave-to {
     opacity: 0;
-}
-
-.confirm-enter-from .confirm-dialog,
-.confirm-leave-to .confirm-dialog {
-    transform: scale(0.96) translateY(6px);
 }
 </style>

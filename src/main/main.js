@@ -80,6 +80,9 @@ let rejectedGameData = null;
 
 const missingAssets = new Map();
 const pendingDownloads = new Map();
+const HARDWARE_ACCELERATION = store.get('hardwareAcceleration', false);
+
+if (!HARDWARE_ACCELERATION) app.disableHardwareAcceleration();
 
 app.setAppUserModelId('com.electron.gacha-manager');
 
@@ -346,7 +349,9 @@ async function deleteCacheFiles(months = 4) {
                     continue;
                 }
 
-                if (!entry.name.toLowerCase().endsWith('.webp')) {
+                const name = entry.name.toLowerCase();
+
+                if (!name.endsWith('.webp') && !name.endsWith('.tmp')) {
                     continue;
                 }
 
@@ -597,6 +602,7 @@ const showWindow = () => {
         return;
     }
 
+    if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.show();
     mainWindow.focus();
 };
@@ -607,8 +613,6 @@ const hideToTray = () => {
     hidingToTray = true;
     mainWindow.close();
 };
-
-ipcMain.on('hideToTray', hideToTray);
 
 function createTray() {
     tray = new Tray(ICON_PATH);
@@ -624,6 +628,13 @@ function createTray() {
 }
 
 // --- IPC Handlers ---
+
+ipcMain.on('hideToTray', hideToTray);
+
+ipcMain.handle('relaunchApp', () => {
+    app.relaunch();
+    app.quit();
+});
 
 function handle(channel, handler) {
     ipcMain.handle(channel, async (_event, payload) => {
@@ -735,7 +746,10 @@ handle('saveSettings', (settings) => {
     updateNextNotification();
     setupAutoUpdates();
 
-    return { accountsChanged: monthlySubModeChanged };
+    return {
+        accountsChanged: monthlySubModeChanged,
+        restartRequired: store.get('hardwareAcceleration', false) !== HARDWARE_ACCELERATION,
+    };
 });
 
 handle('deleteCacheAssets', async () => {
@@ -816,8 +830,6 @@ async function startApp() {
     }
 
     if (gameData.fromCache) refreshGameData();
-
-    setInterval(refreshGameData, GAME_DATA_REFRESH_MS);
 }
 
 if (!app.requestSingleInstanceLock()) {

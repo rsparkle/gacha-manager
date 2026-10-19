@@ -3,6 +3,7 @@
 A desktop task manager built for people who play multiple gacha games at once. Tracks dailies, resets and deadlines across games and accounts so nothing expires while you're busy playing a different one.
 
 **Built with:** Electron + Vue 3 + Vite
+
 **Platform:** Windows only
 
 ---

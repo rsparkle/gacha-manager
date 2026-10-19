@@ -97,6 +97,8 @@ export function createScheduleProcessor(GAME_CONFIG) {
     }
 
     function buildCharacterTrailers(game, gameData, clock, timeline) {
+        if (!gameData.character_trailer) return {};
+
         const { dates, globalAt } = timeline;
 
         const trailerEntries = [
@@ -283,94 +285,100 @@ export function createScheduleProcessor(GAME_CONFIG) {
         return dripMarketingDates;
     }
 
-    function computeScheduleData(server) {
-        const entries = Object.entries(GAME_CONFIG).map(([game, gameData]) => {
-            const clock = CLOCKS[game];
+    function buildGameSchedule(game, gameData, server) {
+        const clock = CLOCKS[game];
 
-            if (clock.secondPhase.scope === 'server' && !clock.servers[server]) {
-                return [game, {}];
-            }
+        if (clock.secondPhase.scope === 'server' && !clock.servers[server]) {
+            return {};
+        }
 
-            const timeline = buildTimeline(gameData, clock, server);
-            const { dates } = timeline;
+        const timeline = buildTimeline(gameData, clock, server);
+        const { dates } = timeline;
 
-            const [anchorNow, anchorNext] =
-                gameData.livestream.schedule === 'hoyo'
-                    ? [dates.currentSecond, dates.nextSecond]
-                    : [dates.currentStart, dates.nextStart];
+        const [anchorNow, anchorNext] =
+            gameData.livestream.schedule === 'hoyo'
+                ? [dates.currentSecond, dates.nextSecond]
+                : [dates.currentStart, dates.nextStart];
 
-            const livestreamDate =
-                gameData.livestream.is_predictable || gameData.livestream.date
-                    ? getLivestreamDate(gameData, clock, anchorNow, gameData.livestream.date)
-                    : null;
-
-            const nextLivestreamDate = gameData.livestream.is_predictable
-                ? getLivestreamDate(gameData, clock, anchorNext)
+        const livestreamDate =
+            gameData.livestream.is_predictable || gameData.livestream.date
+                ? getLivestreamDate(gameData, clock, anchorNow, gameData.livestream.date)
                 : null;
 
-            const characterTrailers = buildCharacterTrailers(game, gameData, clock, timeline);
-            const patchTrailers = buildPatchTrailers(game, gameData, clock, timeline);
-            const releaseEvents = buildPhaseReleaseEvents(game, gameData, timeline);
-            const dripMarketingDates = buildDripMarketing(
-                game,
-                gameData,
-                clock,
-                timeline,
-                livestreamDate,
-                nextLivestreamDate,
-            );
+        const nextLivestreamDate = gameData.livestream.is_predictable
+            ? getLivestreamDate(gameData, clock, anchorNext)
+            : null;
 
-            const bothConfirmed =
-                gameData.current.is_version_duration_confirmed && gameData.next.is_version_duration_confirmed;
+        const characterTrailers = buildCharacterTrailers(game, gameData, clock, timeline);
+        const patchTrailers = buildPatchTrailers(game, gameData, clock, timeline);
+        const releaseEvents = buildPhaseReleaseEvents(game, gameData, timeline);
+        const dripMarketingDates = buildDripMarketing(
+            game,
+            gameData,
+            clock,
+            timeline,
+            livestreamDate,
+            nextLivestreamDate,
+        );
 
-            const livestreamEvents = {
-                ...(livestreamDate
-                    ? {
-                          livestream: {
-                              date: livestreamDate,
-                              type: 'livestream',
-                              portrait: false,
-                              label: `${gameData.abbr} ${gameData.next.version} Livestream`,
-                              title: `${gameData.abbr} ${gameData.next.version} Livestream`,
-                              imgFiles: [
-                                  livestreamImg(game, gameData.next.version),
-                                  gameImg(game, gameData.current.version),
-                                  defaultImg(game),
-                              ],
-                              confirmed: livestreamDate.getTime() - Date.now() <= 3 * DAY,
-                          },
-                      }
-                    : {}),
-                ...(bothConfirmed && nextLivestreamDate
-                    ? {
-                          nextLivestream: {
-                              date: nextLivestreamDate,
-                              type: 'livestream',
-                              portrait: false,
-                              label: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
-                              title: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
-                              imgFiles: [
-                                  livestreamImg(game, gameData.next.future_livestream_version),
-                                  gameImg(game, gameData.next.version),
-                                  gameImg(game, gameData.current.version),
-                                  defaultImg(game),
-                              ],
-                              confirmed: false,
-                          },
-                      }
-                    : {}),
-            };
+        const bothConfirmed =
+            gameData.current.is_version_duration_confirmed && gameData.next.is_version_duration_confirmed;
 
-            return [
-                game,
-                {
-                    ...characterTrailers,
-                    ...patchTrailers,
-                    ...releaseEvents,
-                    ...dripMarketingDates,
-                    ...livestreamEvents,
-                },
-            ];
+        const livestreamEvents = {
+            ...(livestreamDate
+                ? {
+                      livestream: {
+                          date: livestreamDate,
+                          type: 'livestream',
+                          portrait: false,
+                          label: `${gameData.abbr} ${gameData.next.version} Livestream`,
+                          title: `${gameData.abbr} ${gameData.next.version} Livestream`,
+                          imgFiles: [
+                              livestreamImg(game, gameData.next.version),
+                              gameImg(game, gameData.current.version),
+                              defaultImg(game),
+                          ],
+                          confirmed: livestreamDate.getTime() - Date.now() <= 3 * DAY,
+                      },
+                  }
+                : {}),
+            ...(bothConfirmed && nextLivestreamDate
+                ? {
+                      nextLivestream: {
+                          date: nextLivestreamDate,
+                          type: 'livestream',
+                          portrait: false,
+                          label: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
+                          title: `${gameData.abbr} ${gameData.next.future_livestream_version} Livestream`,
+                          imgFiles: [
+                              livestreamImg(game, gameData.next.future_livestream_version),
+                              gameImg(game, gameData.next.version),
+                              gameImg(game, gameData.current.version),
+                              defaultImg(game),
+                          ],
+                          confirmed: false,
+                      },
+                  }
+                : {}),
+        };
+
+        return {
+            ...characterTrailers,
+            ...patchTrailers,
+            ...releaseEvents,
+            ...dripMarketingDates,
+            ...livestreamEvents,
+        };
+    }
+
+    function computeScheduleData(server) {
+        const entries = Object.entries(GAME_CONFIG).map(([game, gameData]) => {
+            try {
+                return [game, buildGameSchedule(game, gameData, server)];
+            } catch (err) {
+                console.error(`Failed to build ${game} schedule:`, err);
+                return [game, {}];
+            }
         });
 
         return Object.fromEntries(entries);

@@ -35,6 +35,33 @@
                     <div class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
+                                <span class="settings-row-title">Hardware Acceleration</span>
+                                <small
+                                    >For smoother animations (but uses more memory in the background). Requires a
+                                    restart</small
+                                >
+                            </div>
+                            <label class="toggle">
+                                <input type="checkbox" v-model="draft.hardwareAcceleration" />
+                                <span class="toggle-box">
+                                    <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
+                                        <path
+                                            d="M2 8.5L6 12L14 3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-section settings-section--plain">
+                        <div class="settings-row">
+                            <div class="settings-row-label">
                                 <span class="settings-row-title">Monthly Sub Tracking</span>
                                 <small>Choose when to reduce the remaining day count</small>
                             </div>
@@ -157,10 +184,12 @@ import { ref, watch } from 'vue';
 import { useNotification } from '../composables/useNotification.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
+import { useConfirm } from '../composables/useConfirm.js';
 
 const { settings, showSettings, toggleSetting, saveSettings } = useSettings();
 const { createNotification } = useNotification();
 const { accountsPerGame, loadAccounts } = useAccounts();
+const { confirm } = useConfirm();
 const draft = ref(null);
 
 watch(
@@ -176,11 +205,25 @@ const closeSettings = () => {
 };
 
 const saveChanges = async () => {
-    Object.assign(settings.value, draft.value);
-    const response = await saveSettings();
+    const accelerationChanged = draft.value.hardwareAcceleration !== settings.value.hardwareAcceleration;
+    const response = await saveSettings(false, draft.value);
+
+    if (!response?.success) return;
+
     showSettings.value = false;
 
-    if (response?.accountsChanged) await loadAccounts();
+    if (response.accountsChanged) await loadAccounts();
+
+    if (
+        accelerationChanged &&
+        response.restartRequired &&
+        (await confirm('Restart now to apply the hardware acceleration change?', {
+            confirmText: 'Restart',
+            cancelText: 'Later',
+        }))
+    ) {
+        window.api.relaunchApp();
+    }
 };
 
 const deleteCacheAssets = async () => {
@@ -202,8 +245,7 @@ const deleteCacheAssets = async () => {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(5px);
+    background: rgba(0, 0, 0, 0.65);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -215,7 +257,7 @@ const deleteCacheAssets = async () => {
     border-radius: 10px;
     border: 1px solid var(--border-hover);
     background: var(--bg);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -521,15 +563,12 @@ const deleteCacheAssets = async () => {
 
 .confirm-enter-active,
 .confirm-leave-active {
-    transition:
-        opacity 0.18s,
-        transform 0.18s;
+    transition: opacity 0.12s;
 }
 
 .confirm-enter-from,
 .confirm-leave-to {
     opacity: 0;
-    transform: scale(0.98) translateY(4px);
 }
 
 .radio-group {

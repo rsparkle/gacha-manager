@@ -196,6 +196,54 @@ input {
     background: #e4e4e7;
 }
 
+.theme-picker {
+    position: relative;
+    display: flex;
+}
+
+.theme-picker .theme-picker-toggle {
+    border-left: 1px solid var(--border);
+}
+
+.theme-picker-caret {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.theme-menu {
+    position: absolute;
+    top: calc(100% + 5px);
+    right: -1px;
+    z-index: 150;
+    min-width: calc(100% + 2px);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.theme-menu .theme-btn {
+    width: 100%;
+    border-left: 0;
+}
+
+.theme-menu-enter-active,
+.theme-menu-leave-active {
+    transition:
+        opacity 0.12s,
+        transform 0.12s;
+}
+
+.theme-menu-enter-from,
+.theme-menu-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
 .settings-btn {
     display: flex;
     align-items: center;

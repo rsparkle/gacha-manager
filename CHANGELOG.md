@@ -1,5 +1,21 @@
 # Changelog
 
+# [1.1.4] - 2026-10-19
+### Added
+- Lacrimosa theme
+- "Hardware Acceleration" setting for smoother animations at the cost of more memory; after changing it, the app offers to restart right away so it takes effect
+### Changed
+- The app now uses much less memory while running in the background, since hardware acceleration is off by default
+- Themes are now picked from a dropdown in the top bar
+- The schedule now remembers which games were toggled on or off, instead of resetting to the games with accounts created
+- The app is about 5 MB smaller: theme backgrounds are compressed and unused files are no longer included
+- Leftover files from interrupted image downloads are now cleaned up with the image cache
+- Settings and confirmation dialogs open faster
+### Fixed
+- Opening the app from the tray, a notification or a second launch now restores the window when it was minimized
+- A problem with one game's data could leave the whole schedule empty; now only that game's events are skipped
+- If saving settings failed, the Settings window closed and showed the changes as applied anyway; it now stays open so it can be tried again
+
 # [1.1.3] - 2026-10-18
 ### Added
 - Miyabi theme

@@ -1,0 +1,229 @@
+[data-theme='lacrimosa'],
+.lacrimosa {
+    --bg: #280806;
+    --panel: #340b08;
+    --panel-hover: #4a100b;
+    --panel-selected: #7a1910;
+    --card-solid: #3f0f0b;
+    --card-solid-hover: #4c130e;
+    --task-bg: #200605;
+    --hero-bg: #4a0e09;
+    --hero-fade: rgba(30, 6, 4, 0.74);
+    --tasks-overlay: rgba(24, 4, 3, 0.74);
+    --bar-bg: #0b0404;
+
+    --border: #6e1b12;
+    --border-hover: #a8322a;
+    --border-selected: #ff4a3d;
+
+    --text: #fff5f3;
+    --muted: #c99a94;
+    --muted2: #ecc3bd;
+
+    --accent: #ff4433;
+    --accent-hover: #ff6a5a;
+    --accent-glow: rgba(255, 68, 51, 0.18);
+    --task-progress: #ff4433;
+    --check-fg: #ffffff;
+    --pill-active-bg: #7a1910;
+
+    --scrollbar-thumb: #ff4433;
+    --scrollbar-thumb-hover: #ff6a5a;
+    --scrollbar-track: #280806;
+
+    --titlebar-bg: #0b0404;
+    --titlebar-symbol: #ecc3bd;
+
+    --done: #8be26a;
+    --urgent: #ffcf4a;
+    --danger: #ffb1a8;
+
+    --orb: #ffffff;
+    --stem: #5cc046;
+    --ink: #0b0404;
+    --calyx: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    --two-tone: linear-gradient(90deg, #ffffff 50%, var(--ink) 50%);
+}
+
+.theme-swatch.lacrimosa {
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.6) 0, transparent 1.6px), #ff4433;
+    box-shadow: 0 -1.5px 0 -1px #5cc046;
+}
+
+.lacrimosa .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.5) 0 1.4px, transparent 1.9px) 0 0 / 9px 9px;
+    -webkit-mask-image: radial-gradient(ellipse 55% 130% at 0% 100%, #000 0%, rgba(0, 0, 0, 0.4) 45%, transparent 75%);
+    mask-image: radial-gradient(ellipse 55% 130% at 0% 100%, #000 0%, rgba(0, 0, 0, 0.4) 45%, transparent 75%);
+}
+
+.lacrimosa .game-item.active::before {
+    left: -10px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 34% 34%, rgba(255, 255, 255, 0.6) 0, transparent 1.6px), var(--accent);
+    box-shadow: 0 0 0 1px #ffffff;
+}
+
+.lacrimosa .game-item.active::after {
+    content: '';
+    position: absolute;
+    left: -9px;
+    top: calc(50% - 7px);
+    width: 6px;
+    height: 5px;
+    background: var(--stem);
+    clip-path: var(--calyx);
+}
+
+.lacrimosa .urgent-orb {
+    border-radius: 50% 0 50% 50%;
+    transform: rotate(-45deg);
+}
+
+.lacrimosa .urgent-orb::before {
+    border-radius: inherit;
+}
+
+.lacrimosa .view-btn.active,
+.lacrimosa .server-btn.active {
+    background:
+        var(--two-tone) bottom / 100% 2px no-repeat,
+        var(--panel-selected);
+    color: #ffffff;
+}
+
+.lacrimosa .theme-btn.active {
+    color: #ffffff;
+}
+
+.lacrimosa .account-tab.active {
+    border-image: var(--two-tone) 1;
+    color: #ffffff;
+}
+
+.lacrimosa .task-card {
+    border-radius: 8px;
+    box-shadow:
+        4px 4px 0 rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.lacrimosa .task-card-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.lacrimosa .task-card-title::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    background:
+        linear-gradient(45deg, transparent 37%, #ffffff 37% 63%, transparent 63%),
+        linear-gradient(-45deg, transparent 37%, #ffffff 37% 63%, transparent 63%);
+}
+
+.lacrimosa .task-card:nth-of-type(even) .task-card-title::before {
+    content: '♥';
+    width: 12px;
+    height: auto;
+    background: none;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1;
+    text-align: center;
+}
+
+.lacrimosa .task-check {
+    position: relative;
+    border-radius: 50%;
+}
+
+.lacrimosa .task.done .task-check {
+    border-color: #ffffff;
+    background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.5) 0, transparent 2.5px), var(--accent);
+    animation: lacrimosa-pick 220ms ease-out;
+}
+
+.lacrimosa .task.done .task-check::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    width: 11px;
+    height: 7px;
+    transform: translateX(-50%);
+    background: var(--stem);
+    clip-path: var(--calyx);
+}
+
+.lacrimosa .task-countdown-bar {
+    height: 4px;
+    background: var(--ink);
+}
+
+.lacrimosa .task-progress {
+    background: linear-gradient(90deg, #5fb84a 0%, #c8c23a 45%, #f08a2e 72%, var(--accent) 100%) left / 68px 100%;
+}
+
+.lacrimosa .hero-progress .complete {
+    position: relative;
+    padding: 3px 9px 3px 15px;
+    border-radius: 999px 4px 4px 999px;
+    background: #1f6b3a;
+    color: #e9ffe2;
+    text-shadow: none;
+}
+
+.lacrimosa .hero-progress .complete::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    transform: translateY(-50%);
+    background: var(--hero-bg);
+}
+
+.lacrimosa .cell.today .day-number {
+    color: #ffffff;
+    background: radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.45) 0, transparent 3.5px), var(--accent);
+    box-shadow: 0 0 0 1.5px #ffffff;
+}
+
+.lacrimosa .cell.today .day-number::before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    width: 13px;
+    height: 8px;
+    transform: translateX(-50%);
+    background: var(--stem);
+    clip-path: var(--calyx);
+}
+
+.lacrimosa .schedule-event-tooltip {
+    box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.5);
+}
+
+@keyframes lacrimosa-pick {
+    0% {
+        transform: scale(0.7);
+    }
+    60% {
+        transform: scale(1.15);
+    }
+    100% {
+        transform: scale(1);
+    }
+}

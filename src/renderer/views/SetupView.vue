@@ -147,9 +147,6 @@ const submit = async () => {
     }
 };
 
-const getLoadingSticker = () =>
-    new URL(`../../assets/themes/${settings.value.theme}/loading.webp`, import.meta.url).href;
-
 const loadGames = async () => {
     const gameNames = await window.api.getGamesWithoutAccounts();
 
