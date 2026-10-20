@@ -1,5 +1,14 @@
 # Changelog
 
+# [1.1.6] - 2026-10-20
+### Added
+- The app now keeps a log file to help diagnose problems when reporting a bug
+### Changed
+- The accounts file now records its format version, so future updates can convert it safely
+- If the accounts file was saved by a newer version of the app, a dialog now offers to download the latest version instead of treating the file as damaged
+### Fixed
+- Schedule images that failed to load, for example when starting offline, now load once the connection is back instead of staying blank until views are switched
+
 # [1.1.5] - 2026-10-20
 ### Fixed
 - Game data refreshes every 6 hours while the app is running again; since 1.1.4 it only refreshed at launch and when the PC woke from sleep

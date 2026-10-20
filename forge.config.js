@@ -5,8 +5,12 @@ const { FusesPlugin } = require('@electron-forge/plugin-fuses');
 const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const { execFileSync } = require('child_process');
 
-function releaseNotesFromCommit() {
+function releaseNotesFromCommit(version) {
   const subject = execFileSync('git', ['log', '-1', '--format=%s'], { encoding: 'utf8' }).trim();
+
+  if (!subject.endsWith(`(${version})`)) {
+    throw new Error(`Latest commit isn't the ${version} release commit: "${subject}"`);
+  }
 
   const notes = subject
     .replace(/^\w+(\([^)]*\))?!?:\s*/, '')
@@ -79,7 +83,7 @@ module.exports = {
             path: fileName,
             sha512: hash,
             releaseDate: new Date().toISOString(),
-            releaseNotes: releaseNotesFromCommit(),
+            releaseNotes: releaseNotesFromCommit(version),
           };
 
           const outDir = path.dirname(exePath);

@@ -37,6 +37,10 @@ import { pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 import { execFile } from 'node:child_process';
 import Store from 'electron-store';
+import log from 'electron-log/main';
+
+Object.assign(console, log.functions);
+log.errorHandler.startCatching();
 
 const { autoUpdater } = require('electron-updater');
 

@@ -1,9 +1,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { app, dialog, Notification } from 'electron';
+import { app, dialog, Notification, shell } from 'electron';
 import { createResetProcessor } from '../shared/resetProcessor';
 import { URGENT_PROGRESS, isUrgent } from '../shared/tasks.js';
+import {
+    ACCOUNTS_VERSION,
+    AccountsMigrationError,
+    NewerAccountsVersionError,
+    migrateAccountsFile,
+    serializeAccounts,
+} from './accountsFile.js';
 
 let accounts = {};
 let accountPath;
@@ -14,7 +21,7 @@ let computeSingleAccountResetData;
 let getLastDailyReset;
 let store;
 let notificationTimeout;
-let onNotificationClick = () => {};
+let onNotificationClick = () => { };
 let deadlineNotification = null;
 const notifiedKeys = new Set();
 const TIMER_BUFFER_MS = 1000;
@@ -66,46 +73,72 @@ function writeFileAtomic(filePath, contents) {
     }
 }
 
+function recoverCorruptAccounts(err) {
+    const choice = dialog.showMessageBoxSync({
+        type: 'error',
+        title: 'Accounts file is corrupted',
+        message: 'Your accounts file could not be read.',
+        detail: `${err.message}\n\nStart fresh? The damaged file will be saved as a backup first, so nothing is deleted.`,
+        buttons: ['Start fresh', 'Quit'],
+        defaultId: 1,
+        cancelId: 1,
+    });
+
+    if (choice !== 0) {
+        err.userDeclined = true;
+        throw err;
+    }
+
+    fs.copyFileSync(accountPath, accountPath.replace('.json', `.corrupt-${Date.now()}.json`));
+    writeFileAtomic(accountPath, serializeAccounts({}));
+
+    return {};
+}
+
 function loadStoredAccounts() {
     if (!fs.existsSync(accountPath)) {
-        writeFileAtomic(accountPath, '{}');
+        writeFileAtomic(accountPath, serializeAccounts({}));
         return {};
     }
 
+    let result;
+
     try {
-        const parsed = JSON.parse(fs.readFileSync(accountPath, 'utf-8'));
-
-        if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-            throw new Error('Invalid accounts.json structure');
-        }
-
-        return parsed;
+        result = migrateAccountsFile(JSON.parse(fs.readFileSync(accountPath, 'utf-8')));
     } catch (err) {
-        const choice = dialog.showMessageBoxSync({
-            type: 'error',
-            title: 'Accounts file is corrupted',
-            message: 'Your accounts file could not be read.',
-            detail: `${err.message}\n\nStart fresh? The damaged file will be saved as a backup first, so nothing is deleted.`,
-            buttons: ['Start fresh', 'Quit'],
-            defaultId: 1,
-            cancelId: 1,
-        });
+        if (err instanceof NewerAccountsVersionError) {
+            const choice = dialog.showMessageBoxSync({
+                type: 'error',
+                title: 'Accounts file is from a newer version',
+                message: 'Your accounts were saved by a newer version of Gacha Manager.',
+                detail: 'Download and install the latest version to open them. Nothing was changed.',
+                buttons: ['Download latest version', 'Quit'],
+                defaultId: 0,
+                cancelId: 1,
+            });
 
-        if (choice !== 0) {
+            if (choice === 0) {
+                shell.openExternal('https://github.com/rsparkle/gacha-manager/releases/latest');
+            }
+
             err.userDeclined = true;
             throw err;
         }
 
-        const backup = accountPath.replace('.json', `.corrupt-${Date.now()}.json`);
-        fs.copyFileSync(accountPath, backup);
-        writeFileAtomic(accountPath, '{}');
-
-        return {};
+        if (err instanceof AccountsMigrationError) throw err;
+        return recoverCorruptAccounts(err);
     }
+
+    if (result.fromVersion !== ACCOUNTS_VERSION) {
+        fs.copyFileSync(accountPath, accountPath.replace('.json', `.v${result.fromVersion}-backup.json`));
+        writeFileAtomic(accountPath, serializeAccounts(result.accounts));
+    }
+
+    return result.accounts;
 }
 
 function saveAccounts(nextAccounts) {
-    writeFileAtomic(accountPath, JSON.stringify(nextAccounts, null, 2));
+    writeFileAtomic(accountPath, serializeAccounts(nextAccounts));
 
     accounts = nextAccounts;
 
@@ -196,10 +229,10 @@ export function updateAccount(gameName, accountId, changes) {
         [gameName]: gameAccounts.map((account) =>
             account.id === accountId
                 ? {
-                      ...account,
-                      ...sanitized,
-                      id: account.id,
-                  }
+                    ...account,
+                    ...sanitized,
+                    id: account.id,
+                }
                 : account,
         ),
     };

@@ -527,6 +527,8 @@ watch(selectedServer, (server) => {
 onMounted(() => {
     clockTimer = window.setInterval(() => {
         now.value = new Date();
+        loadGameIcons();
+        loadEventImages();
     }, 30_000);
 
     const saved = settings.value.scheduleGames;
