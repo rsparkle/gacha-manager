@@ -60,4 +60,6 @@ contextBridge.exposeInMainWorld('api', {
     setTitleBarColors: (colors) => ipcRenderer.send('setTitleBarColors', colors),
 
     relaunchApp: () => ipcRenderer.invoke('relaunchApp'),
+
+    openReleasesPage: () => ipcRenderer.invoke('openReleasesPage'),
 });

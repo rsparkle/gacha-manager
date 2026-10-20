@@ -48,17 +48,21 @@ const store = new Store();
 
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 
-const CONFIG_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-config.json';
-
-const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
-
-const TASKS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main/game-tasks.json';
-
-const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
-
 const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main';
 
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
+
+const CONFIG_BASE = `${ASSETS_BASE}/game-config/v1.json`;
+
+const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
+
+const TASKS_BASE = `${ASSETS_BASE}/game-tasks/v1.json`;
+
+const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
+
+const STATUS_URL = `${ASSETS_BASE}/status.json`;
+
+const RELEASES_URL = 'https://github.com/rsparkle/gacha-manager/releases/latest';
 
 const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
 
@@ -81,6 +85,7 @@ let checkingProcesses = false;
 let tray = null;
 let hidingToTray = false;
 let rejectedGameData = null;
+let appUpdateRequired = false;
 
 const missingAssets = new Map();
 const pendingDownloads = new Map();
@@ -106,6 +111,29 @@ protocol.registerSchemesAsPrivileged([
         },
     },
 ]);
+
+function isOlderVersion(current, minimum) {
+    const a = current.split('.').map(Number);
+    const b = minimum.split('.').map(Number);
+
+    for (let i = 0; i < 3; i++) {
+        if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
+    }
+
+    return false;
+}
+
+async function checkAppStatus() {
+    try {
+        const status = await fetchJson(STATUS_URL);
+
+        appUpdateRequired =
+            typeof status.min_app_version === 'string' && isOlderVersion(app.getVersion(), status.min_app_version);
+        setUpdateState({});
+    } catch (err) {
+        console.error('Status check failed:', err);
+    }
+}
 
 async function fetchWithTimeout(url, ms = 5000) {
     const controller = new AbortController();
@@ -446,7 +474,12 @@ function isAutomaticUpdates() {
 }
 
 function getUpdateState() {
-    return { ...updateState, auto: isAutomaticUpdates(), dismissed: updateDismissed };
+    return {
+        ...updateState,
+        auto: isAutomaticUpdates(),
+        dismissed: updateDismissed,
+        required: appUpdateRequired,
+    };
 }
 
 function setUpdateState(changes) {
@@ -779,6 +812,8 @@ ipcMain.handle('dismissUpdate', () => {
     setUpdateState({});
 });
 
+ipcMain.handle('openReleasesPage', () => shell.openExternal(RELEASES_URL));
+
 // --- App Entry Point ---
 
 async function startApp() {
@@ -815,6 +850,7 @@ async function startApp() {
         syncCalendarMonthlySubs();
         updateNextNotification();
         refreshGameData();
+        checkAppStatus();
     });
 
     syncCalendarMonthlySubs();
@@ -833,8 +869,14 @@ async function startApp() {
         startMonitoring();
     }
 
+    checkAppStatus();
+
     if (gameData.fromCache) refreshGameData();
-    setInterval(refreshGameData, GAME_DATA_REFRESH_MS);
+
+    setInterval(() => {
+        refreshGameData();
+        checkAppStatus();
+    }, GAME_DATA_REFRESH_MS);
 }
 
 if (!app.requestSingleInstanceLock()) {

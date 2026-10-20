@@ -1,0 +1,141 @@
+[data-theme='nikki'],
+.nikki {
+    --bg: #1e1416;
+    --panel: #271a1d;
+    --panel-hover: #36242a;
+    --panel-selected: #54303a;
+    --card-solid: #2e1f23;
+    --card-solid-hover: #38262b;
+    --task-bg: #1a1113;
+    --hero-bg: #3a2329;
+    --hero-fade: rgba(24, 15, 17, 0.74);
+    --tasks-overlay: rgba(16, 9, 11, 0.74);
+    --bar-bg: #0f0a0b;
+
+    --border: #523840;
+    --border-hover: #9c5568;
+    --border-selected: #e07e93;
+
+    --text: #fdf4f5;
+    --muted: #b5979d;
+    --muted2: #e5c9ce;
+
+    --accent: #e07e93;
+    --accent-hover: #eb9aab;
+    --accent-glow: rgba(224, 126, 147, 0.16);
+    --task-progress: #e07e93;
+    --check-fg: #2a1419;
+    --pill-active-bg: #54303a;
+
+    --scrollbar-thumb: #e07e93;
+    --scrollbar-thumb-hover: #eb9aab;
+    --scrollbar-track: #1e1416;
+
+    --titlebar-bg: #0f0a0b;
+    --titlebar-symbol: #e5c9ce;
+
+    --done: #86cfa6;
+    --urgent: #f2bf6c;
+    --danger: #ff9a9a;
+
+    --accent-deep: #b9506a;
+    --lace: #fdf4f5;
+    --bow-shape: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 50% 64%, 0 100%);
+}
+
+.theme-swatch.nikki {
+    width: 10px;
+    height: 7px;
+    border-radius: 0;
+    background: #e07e93;
+    clip-path: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 50% 64%, 0 100%);
+}
+
+.nikki .game-item {
+    border-radius: 10px;
+}
+
+.nikki .game-item.active::before {
+    left: -13px;
+    width: 11px;
+    height: 8px;
+    border-radius: 0;
+    background: var(--accent);
+    clip-path: var(--bow-shape);
+}
+
+.nikki .view-btn.active,
+.nikki .server-btn.active {
+    box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.nikki .account-tab {
+    border-radius: 10px 10px 0 0;
+}
+
+.nikki .task-card {
+    border-radius: 14px;
+}
+
+.nikki .task-card-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.nikki .task-card-title::before {
+    content: '';
+    width: 13px;
+    height: 9px;
+    flex-shrink: 0;
+    background: var(--accent);
+    clip-path: var(--bow-shape);
+}
+
+.nikki .task {
+    border-radius: 9px;
+}
+
+.nikki .task-check {
+    border-radius: 6px;
+}
+
+.nikki .task-countdown-bar {
+    height: 4px;
+    border-radius: 999px;
+}
+
+.nikki .task-progress {
+    background: linear-gradient(90deg, var(--accent-deep), var(--accent-hover)) left / 68px 100%;
+}
+
+.nikki .nav-btn,
+.nikki .game-badge {
+    border-radius: 9px;
+}
+
+.nikki .server-select,
+.nikki .server-btn {
+    border-radius: 999px;
+}
+
+.nikki .event {
+    border-radius: 7px;
+}
+
+.nikki .calendar-grid {
+    border-radius: 14px;
+}
+
+.nikki .schedule-event-tooltip {
+    border-radius: 12px;
+}
+
+.nikki .cell.today .day-number {
+    color: var(--lace);
+    box-shadow: 0 0 0 1.5px var(--lace);
+}
+
+.nikki .task-check {
+    position: relative;
+}

@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.1.7] - 2026-10-20
+### Added
+- Nikki theme
+- Versions that are no longer supported now show a message asking to update, with a button to download the latest version
+- The Tasks and Setup screens now show a game's new version number and art as soon as its patch goes live, without waiting for the game data to be updated
+
 # [1.1.6] - 2026-10-20
 ### Added
 - The app now keeps a log file to help diagnose problems when reporting a bug

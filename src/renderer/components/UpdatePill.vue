@@ -15,6 +15,7 @@
             <div class="update-pill-actions">
                 <button v-if="state.status === 'available'" class="update-pill-btn" @click="download">Update</button>
                 <button v-if="state.status === 'ready'" class="update-pill-btn" @click="install">Restart</button>
+                <button v-if="needsManualDownload" class="update-pill-btn" @click="openReleases">Download</button>
                 <button class="update-pill-close" aria-label="Dismiss" @click="dismiss">×</button>
             </div>
         </div>
@@ -27,23 +28,29 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 const state = ref({ status: 'idle' });
 let stopListener = null;
 
+const needsManualDownload = computed(() => state.value.required && state.value.status === 'idle');
+
 const visible = computed(() => {
-    const { status, auto, dismissed } = state.value;
+    const { status, auto, dismissed, required } = state.value;
 
     if (dismissed) return false;
+    if (required) return true;
     if (status === 'available' || status === 'ready') return true;
 
     return status === 'downloading' && !auto;
 });
 
 const title = computed(() => {
-    const { status, version, percent } = state.value;
+    const { status, version, percent, required } = state.value;
 
-    if (status === 'available') return `Version ${version} is available`;
     if (status === 'downloading') return `Downloading ${version}… ${percent}%`;
+    if (status === 'ready') return `Version ${version} is ready`;
+    if (required) return 'This version is no longer supported, please update';
 
-    return `Version ${version} is ready`;
+    return `Version ${version} is available`;
 });
+
+const openReleases = () => window.api.openReleasesPage();
 
 const download = () => window.api.downloadUpdate();
 const install = () => window.api.installUpdate();

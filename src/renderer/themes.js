@@ -1,5 +1,6 @@
 export const THEMES = [
     { id: '', name: 'Default' },
+    { id: 'nikki', name: 'Nikki' },
     { id: 'lacrimosa', name: 'Lacrimosa' },
     { id: 'miyabi', name: 'Miyabi' },
     { id: 'furina', name: 'Furina' },

@@ -65,6 +65,7 @@ import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { slugify } from '../../shared/format.js';
 import { themeAsset } from '../themes.js';
+import { getLiveVersion } from '../../shared/liveVersion.js';
 
 const emit = defineEmits(['done']);
 
@@ -152,7 +153,7 @@ const loadGames = async () => {
 
     gameList.value = gameNames.map((name) => ({
         name,
-        currentVersion: GAME_CONFIG[name].current.version,
+        currentVersion: getLiveVersion(GAME_CONFIG[name]),
     }));
 
     await Promise.all(

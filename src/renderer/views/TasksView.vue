@@ -581,8 +581,10 @@ const handleImageError = (game) => {
 const loadedImageVersions = {};
 
 watch(
-    trackedGames,
-    async (games) => {
+    () => trackedGames.value.map((game) => `${game.name}:${game.game_version}`).join('|'),
+    async () => {
+        const games = trackedGames.value;
+
         await Promise.all(
             games.flatMap((game) => {
                 const loads = [];

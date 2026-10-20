@@ -21,7 +21,7 @@ let computeSingleAccountResetData;
 let getLastDailyReset;
 let store;
 let notificationTimeout;
-let onNotificationClick = () => { };
+let onNotificationClick = () => {};
 let deadlineNotification = null;
 const notifiedKeys = new Set();
 const TIMER_BUFFER_MS = 1000;
@@ -229,10 +229,10 @@ export function updateAccount(gameName, accountId, changes) {
         [gameName]: gameAccounts.map((account) =>
             account.id === accountId
                 ? {
-                    ...account,
-                    ...sanitized,
-                    id: account.id,
-                }
+                      ...account,
+                      ...sanitized,
+                      id: account.id,
+                  }
                 : account,
         ),
     };

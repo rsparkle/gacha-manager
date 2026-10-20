@@ -287,8 +287,8 @@
 .complete-sticker {
     order: -1;
     display: block;
-    width: 48px;
-    height: 48px;
+    width: auto;
+    height: 54px;
     margin: 0 auto 3px;
     pointer-events: none;
     animation: sticker-pop 180ms ease-out both;

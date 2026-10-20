@@ -120,27 +120,6 @@
     gap: 9px;
 }
 
-.lacrimosa .task-card-title::before {
-    content: '';
-    width: 12px;
-    height: 12px;
-    flex-shrink: 0;
-    background:
-        linear-gradient(45deg, transparent 37%, #ffffff 37% 63%, transparent 63%),
-        linear-gradient(-45deg, transparent 37%, #ffffff 37% 63%, transparent 63%);
-}
-
-.lacrimosa .task-card:nth-of-type(even) .task-card-title::before {
-    content: '♥';
-    width: 12px;
-    height: auto;
-    background: none;
-    color: #ffffff;
-    font-size: 14px;
-    line-height: 1;
-    text-align: center;
-}
-
 .lacrimosa .task-check {
     position: relative;
     border-radius: 50%;

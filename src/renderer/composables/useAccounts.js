@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue';
 import { createResetProcessor } from '../../shared/resetProcessor';
 import { useSettings } from './useSettings.js';
+import { getLiveVersion } from '../../shared/liveVersion.js';
 
 const gameConfig = ref(null);
 const accountsPerGame = ref([]);
@@ -27,12 +28,22 @@ async function loadGameData() {
     gameConfig.value = config;
 }
 
+function applyLiveVersions(groups) {
+    for (const group of groups) {
+        const config = gameConfig.value?.[group.name];
+
+        if (config) group.game_version = getLiveVersion(config);
+    }
+
+    return groups;
+}
+
 async function loadAccounts() {
-    accountsPerGame.value = processor.computeTaskResetData(await window.api.getGroupedAccounts());
+    accountsPerGame.value = applyLiveVersions(processor.computeTaskResetData(await window.api.getGroupedAccounts()));
 }
 
 function recompute() {
-    accountsPerGame.value = processor.computeTaskResetData(accountsPerGame.value);
+    accountsPerGame.value = applyLiveVersions(processor.computeTaskResetData(accountsPerGame.value));
 }
 
 function replaceAccount(gameName, account) {
