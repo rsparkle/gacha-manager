@@ -1,5 +1,5 @@
 <template>
-    <div :class="settings.theme" id="app">
+    <div id="app" :class="settings.theme">
         <NotificationCenter />
         <AppSettings />
         <ConfirmDialogue />
@@ -9,7 +9,7 @@
             <span>Gacha Manager</span>
         </div>
         <div class="app-bar">
-            <div class="view-toggle" v-if="currentView !== 'setup'">
+            <div v-if="currentView !== 'setup'" class="view-toggle">
                 <button
                     v-if="hideSetup"
                     class="view-btn"
@@ -39,7 +39,7 @@
             <div class="app-bar-right">
                 <div class="theme-group">
                     <span class="app-bar-label">Theme</span>
-                    <div class="theme-picker" ref="themePicker">
+                    <div ref="themePicker" class="theme-picker">
                         <button
                             class="theme-btn theme-picker-toggle"
                             :aria-expanded="themeMenuOpen"
@@ -67,8 +67,8 @@
                 </div>
                 <button
                     class="settings-btn"
-                    @click="hideToTray"
                     title="Closes the window to save memory. The app keeps running in the tray."
+                    @click="hideToTray"
                 >
                     <span>Background</span>
                     <span>▾</span>

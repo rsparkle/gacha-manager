@@ -4,7 +4,7 @@
             <div class="settings-modal">
                 <div class="settings-header">
                     <h1 class="settings-title">Settings</h1>
-                    <button class="settings-close" @click="closeSettings" aria-label="Close">×</button>
+                    <button class="settings-close" aria-label="Close" @click="closeSettings">×</button>
                 </div>
 
                 <div class="settings-body">
@@ -15,7 +15,7 @@
                                 <small>Download and install new versions automatically</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="draft.automaticUpdates" />
+                                <input v-model="draft.automaticUpdates" type="checkbox" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path
@@ -42,7 +42,7 @@
                                 >
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="draft.hardwareAcceleration" />
+                                <input v-model="draft.hardwareAcceleration" type="checkbox" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path
@@ -70,20 +70,20 @@
                         <div class="radio-group">
                             <label>
                                 <input
+                                    v-model="draft.monthlySubCheck"
                                     type="radio"
                                     name="monthlySubCheck"
                                     value="calendar"
-                                    v-model="draft.monthlySubCheck"
                                 />
                                 Count each calendar day even when the app is closed
                             </label>
 
                             <label>
                                 <input
+                                    v-model="draft.monthlySubCheck"
                                     type="radio"
                                     name="monthlySubCheck"
                                     value="dailyTask"
-                                    v-model="draft.monthlySubCheck"
                                 />
                                 Count a day only when its daily task is checked
                             </label>
@@ -97,7 +97,7 @@
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
                             <label class="toggle">
-                                <input type="checkbox" v-model="draft.checkGachaProcesses" />
+                                <input v-model="draft.checkGachaProcesses" type="checkbox" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path
@@ -140,12 +140,12 @@
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
                                             <button
+                                                v-if="draft.checkGachaProcesses"
                                                 type="button"
                                                 class="text-toggle"
                                                 :class="{
                                                     active: draft.automaticDailies[game.name]?.includes(account.id),
                                                 }"
-                                                v-if="draft.checkGachaProcesses"
                                                 @click="toggleSetting(draft.automaticDailies, game.name, account.id)"
                                             >
                                                 Auto

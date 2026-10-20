@@ -6,8 +6,8 @@
                     class="nav-btn"
                     type="button"
                     aria-label="Previous month"
-                    @click="prevMonth"
                     :style="{ visibility: canGoPrev ? 'visible' : 'hidden' }"
+                    @click="prevMonth"
                 >
                     &#8592;
                 </button>
@@ -21,8 +21,8 @@
                     class="nav-btn"
                     type="button"
                     aria-label="Next month"
-                    @click="nextMonth"
                     :style="{ visibility: canGoNext ? 'visible' : 'hidden' }"
+                    @click="nextMonth"
                 >
                     &#8594;
                 </button>
@@ -62,9 +62,9 @@
             <div class="calendar-grid">
                 <div class="week-header">
                     <div
-                        class="header-cell"
                         v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
                         :key="day"
+                        class="header-cell"
                     >
                         {{ day }}
                     </div>

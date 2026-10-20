@@ -6,11 +6,11 @@
                 <p class="setup-subtitle">Select which games you want to track (you can add more later).</p>
             </div>
 
-            <div class="game-grid" v-if="!isLoading">
+            <div v-if="!isLoading" class="game-grid">
                 <div
-                    class="game-card"
                     v-for="game in gameList"
                     :key="game.name"
+                    class="game-card"
                     :class="{ selected: selectedGames[game.name] }"
                     @click="toggleGame(game)"
                 >
@@ -22,16 +22,16 @@
 
                     <div class="game-card-body">
                         <p class="game-card-name">{{ game.name }}</p>
-                        <p class="game-card-version" v-if="game.currentVersion">v{{ game.currentVersion }}</p>
+                        <p v-if="game.currentVersion" class="game-card-version">v{{ game.currentVersion }}</p>
                     </div>
 
-                    <div class="game-card-server" v-if="selectedGames[game.name]" @click.stop>
+                    <div v-if="selectedGames[game.name]" class="game-card-server" @click.stop>
                         <p class="server-label">Server</p>
                         <div class="server-pills">
                             <button
-                                class="server-pill"
                                 v-for="server in Object.keys(GAME_CONFIG[game.name].servers)"
                                 :key="server"
+                                class="server-pill"
                                 :class="{ active: selectedGames[game.name]?.server === server }"
                                 @click.stop="setServer(game, server)"
                             >
@@ -42,7 +42,7 @@
                 </div>
             </div>
 
-            <div class="game-grid-empty" v-else>
+            <div v-else class="game-grid-empty">
                 <img v-if="loadingSticker" :src="loadingSticker" class="loading-sticker" alt="" />
                 <div v-else class="empty-spinner"></div>
                 <p>Loading games…</p>

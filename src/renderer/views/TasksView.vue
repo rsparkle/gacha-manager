@@ -4,11 +4,11 @@
             <p class="sidebar-title">Game List</p>
             <div class="game-list">
                 <div
-                    class="game-item"
                     v-for="gameGroup in trackedGames"
                     :key="gameGroup.name"
-                    @click="selectGame(gameGroup)"
+                    class="game-item"
                     :class="{ active: selectedGame?.name === gameGroup.name }"
+                    @click="selectGame(gameGroup)"
                 >
                     <div class="game-name-row">
                         <img class="game-item-icon" :src="sidebarIcons[gameGroup.name]" :alt="gameGroup.name" />
@@ -18,13 +18,13 @@
                 </div>
             </div>
 
-            <div class="add-game-wrapper" v-if="missingGames.length > 0">
+            <div v-if="missingGames.length > 0" class="add-game-wrapper">
                 <Transition name="popover">
                     <div v-if="showGamePicker" class="game-picker">
                         <div
-                            class="game-picker-item"
                             v-for="game in missingGames"
                             :key="game.name"
+                            class="game-picker-item"
                             @click="addGame(game)"
                         >
                             {{ game.name }}
@@ -36,14 +36,14 @@
         </div>
 
         <div class="main">
-            <div class="main-inner" v-if="selectedGame && selectedAccount">
+            <div v-if="selectedGame && selectedAccount" class="main-inner">
                 <div class="hero">
                     <img v-if="heroImage" :src="heroImage" class="hero-img" />
                     <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
 
                     <div class="hero-bottom">
                         <div class="hero-account-info">
-                            <div class="server-wrapper" ref="serverAnchor">
+                            <div ref="serverAnchor" class="server-wrapper">
                                 <span class="account-server server-clickable" @click="editingServer = !editingServer">
                                     {{ selectedAccount?.server }}
                                     <svg
@@ -62,9 +62,9 @@
                                 <Transition name="popover">
                                     <div v-if="editingServer" class="server-picker">
                                         <div
-                                            class="server-picker-item"
                                             v-for="s in availableServers"
                                             :key="s"
+                                            class="server-picker-item"
                                             :class="{ active: s === selectedAccount?.server }"
                                             @click="selectServer(s)"
                                         >
@@ -73,20 +73,20 @@
                                     </div>
                                 </Transition>
                             </div>
-                            <span class="account-uid" v-if="!editingUid" @click="startUidEdit">{{
+                            <span v-if="!editingUid" class="account-uid" @click="startUidEdit">{{
                                 selectedAccount?.uid || 0
                             }}</span>
                             <input
-                                class="account-uid account-uid-input"
                                 v-else
-                                type="text"
+                                ref="uidInput"
                                 v-model="editUidValue"
+                                class="account-uid account-uid-input"
+                                type="text"
+                                :maxlength="currentGameConfig?.uid_digits"
+                                inputmode="numeric"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)"
                                 @keyup.escape="cancelUidEdit"
-                                ref="uidInput"
-                                :maxlength="currentGameConfig?.uid_digits"
-                                inputmode="numeric"
                                 @input="editUidValue = editUidValue.replace(/\D/g, '')"
                             />
                         </div>
@@ -101,14 +101,15 @@
                             />
                         </div>
                         <div class="hero-actions">
-                            <button class="btn-edit" v-if="!editingUid" @click="startUidEdit">Edit UID</button>
-                            <button class="btn-edit" v-else @mousedown.prevent="cancelUidEdit" @click="cancelUidEdit">
+                            <button v-if="!editingUid" class="btn-edit" @click="startUidEdit">Edit UID</button>
+                            <button v-else class="btn-edit" @mousedown.prevent="cancelUidEdit" @click="cancelUidEdit">
                                 Cancel
                             </button>
                             <button class="btn-delete" @click="deleteAccount">Delete Account</button>
                             <button
                                 class="btn-bell"
                                 :class="{ active: notificationsEnabled }"
+                                :title="notificationsEnabled ? 'Notifications on' : 'Notifications off'"
                                 @click="
                                     toggleAndSaveSetting(
                                         settings.windowsNotifications,
@@ -116,7 +117,6 @@
                                         selectedAccount.id,
                                     )
                                 "
-                                :title="notificationsEnabled ? 'Notifications on' : 'Notifications off'"
                             >
                                 <svg
                                     width="14"
@@ -147,11 +147,11 @@
                 <div class="account-nav">
                     <div class="account-nav-list">
                         <div
-                            class="account-tab"
                             v-for="account in selectedGame.accounts"
                             :key="account.id"
-                            @click="selectedAccountId = account.id"
+                            class="account-tab"
                             :class="{ active: selectedAccount?.id === account.id }"
+                            @click="selectedAccountId = account.id"
                         >
                             <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
                                 {{ account.label || account.uid || 'New Account' }}
@@ -159,15 +159,15 @@
 
                             <input
                                 v-else
+                                ref="labelInput"
+                                v-model="editLabelValue"
                                 class="account-label-input"
                                 type="text"
-                                v-model="editLabelValue"
+                                :style="{ width: Math.max(editLabelValue?.length ?? 0, 4) * 7 + 'px' }"
                                 @keyup.enter="commitLabelEdit"
                                 @keyup.escape="cancelLabelEdit"
                                 @keydown.tab.prevent="commitAndMoveToNext(account)"
                                 @blur="commitLabelEdit"
-                                ref="labelInput"
-                                :style="{ width: Math.max(editLabelValue?.length ?? 0, 4) * 7 + 'px' }"
                             />
                         </div>
 
@@ -201,20 +201,20 @@
 
                 <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
                     <img
+                        :key="selectedGame.name"
                         :src="gameImages[selectedGame.name]"
                         style="display: none"
-                        :key="selectedGame.name"
                         @error="handleImageError(selectedGame)"
                     />
-                    <div class="task-card" v-for="(tasks, taskType) in selectedAccount.tasks" :key="taskType">
+                    <div v-for="(tasks, taskType) in selectedAccount.tasks" :key="taskType" class="task-card">
                         <div class="task-card-header">
                             <p class="task-card-title">{{ taskType }}</p>
                         </div>
                         <div class="task-list">
                             <div
-                                class="task"
                                 v-for="task in tasks"
                                 :key="task.id"
+                                class="task"
                                 :class="{ done: task.isCompleted, disabled: task.isDisabled }"
                                 @click="toggleTask(task)"
                             >
@@ -223,7 +223,7 @@
                                     <span v-if="task.isDisabled">✗</span>
                                 </div>
                                 <p class="task-name">{{ task.label }}</p>
-                                <div class="task-completion" v-if="!task.isDisabled">
+                                <div v-if="!task.isDisabled" class="task-completion">
                                     <span
                                         class="task-countdown"
                                         :class="{ urgent: !task.isCompleted && isUrgent(task) }"
@@ -236,7 +236,7 @@
                                                   : formatCountdown(task.nextReset)
                                         }}
                                     </span>
-                                    <div class="task-countdown-bar" v-if="!task.isCompleted && task.nextReset !== null">
+                                    <div v-if="!task.isCompleted && task.nextReset !== null" class="task-countdown-bar">
                                         <div class="task-progress" :style="{ width: taskProgress(task) + '%' }"></div>
                                     </div>
                                 </div>

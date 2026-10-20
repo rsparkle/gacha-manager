@@ -830,6 +830,7 @@ async function startApp() {
     }
 
     if (gameData.fromCache) refreshGameData();
+    setInterval(refreshGameData, GAME_DATA_REFRESH_MS);
 }
 
 if (!app.requestSingleInstanceLock()) {

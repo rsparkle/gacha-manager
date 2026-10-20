@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.1.5] - 2026-10-20
+### Fixed
+- Game data refreshes every 6 hours while the app is running again; since 1.1.4 it only refreshed at launch and when the PC woke from sleep
+### Changed
+- Updated dependencies, including security fixes for the auto-updater
+
 # [1.1.4] - 2026-10-19
 ### Added
 - Lacrimosa theme
