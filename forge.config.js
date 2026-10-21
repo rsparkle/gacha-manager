@@ -6,10 +6,13 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 const { execFileSync } = require('child_process');
 
 function releaseNotesFromCommit(version) {
-  const subject = execFileSync('git', ['log', '-1', '--format=%s'], { encoding: 'utf8' }).trim();
+  const subject = execFileSync('git', ['log', '-50', '--format=%s'], { encoding: 'utf8' })
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.endsWith(`(${version})`));
 
-  if (!subject.endsWith(`(${version})`)) {
-    throw new Error(`Latest commit isn't the ${version} release commit: "${subject}"`);
+  if (!subject) {
+    throw new Error(`No ${version} release commit found in the last 50 commits`);
   }
 
   const notes = subject
