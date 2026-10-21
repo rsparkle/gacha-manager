@@ -66,18 +66,6 @@
     gap: 10px;
 }
 
-.game-grid-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    padding: 52px 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    color: var(--muted2);
-    font-size: 13px;
-}
-
 .empty-spinner {
     width: 20px;
     height: 20px;
@@ -93,9 +81,23 @@
     }
 }
 
+.loading-overlay {
+    position: fixed;
+    inset: calc(44px + var(--titlebar-h)) 0 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    background: var(--bg);
+    color: var(--muted2);
+    font-size: 13px;
+}
+
 .loading-sticker {
-    width: 120px;
-    height: auto;
+    width: 160px;
+    height: 160px;
     object-fit: contain;
     animation: sticker-pulse 2s ease-in-out infinite;
 }

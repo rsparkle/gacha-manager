@@ -59,15 +59,19 @@ export function createScheduleProcessor(GAME_CONFIG) {
             return zonedInstant(dateKey, clock.secondPhase.minutes, offset);
         };
 
+        const { previous } = gameData;
         const currentStart = toDateKey(gameData.current.version_start);
+        const previousStart = previous ? shiftDate(currentStart, -previous.version_duration) : null;
         const nextStart = shiftDate(currentStart, gameData.current.version_duration);
+        const previousSecond = previous ? shiftDate(previousStart, secondPhaseDay(previous)) : null;
         const currentSecond = shiftDate(currentStart, secondPhaseDay(gameData.current));
         const nextSecond = shiftDate(nextStart, secondPhaseDay(gameData.next));
 
         return {
             globalAt,
-            dates: { currentStart, currentSecond, nextStart, nextSecond },
+            dates: { previousStart, previousSecond, currentStart, currentSecond, nextStart, nextSecond },
             phases: {
+                previous: previous ? { open: openAt(previousStart), secondPhase: secondPhaseAt(previousSecond) } : null,
                 current: { open: openAt(currentStart), secondPhase: secondPhaseAt(currentSecond) },
                 next: { open: openAt(nextStart), secondPhase: secondPhaseAt(nextSecond) },
             },
@@ -102,6 +106,22 @@ export function createScheduleProcessor(GAME_CONFIG) {
         const { dates, globalAt } = timeline;
 
         const trailerEntries = [
+            ...(gameData.previous
+                ? [
+                      {
+                          phaseKey: 'previous_phase1',
+                          date: dates.previousStart,
+                          patchData: gameData.previous,
+                          phaseNum: '1',
+                      },
+                      {
+                          phaseKey: 'previous_phase2',
+                          date: dates.previousSecond,
+                          patchData: gameData.previous,
+                          phaseNum: '2',
+                      },
+                  ]
+                : []),
             { phaseKey: 'current_phase1', date: dates.currentStart, patchData: gameData.current, phaseNum: '1' },
             { phaseKey: 'current_phase2', date: dates.currentSecond, patchData: gameData.current, phaseNum: '2' },
             { phaseKey: 'next_phase1', date: dates.nextStart, patchData: gameData.next, phaseNum: '1' },
@@ -136,6 +156,24 @@ export function createScheduleProcessor(GAME_CONFIG) {
         const currentConfirmed = gameData.current.is_version_duration_confirmed;
 
         const phaseEntries = [
+            ...(phases.previous
+                ? [
+                      {
+                          phaseDate: phases.previous.open,
+                          patchData: gameData.previous,
+                          phaseNum: '1',
+                          baseKey: 'previousRelease',
+                          confirmed: true,
+                      },
+                      {
+                          phaseDate: phases.previous.secondPhase,
+                          patchData: gameData.previous,
+                          phaseNum: '2',
+                          baseKey: 'previousSecondPhase',
+                          confirmed: true,
+                      },
+                  ]
+                : []),
             {
                 phaseDate: phases.current.open,
                 patchData: gameData.current,
@@ -215,48 +253,74 @@ export function createScheduleProcessor(GAME_CONFIG) {
     }
 
     function buildPatchTrailers(game, gameData, clock, timeline) {
-        const hasPatchTrailerDistance = !!gameData.patch_trailer_distance;
-        const needsPatchTrailer = !gameData.livestream.is_predictable || !gameData.livestream.date;
+        if (!gameData.patch_trailer_distance) return {};
 
-        if (!hasPatchTrailerDistance || !needsPatchTrailer) return {};
+        const patchTrailer = (startDate, duration, version) => ({
+            date: timeline.globalAt(
+                shiftDate(startDate, duration - gameData.patch_trailer_distance),
+                clock.trailerMinutes,
+            ),
+            type: 'trailer',
+            portrait: false,
+            label: `${gameData.abbr} ${version} Trailer`,
+            title: `${gameData.abbr} ${version} Trailer`,
+            imgFiles: [gameImg(game, version), defaultImg(game)],
+            confirmed: true,
+        });
 
-        const trailerDay = shiftDate(
-            timeline.dates.currentStart,
-            gameData.current.version_duration - gameData.patch_trailer_distance,
-        );
+        const trailers = {};
 
-        return {
-            nextPatchTrailer: {
-                date: timeline.globalAt(trailerDay, clock.trailerMinutes),
-                type: 'trailer',
-                portrait: false,
-                label: `${gameData.abbr} ${gameData.next.version} Trailer`,
-                title: `${gameData.abbr} ${gameData.next.version} Trailer`,
-                imgFiles: [gameImg(game, gameData.next.version), defaultImg(game)],
-                confirmed: true,
-            },
-        };
+        if (gameData.previous && !gameData.livestream.is_predictable) {
+            trailers.currentPatchTrailer = patchTrailer(
+                timeline.dates.previousStart,
+                gameData.previous.version_duration,
+                gameData.current.version,
+            );
+        }
+
+        if (!gameData.livestream.is_predictable || !gameData.livestream.date) {
+            trailers.nextPatchTrailer = patchTrailer(
+                timeline.dates.currentStart,
+                gameData.current.version_duration,
+                gameData.next.version,
+            );
+        }
+
+        return trailers;
     }
 
-    function buildDripMarketing(game, gameData, clock, timeline, livestreamDate, nextLivestreamDate) {
+    function buildDripMarketing(game, gameData, clock, timeline, livestreams) {
         const dripMarketingDates = {};
 
         const dripMarketingEntries = [
+            ...(timeline.phases.previous
+                ? [
+                      {
+                          key: 'previous',
+                          openDate: timeline.phases.previous.open,
+                          associatedLivestream: livestreams.previous,
+                          versionNumber: gameData.current.version,
+                          imgVersion: gameData.current.version,
+                      },
+                  ]
+                : []),
             {
                 key: 'current',
                 openDate: timeline.phases.current.open,
-                associatedLivestream: livestreamDate,
+                associatedLivestream: livestreams.current,
                 versionNumber: gameData.next.version,
+                imgVersion: gameData.next.version,
             },
             {
                 key: 'next',
                 openDate: timeline.phases.next.open,
-                associatedLivestream: nextLivestreamDate,
+                associatedLivestream: livestreams.next,
                 versionNumber: gameData.next.future_livestream_version,
+                imgVersion: gameData.next.version,
             },
         ];
 
-        for (const { key, openDate, associatedLivestream, versionNumber } of dripMarketingEntries) {
+        for (const { key, openDate, associatedLivestream, versionNumber, imgVersion } of dripMarketingEntries) {
             if (!gameData.drip) return {};
 
             const anchor = gameData.drip.anchor === 'patch' ? openDate : associatedLivestream;
@@ -276,7 +340,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                     portrait: false,
                     label: `${gameData.abbr} ${versionNumber} 5★ Drip Marketing`,
                     title: `${gameData.abbr} ${versionNumber} Drip`,
-                    imgFiles: [gameImg(game, gameData.next.version), defaultImg(game)],
+                    imgFiles: [gameImg(game, imgVersion), defaultImg(game)],
                     confirmed: true,
                 };
             }
@@ -295,10 +359,15 @@ export function createScheduleProcessor(GAME_CONFIG) {
         const timeline = buildTimeline(gameData, clock, server);
         const { dates } = timeline;
 
-        const [anchorNow, anchorNext] =
+        const [anchorPrevious, anchorNow, anchorNext] =
             gameData.livestream.schedule === 'hoyo'
-                ? [dates.currentSecond, dates.nextSecond]
-                : [dates.currentStart, dates.nextStart];
+                ? [dates.previousSecond, dates.currentSecond, dates.nextSecond]
+                : [dates.previousStart, dates.currentStart, dates.nextStart];
+
+        const previousLivestreamDate =
+            gameData.previous && gameData.livestream.is_predictable
+                ? getLivestreamDate(gameData, clock, anchorPrevious)
+                : null;
 
         const livestreamDate =
             gameData.livestream.is_predictable || gameData.livestream.date
@@ -312,19 +381,33 @@ export function createScheduleProcessor(GAME_CONFIG) {
         const characterTrailers = buildCharacterTrailers(game, gameData, clock, timeline);
         const patchTrailers = buildPatchTrailers(game, gameData, clock, timeline);
         const releaseEvents = buildPhaseReleaseEvents(game, gameData, timeline);
-        const dripMarketingDates = buildDripMarketing(
-            game,
-            gameData,
-            clock,
-            timeline,
-            livestreamDate,
-            nextLivestreamDate,
-        );
+        const dripMarketingDates = buildDripMarketing(game, gameData, clock, timeline, {
+            previous: previousLivestreamDate,
+            current: livestreamDate,
+            next: nextLivestreamDate,
+        });
 
         const bothConfirmed =
             gameData.current.is_version_duration_confirmed && gameData.next.is_version_duration_confirmed;
 
         const livestreamEvents = {
+            ...(previousLivestreamDate
+                ? {
+                      previousLivestream: {
+                          date: previousLivestreamDate,
+                          type: 'livestream',
+                          portrait: false,
+                          label: `${gameData.abbr} ${gameData.current.version} Livestream`,
+                          title: `${gameData.abbr} ${gameData.current.version} Livestream`,
+                          imgFiles: [
+                              livestreamImg(game, gameData.current.version),
+                              gameImg(game, gameData.previous.version),
+                              defaultImg(game),
+                          ],
+                          confirmed: true,
+                      },
+                  }
+                : {}),
             ...(livestreamDate
                 ? {
                       livestream: {

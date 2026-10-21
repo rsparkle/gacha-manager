@@ -1,4 +1,8 @@
 # Changelog
+# [1.1.8] - 2026-10-21
+### Added
+- Previous patch data is now stored instead of being immediately wiped
+- Finishing Setup now shows the loading animation instead of the screen appearing frozen
 
 # [1.1.7] - 2026-10-20
 ### Added

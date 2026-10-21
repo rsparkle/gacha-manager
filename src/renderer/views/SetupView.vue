@@ -6,7 +6,7 @@
                 <p class="setup-subtitle">Select which games you want to track (you can add more later).</p>
             </div>
 
-            <div v-if="!isLoading" class="game-grid">
+            <div v-if="!showLoader" class="game-grid">
                 <div
                     v-for="game in gameList"
                     :key="game.name"
@@ -42,7 +42,7 @@
                 </div>
             </div>
 
-            <div v-else class="game-grid-empty">
+            <div v-else class="loading-overlay">
                 <img v-if="loadingSticker" :src="loadingSticker" class="loading-sticker" alt="" />
                 <div v-else class="empty-spinner"></div>
                 <p>Loading games…</p>
@@ -79,11 +79,24 @@ const gameList = ref([]);
 const selectedGames = ref({});
 const gameImages = ref({});
 const submitting = ref(false);
-const isLoading = ref(true);
 
 const hasSelection = computed(() => Object.keys(selectedGames.value).length > 0);
 const setupBackground = computed(() => themeAsset(settings.value.theme, 'setup_background'));
 const loadingSticker = computed(() => themeAsset(settings.value.theme, 'loading'));
+
+const showLoader = ref(false);
+let loaderTimer = null;
+
+const startLoading = () => {
+    loaderTimer = setTimeout(() => {
+        showLoader.value = true;
+    }, 300);
+};
+
+const stopLoading = () => {
+    clearTimeout(loaderTimer);
+    showLoader.value = false;
+};
 
 const bgStyle = computed(() => ({
     backgroundImage: setupBackground.value ? `url(${setupBackground.value})` : '',
@@ -132,6 +145,7 @@ const setServer = (game, server) => {
 const submit = async () => {
     if (submitting.value) return;
     submitting.value = true;
+    startLoading();
 
     try {
         const accountList = Object.entries(selectedGames.value).map(([name, data]) => ({
@@ -145,6 +159,7 @@ const submit = async () => {
         createNotification('error', `Error creating accounts: ${error.message}`, 2000);
     } finally {
         submitting.value = false;
+        stopLoading();
     }
 };
 
@@ -164,10 +179,11 @@ const loadGames = async () => {
 };
 
 onMounted(async () => {
+    startLoading();
     try {
         await loadGames();
     } finally {
-        isLoading.value = false;
+        stopLoading();
     }
 });
 </script>

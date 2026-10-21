@@ -52,11 +52,11 @@ const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-as
 
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
 
-const CONFIG_BASE = `${ASSETS_BASE}/game-config/v1.json`;
+const CONFIG_BASE = null; //`${ASSETS_BASE}/game-config/v1.json`;
 
 const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
 
-const TASKS_BASE = `${ASSETS_BASE}/game-tasks/v1.json`;
+const TASKS_BASE = null; //`${ASSETS_BASE}/game-tasks/v1.json`;
 
 const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
 
