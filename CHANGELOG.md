@@ -1,4 +1,16 @@
 # Changelog
+## [1.1.9] - 2026-10-26
+### Added
+- Special phases: extra banner phases within a patch (mostly collabs), each with its own date and characters
+- Drip marketing time is now set per game
+- Drip marketing can be set to a single day per game
+### Changed
+- Livestream dates can now be overridden per patch
+- Overridden livestreams show as confirmed, and an override on the next patch shows its livestream before the patch duration is confirmed
+- Patch trailers only show for patches without a livestream
+- Drip marketing dates can now be anchored to the 2nd phase
+- Rumored characters (marked with `?`) get a landscape trailer with the patch wallpaper
+
 # [1.1.8] - 2026-10-21
 ### Added
 - Previous patch data is now stored instead of being immediately wiped

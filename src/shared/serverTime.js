@@ -89,10 +89,15 @@ export function compileGameClock(name, game) {
         ? parseClock(game.character_trailer.time, `${name} trailer.time`)
         : parseClock(game.trailer_time, `${name} trailer_time`);
 
-    const needsLivestream = Boolean(game.livestream.is_predictable || game.livestream.date);
+    const needsLivestream = Boolean(
+        game.livestream.is_predictable ||
+        [game.previous, game.current, game.next].some((patch) => patch?.livestream_date),
+    );
     const livestreamMinutes = game.livestream.time ? parseClock(game.livestream.time, `${name} livestream.time`) : null;
 
     if (needsLivestream && livestreamMinutes === null) fail('livestream.time is required');
+
+    const dripMinutes = game.drip ? parseClock(game.drip.time, `${name} drip.time`) : null;
 
     const secondPhase = game.second_phase;
 
@@ -141,6 +146,7 @@ export function compileGameClock(name, game) {
         maintenance,
         trailerMinutes,
         livestreamMinutes,
+        dripMinutes,
         secondPhase: secondPhaseClock,
         eventStart: readScopedClock('event_start'),
         eventEnd: readScopedClock('event_end'),
