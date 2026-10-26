@@ -16,7 +16,7 @@ Windows SmartScreen may warn about an unrecognized app since the installer isn't
 ## Web version
 Try it in the browser at **https://rsparkle.github.io/gacha-manager/**.
 
-The web version has the schedule and task tracking, with accounts saved in the browser. Game detection and notifications are desktop-only.
+The web version has the schedule and task tracking, with accounts saved in the browser. Notifications work in the browser too, but only while the tab is open. Game detection is desktop-only.
 Use **Settings → Accounts backup** to move them between browsers or to and from the desktop app.
 
 ## Supported Games
@@ -44,7 +44,7 @@ https://github.com/user-attachments/assets/b0336d16-2e27-4e57-b3bb-063e3235cb73
 - **Per-Game Task Tracking:** Track dailies, weeklies, events, etc. per game.
 - **Server-Aware Reset Timers:** Every task counts down to its real reset time on your account's server, including servers that follow daylight saving time.
 - **Multi-Account Support:** Seamlessly switch between main and alt accounts. Entering a UID picks the right server automatically.
-- **Notifications & Game Detection:** Optional Windows alerts when unfinished tasks are about to reset, and optional automatic completion of your dailies when the game is running.
+- **Notifications & Game Detection:** Optional Windows or browser alerts when unfinished tasks are about to reset, and optional automatic completion of your dailies when the game is running.
 - **Schedule Tracking:** Visual calendar of patch releases, banners and livestreams with countdown timers and server-aware timing.
 - **Character Themes:** A default dark mode plus character themes for a few characters.
 

@@ -74,6 +74,7 @@ let checkingProcesses = false;
 let tray = null;
 let hidingToTray = false;
 let appUpdateRequired = false;
+let appStarted = false;
 
 const missingAssets = new Map();
 const pendingDownloads = new Map();
@@ -319,7 +320,7 @@ async function getImageUrl(filename) {
         if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
             const now = new Date();
 
-            fs.utimes(localPath, now, now).catch(() => {});
+            fs.utimes(localPath, now, now).catch(() => { });
         }
     } catch {
         if (!pendingDownloads.has(filename)) {
@@ -740,6 +741,8 @@ async function startApp() {
 
     createMainWindow();
 
+    appStarted = true;
+
     createTray();
 
     deleteCacheFiles();
@@ -759,7 +762,9 @@ async function startApp() {
 if (!app.requestSingleInstanceLock()) {
     app.quit();
 } else {
-    app.on('second-instance', showWindow);
+    app.on('second-instance', () => {
+        if (appStarted) showWindow();
+    });
 
     app.whenReady()
         .then(startApp)

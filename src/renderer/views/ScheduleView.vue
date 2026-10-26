@@ -257,12 +257,9 @@ const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 
 const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate);
 
-const canGoNext = computed(() => {
-    const maxMonth = today.getMonth() === 11 ? 0 : today.getMonth() + 2;
-    const maxYear = today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear();
+const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
 
-    return !(currentYear.value === maxYear && currentMonth.value === maxMonth);
-});
+const canGoNext = computed(() => new Date(currentYear.value, currentMonth.value, 1) < maxDate);
 
 const hoveredEventHasImage = computed(() => {
     if (!hoveredEvent.value) return false;
