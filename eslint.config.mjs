@@ -4,7 +4,7 @@ import globals from 'globals';
 import prettier from 'eslint-config-prettier';
 
 export default [
-    { ignores: ['**/.vite/**', 'out/**'] },
+    { ignores: ['**/.vite/**', 'out/**', 'dist/**', 'coverage/**'] },
     js.configs.recommended,
     ...pluginVue.configs['flat/recommended'],
     {
@@ -20,6 +20,10 @@ export default [
     {
         files: ['forge.config.js'],
         languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    },
+    {
+        files: ['tests/**/*.js', 'vitest.config.mjs'],
+        languageOptions: { globals: { ...globals.node } },
     },
     {
         files: ['vite.*.mjs'],

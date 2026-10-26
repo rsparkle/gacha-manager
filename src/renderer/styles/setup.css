@@ -52,14 +52,6 @@
     line-height: 1.1;
 }
 
-.setup-subtitle {
-    max-width: 480px;
-    margin: 2px 0 0;
-    color: var(--muted2);
-    font-size: 13px;
-    line-height: 1.55;
-}
-
 .game-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));

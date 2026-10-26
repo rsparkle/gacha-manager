@@ -3,8 +3,8 @@
         <NotificationCenter />
         <AppSettings />
         <ConfirmDialogue />
-        <UpdatePill />
-        <div class="title-bar">
+        <UpdatePill v-if="desktop" />
+        <div v-if="desktop" class="title-bar">
             <img :src="appIcon" alt="" class="title-bar-icon" />
             <span>Gacha Manager</span>
         </div>
@@ -66,9 +66,10 @@
                     </div>
                 </div>
                 <button
+                    v-if="desktop"
                     class="settings-btn"
                     title="Closes the window to save memory. The app keeps running in the tray."
-                    @click="hideToTray"
+                    @click="desktop.hideToTray()"
                 >
                     <span>Background</span>
                     <span>▾</span>
@@ -79,7 +80,12 @@
                 </button>
             </div>
         </div>
-        <SetupView v-if="currentView === 'setup'" @done="onSetupDone" />
+        <div v-if="startupError" class="startup-error">
+            <p class="startup-error-title">Gacha Manager couldn't start</p>
+            <p class="startup-error-detail">{{ startupError }}</p>
+            <button class="settings-btn" @click="reloadPage">Try again</button>
+        </div>
+        <SetupView v-else-if="currentView === 'setup'" @done="onSetupDone" />
         <TasksView v-else-if="currentView === 'tasks'" />
         <ScheduleView v-else-if="currentView === 'schedule'" />
         <AppFooter />
@@ -88,6 +94,7 @@
 
 <script setup>
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue';
+import platform from '#platform';
 
 import './styles/app.css';
 import.meta.glob('./styles/themes/*.css', { eager: true });
@@ -107,14 +114,16 @@ import UpdatePill from './components/UpdatePill.vue';
 
 const { createNotification, setTheme } = useNotification();
 const { settings, showSettings, saveSettings } = useSettings();
-const { gamesWithAccounts, loadGameData, loadAccounts, recompute } = useAccounts();
+const { gamesWithAccounts, loadGameData, loadAccounts, reloadAccountsAndSettings, syncMonthlySubs } = useAccounts();
 
+const desktop = platform.desktop;
 const hideSetup = ref(false);
 const currentView = ref(null);
 const themeMenuOpen = ref(false);
 const themePicker = ref(null);
+const startupError = ref(null);
 let taskTimer = null;
-let stopDailiesListener = null;
+let stopExternalChangeListener = null;
 let stopGameDataListener = null;
 
 const selectTheme = (theme) => {
@@ -144,13 +153,7 @@ const scheduleUpdate = () => {
 
     taskTimer = setTimeout(async () => {
         try {
-            const res = await window.api.syncCalendarMonthlySubs();
-
-            if (res?.changed) {
-                await loadAccounts();
-            } else {
-                recompute();
-            }
+            await syncMonthlySubs();
         } catch (err) {
             console.error('Minute tick failed:', err);
         }
@@ -158,9 +161,14 @@ const scheduleUpdate = () => {
     }, msUntilNextMinute);
 };
 
-const onDailiesCompleted = async () => {
-    createNotification('success', 'Daily completed!', 1000);
-    await loadAccounts();
+const onExternalChange = async (reason) => {
+    if (reason === 'dailiesCompleted') createNotification('success', 'Daily completed!', 1000);
+
+    try {
+        await reloadAccountsAndSettings();
+    } catch (err) {
+        console.error('Reloading accounts failed:', err);
+    }
 };
 
 const onGameDataUpdated = async () => {
@@ -172,7 +180,7 @@ const onGameDataUpdated = async () => {
     }
 };
 
-const hideToTray = () => window.api.hideToTray();
+const reloadPage = () => window.location.reload();
 
 watch(
     () => settings.value.theme,
@@ -187,8 +195,10 @@ watch(
             document.documentElement.classList.add(theme);
         }
 
+        if (!desktop) return;
+
         const style = getComputedStyle(document.documentElement);
-        window.api.setTitleBarColors({
+        desktop.setTitleBarColors({
             color: style.getPropertyValue('--titlebar-bg').trim(),
             symbolColor: style.getPropertyValue('--titlebar-symbol').trim(),
         });
@@ -199,16 +209,22 @@ watch(
 onMounted(async () => {
     document.addEventListener('mousedown', closeThemeMenuOnOutsideClick);
     document.addEventListener('keydown', closeThemeMenuOnEscape);
-    stopGameDataListener = window.api.onGameDataUpdated(onGameDataUpdated);
+    stopGameDataListener = platform.gameData.onUpdated(onGameDataUpdated);
 
-    await loadGameData();
-    await loadAccounts();
+    try {
+        await loadGameData();
+        await loadAccounts();
+    } catch (err) {
+        console.error('Startup failed:', err);
+        startupError.value = err.message;
+        return;
+    }
 
     hideSetup.value = gamesWithAccounts.value.length > 0;
     currentView.value = hideSetup.value ? 'tasks' : 'setup';
     scheduleUpdate();
 
-    stopDailiesListener = window.api.onDailiesCompleted(onDailiesCompleted);
+    stopExternalChangeListener = platform.accounts.onExternalChange(onExternalChange);
 });
 
 onUnmounted(() => {
@@ -216,7 +232,7 @@ onUnmounted(() => {
     document.removeEventListener('keydown', closeThemeMenuOnEscape);
     clearTimeout(taskTimer);
     if (settings.value.theme) document.documentElement.classList.remove(settings.value.theme);
-    if (stopDailiesListener) stopDailiesListener();
+    if (stopExternalChangeListener) stopExternalChangeListener();
     if (stopGameDataListener) stopGameDataListener();
 });
 </script>

@@ -204,10 +204,12 @@
 <script setup>
 import '../styles/schedule.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import platform from '#platform';
 import { createScheduleProcessor } from '../lib/scheduleProcessor.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
-import { slugify, formatCountdown } from '../../shared/format.js';
+import { slugify, formatCountdown, thumbnailPath } from '../../shared/format.js';
+import { SCHEDULE_SERVERS } from '../../shared/gameData.js';
 import { themeAsset } from '../themes.js';
 
 const { settings, saveSettings } = useSettings();
@@ -222,7 +224,7 @@ const now = ref(new Date());
 const currentYear = ref(today.getFullYear());
 const currentMonth = ref(today.getMonth());
 
-const servers = ['America', 'Europe', 'Asia'];
+const servers = SCHEDULE_SERVERS;
 const selectedServer = ref(settings.value?.server ?? 'America');
 
 const scheduleData = ref({});
@@ -256,7 +258,7 @@ const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
 const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate);
 
 const canGoNext = computed(() => {
-    const maxMonth = today.getMonth() === 11 ? 0 : today.getMonth() + 1;
+    const maxMonth = today.getMonth() === 11 ? 0 : today.getMonth() + 2;
     const maxYear = today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear();
 
     return !(currentYear.value === maxYear && currentMonth.value === maxMonth);
@@ -305,7 +307,7 @@ const loadGameIcons = () =>
             .filter((game) => !gameIcons[game])
             .map(async (game) => {
                 try {
-                    const url = await window.api.cacheImage(`games/${slugify(game)}_icon.webp`);
+                    const url = await platform.images.getUrl(`games/${slugify(game)}_icon.webp`);
 
                     if (url) gameIcons[game] = url;
                 } catch (err) {
@@ -326,7 +328,8 @@ const loadEventImages = () => {
             .filter((file) => !imageUrls[file])
             .map(async (file) => {
                 try {
-                    const url = await window.api.cacheImage(file);
+                    const url =
+                        (await platform.images.getUrl(thumbnailPath(file))) ?? (await platform.images.getUrl(file));
 
                     if (url) imageUrls[file] = url;
                 } catch (err) {

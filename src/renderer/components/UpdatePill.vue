@@ -24,7 +24,9 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
+import platform from '#platform';
 
+const updates = platform.desktop.updates;
 const state = ref({ status: 'idle' });
 let stopListener = null;
 
@@ -50,18 +52,17 @@ const title = computed(() => {
     return `Version ${version} is available`;
 });
 
-const openReleases = () => window.api.openReleasesPage();
-
-const download = () => window.api.downloadUpdate();
-const install = () => window.api.installUpdate();
-const dismiss = () => window.api.dismissUpdate();
+const openReleases = () => updates.openReleasesPage();
+const download = () => updates.download();
+const install = () => updates.install();
+const dismiss = () => updates.dismiss();
 
 onMounted(async () => {
-    stopListener = window.api.onUpdateState((next) => {
+    stopListener = updates.onState((next) => {
         state.value = next;
     });
 
-    state.value = await window.api.getUpdateState();
+    state.value = await updates.getState();
 });
 
 onUnmounted(() => {

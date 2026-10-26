@@ -40,15 +40,35 @@
 
     --accent-deep: #b9506a;
     --lace: #fdf4f5;
-    --bow-shape: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 50% 64%, 0 100%);
 }
 
 .theme-swatch.nikki {
-    width: 10px;
-    height: 7px;
+    width: 11px;
+    height: 11px;
     border-radius: 0;
-    background: #e07e93;
-    clip-path: polygon(0 0, 50% 36%, 100% 0, 100% 100%, 50% 64%, 0 100%);
+    background: url('../../../assets/themes/nikki/sparkle.webp') no-repeat center / contain;
+}
+
+.nikki .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        url('../../../assets/themes/nikki/sparkle.webp') no-repeat left 56% top 16px / 34px auto,
+        url('../../../assets/themes/nikki/sparkle.webp') no-repeat left 25% top 96px / 16px auto,
+        url('../../../assets/themes/nikki/sparkle.webp') no-repeat left 38% top 58px / 20px auto,
+        url('../../../assets/themes/nikki/star-pink.webp') no-repeat left 21% top 58px / 20px auto,
+        url('../../../assets/themes/nikki/star-pink.webp') no-repeat left 44% top 38px / 14px auto,
+        url('../../../assets/themes/nikki/star-peach.webp') no-repeat left 50% top 28px / 18px auto,
+        url('../../../assets/themes/nikki/star-peach.webp') no-repeat left 35% top 88px / 15px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 52% top 104px / 11px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 29% top 22px / 9px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 61% top 84px / 8px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 41% top 98px / 9px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 47% top 70px / 8px auto,
+        url('../../../assets/themes/nikki/star-white.webp') no-repeat left 33% top 44px / 8px auto;
+    opacity: 0.85;
 }
 
 .nikki .game-item {
@@ -56,16 +76,14 @@
 }
 
 .nikki .game-item.active::before {
-    left: -13px;
-    width: 11px;
-    height: 8px;
+    left: -9px;
+    width: 14px;
+    height: 14px;
     border-radius: 0;
-    background: var(--accent);
-    clip-path: var(--bow-shape);
+    background: url('../../../assets/themes/nikki/sparkle.webp') no-repeat center / contain;
 }
 
-.nikki .view-btn.active,
-.nikki .server-btn.active {
+.nikki .view-btn.active {
     box-shadow: inset 0 -2px 0 var(--accent);
 }
 
@@ -85,19 +103,64 @@
 
 .nikki .task-card-title::before {
     content: '';
-    width: 13px;
-    height: 9px;
+    width: 18px;
+    height: 18px;
     flex-shrink: 0;
-    background: var(--accent);
-    clip-path: var(--bow-shape);
+    background: url('../../../assets/themes/nikki/paw-glow.webp') no-repeat center / contain;
 }
 
 .nikki .task {
     border-radius: 9px;
 }
 
-.nikki .task-check {
-    border-radius: 6px;
+.nikki .task-check,
+.nikki .task.done .task-check,
+.nikki .task.disabled .task-check {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    color: transparent;
+}
+
+.nikki .task-check::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--muted);
+    -webkit-mask: url('../../../assets/themes/nikki/star-outline.webp') no-repeat center / contain;
+    mask: url('../../../assets/themes/nikki/star-outline.webp') no-repeat center / contain;
+    transition: background-color 120ms ease;
+}
+
+.nikki .task:hover .task-check::before {
+    background: var(--accent-hover);
+}
+
+.nikki .task.done .task-check::before {
+    inset: -3px;
+    background: url('../../../assets/themes/nikki/star-peach.webp') no-repeat center / contain;
+    -webkit-mask: none;
+    mask: none;
+    animation: nikki-star-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nikki .task.done:nth-child(even) .task-check::before {
+    background-image: url('../../../assets/themes/nikki/star-pink.webp');
+}
+
+@keyframes nikki-star-pop {
+    from {
+        opacity: 0;
+        transform: scale(0.4) rotate(-40deg);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) rotate(0);
+    }
 }
 
 .nikki .task-countdown-bar {
@@ -112,11 +175,6 @@
 .nikki .nav-btn,
 .nikki .game-badge {
     border-radius: 9px;
-}
-
-.nikki .server-select,
-.nikki .server-btn {
-    border-radius: 999px;
 }
 
 .nikki .event {
@@ -136,6 +194,12 @@
     box-shadow: 0 0 0 1.5px var(--lace);
 }
 
-.nikki .task-check {
-    position: relative;
+.nikki .cell.today:not(.cell--has-art)::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: url('../../../assets/themes/nikki/paw.webp') no-repeat center / auto 65px;
+    opacity: 0.45;
+    pointer-events: none;
 }

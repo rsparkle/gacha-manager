@@ -93,3 +93,6 @@ out/
 
 # Local database
 *.db
+
+# Web build
+dist/

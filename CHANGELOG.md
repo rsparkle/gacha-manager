@@ -1,7 +1,24 @@
 # Changelog
-## [1.1.9] - 2026-10-26
+## [1.2.0] - 2026-10-26
 ### Added
-- Special phases: extra banner phases within a patch (mostly collabs), each with its own date and characters
+- Web version: the schedule and task tracking now also run in the browser, with accounts saved in the browser
+- Accounts backup in Settings: export your accounts to a file and import them on another PC or in the web version
+- Drip marketing dates can now be marked as confirmed per game
+- UI decorations for Nikki's theme
+### Changed
+- Game data can now give a server a time zone instead of a fixed UTC offset
+- Removed pulse animation for Furina's theme
+- The schedule now shows up to two months ahead, instead of only next month
+- Special phases can now be marked as confirmed or estimated per patch
+### Fixed
+- Resets for servers that follow daylight saving time now move with the clock change instead of being an hour off (affects NTE America/EU)
+- The Sparkle theme's wave pattern now shows in the installed app
+- Monthly Sub Tracking now shows the default option as selected before it's ever changed
+- Schedule pictures are no longer pixelated, since the calendar now loads smaller copies made for its size
+
+## [1.1.9] - 2026-10-22
+### Added
+- Special phases: extra banner phases within a patch (collabs or 3rd phases), each with its own date and characters
 - Drip marketing time is now set per game
 - Drip marketing can be set to a single day per game
 ### Changed

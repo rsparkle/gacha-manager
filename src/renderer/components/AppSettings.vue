@@ -8,7 +8,7 @@
                 </div>
 
                 <div class="settings-body">
-                    <div class="settings-section settings-section--plain">
+                    <div v-if="desktop" class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Automatic Updates</span>
@@ -32,7 +32,7 @@
                         </div>
                     </div>
 
-                    <div class="settings-section settings-section--plain">
+                    <div v-if="desktop" class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Hardware Acceleration</span>
@@ -90,7 +90,7 @@
                         </div>
                     </div>
 
-                    <div class="settings-section settings-section--plain">
+                    <div v-if="desktop" class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Automation</span>
@@ -114,7 +114,7 @@
                         </div>
                     </div>
 
-                    <div class="settings-section settings-section--plain">
+                    <div v-if="desktop" class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Cached assets</span>
@@ -126,7 +126,20 @@
                         </div>
                     </div>
 
-                    <div class="settings-section">
+                    <div class="settings-section settings-section--plain">
+                        <div class="settings-row">
+                            <div class="settings-row-label">
+                                <span class="settings-row-title">Accounts backup</span>
+                                <small>Save your accounts to a file, or load them on another device or browser</small>
+                            </div>
+                            <div class="backup-actions">
+                                <button type="button" class="backup-btn" @click="exportBackup">Export</button>
+                                <button type="button" class="backup-btn" @click="importBackup">Import</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="desktop" class="settings-section">
                         <p class="settings-section-title">Account settings</p>
                         <p class="settings-section-desc">Configure automatic dailies and notifications per account</p>
                         <div class="game-groups">
@@ -181,6 +194,7 @@
 
 <script setup>
 import { ref, watch } from 'vue';
+import platform from '#platform';
 import { useNotification } from '../composables/useNotification.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
@@ -188,8 +202,9 @@ import { useConfirm } from '../composables/useConfirm.js';
 
 const { settings, showSettings, toggleSetting, saveSettings } = useSettings();
 const { createNotification } = useNotification();
-const { accountsPerGame, loadAccounts } = useAccounts();
+const { accountsPerGame, loadAccounts, exportAccounts, importAccounts } = useAccounts();
 const { confirm } = useConfirm();
+const desktop = platform.desktop;
 const draft = ref(null);
 
 watch(
@@ -208,7 +223,7 @@ const saveChanges = async () => {
     const accelerationChanged = draft.value.hardwareAcceleration !== settings.value.hardwareAcceleration;
     const response = await saveSettings(false, draft.value);
 
-    if (!response?.success) return;
+    if (!response) return;
 
     showSettings.value = false;
 
@@ -222,20 +237,41 @@ const saveChanges = async () => {
             cancelText: 'Later',
         }))
     ) {
-        window.api.relaunchApp();
+        desktop.relaunch();
     }
 };
 
 const deleteCacheAssets = async () => {
     try {
-        const response = await window.api.deleteCacheAssets();
-        if (response.success) {
-            createNotification('success', 'Cache deleted!', 1000);
-        } else {
-            createNotification('error', `Error: ${response.error || 'Unknown error'}`, 2000);
-        }
+        await desktop.clearImageCache();
+        createNotification('success', 'Cache deleted!', 1000);
     } catch (err) {
-        createNotification('error', `Critical Error: ${err.message}`, 2000);
+        createNotification('error', `Error: ${err.message}`, 2000);
+    }
+};
+
+const exportBackup = async () => {
+    try {
+        if (await exportAccounts()) createNotification('success', 'Accounts exported!', 1500);
+    } catch (err) {
+        createNotification('error', `Error: ${err.message}`, 2500);
+    }
+};
+
+const importBackup = async () => {
+    const ok = await confirm('Importing replaces all your current accounts with the ones in the file. Continue?', {
+        confirmText: 'Import',
+    });
+
+    if (!ok) return;
+
+    try {
+        if (!(await importAccounts())) return;
+
+        draft.value = JSON.parse(JSON.stringify(settings.value));
+        createNotification('success', 'Accounts imported!', 1500);
+    } catch (err) {
+        createNotification('error', `Error: ${err.message}`, 2500);
     }
 };
 </script>
@@ -559,6 +595,30 @@ const deleteCacheAssets = async () => {
     border-color: var(--urgent);
     background: color-mix(in srgb, var(--urgent) 12%, transparent);
     color: var(--urgent);
+}
+
+.backup-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.backup-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border-hover);
+    background: var(--task-bg);
+    color: var(--muted2);
+    font-family: 'Sora', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.backup-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
 }
 
 .confirm-enter-active,

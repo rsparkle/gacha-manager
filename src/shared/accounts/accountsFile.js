@@ -16,6 +16,16 @@ function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+function isValidAccount(account) {
+    return (
+        isPlainObject(account) &&
+        typeof account.id === 'string' &&
+        account.id.length > 0 &&
+        typeof account.server === 'string' &&
+        (account.tasks === undefined || isPlainObject(account.tasks))
+    );
+}
+
 function readEnvelope(data) {
     if (!isPlainObject(data)) {
         throw new Error('Invalid accounts.json structure');
@@ -65,12 +75,20 @@ export function migrateAccountsFile(data) {
     }
 
     for (const [gameName, gameAccounts] of Object.entries(accounts)) {
-        if (!Array.isArray(gameAccounts)) {
+        if (!Array.isArray(gameAccounts) || !gameAccounts.every(isValidAccount)) {
             throw new Error(`Invalid accounts for ${gameName}`);
         }
     }
 
     return { accounts, fromVersion };
+}
+
+export function backupFileName(date = new Date()) {
+    return `gacha-manager-accounts-${date.toISOString().slice(0, 10)}.json`;
+}
+
+export function parseAccounts(text) {
+    return migrateAccountsFile(JSON.parse(text));
 }
 
 export function serializeAccounts(accounts) {

@@ -12,29 +12,29 @@ import {
     shell,
 } from 'electron';
 
+import { createAccountService } from '../shared/accounts/accountService.js';
+import { backupFileName } from '../shared/accounts/accountsFile.js';
+import { createDeadlineNotifier } from '../shared/deadlineNotifier.js';
+import { createGameDataLoader } from '../shared/gameDataLoader.js';
+import { DEFAULT_SETTINGS } from '../shared/settings.js';
 import {
-    initializeAccounts,
-    getAccounts,
-    insertAccounts,
-    updateAccount,
-    deleteAccount,
-    setTaskCompleted,
-    getGroupedAccounts,
-    syncCalendarMonthlySubs,
-    updateNextNotification,
-    completeAutomaticDailies,
-    getAccountIds,
-    setGameData,
-    restartMonthlySubCount,
-} from './accountHelper.js';
-
+    GAME_DATA_REFRESH_MS,
+    MISSING_ASSET_RETRY_MS,
+    NETWORK_RETRY_MS,
+    RELEASES_URL,
+    STATUS_URL,
+    assetUrl,
+    encodePath,
+    fetchJson,
+    fetchWithTimeout,
+} from '../shared/remote.js';
+import { createAccountsFileStorage } from './accountsStorage.js';
+import { isOlderVersion } from './appVersion.js';
 import { resolveInside } from './safePath.js';
-import { createResetProcessor } from '../shared/resetProcessor';
 
 import path from 'node:path';
 import { promises as fs } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { isDeepStrictEqual } from 'node:util';
 import { execFile } from 'node:child_process';
 import Store from 'electron-store';
 import log from 'electron-log/main';
@@ -48,48 +48,36 @@ const store = new Store();
 
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 
-const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main';
-
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
-
-const CONFIG_BASE = `${ASSETS_BASE}/game-config/v1.json`;
 
 const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
 
-const TASKS_BASE = `${ASSETS_BASE}/game-tasks/v1.json`;
-
 const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
 
-const STATUS_URL = `${ASSETS_BASE}/status.json`;
-
-const RELEASES_URL = 'https://github.com/rsparkle/gacha-manager/releases/latest';
+const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
 
 const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
 
-const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
-const NETWORK_RETRY_MS = 60 * 1000;
-const GAME_DATA_REFRESH_MS = 6 * 60 * 60 * 1000;
 const CACHE_TOUCH_AFTER_MS = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000;
 
-let GAME_CONFIG = null;
-let GAME_TASKS = null;
-let refreshingGameData = null;
+let accounts = null;
+let notifier = null;
 let updatesStarted = false;
 let updateState = { status: 'idle', version: null, notes: '', percent: 0, failed: false };
 let updateDismissed = false;
 let updateNotification = null;
+let deadlineNotification = null;
 let mainWindow;
 let monitorInterval = null;
 let checkingProcesses = false;
 let tray = null;
 let hidingToTray = false;
-let rejectedGameData = null;
 let appUpdateRequired = false;
 
 const missingAssets = new Map();
 const pendingDownloads = new Map();
-const HARDWARE_ACCELERATION = store.get('hardwareAcceleration', false);
+const HARDWARE_ACCELERATION = store.get('hardwareAcceleration', DEFAULT_SETTINGS.hardwareAcceleration);
 
 if (!HARDWARE_ACCELERATION) app.disableHardwareAcceleration();
 
@@ -112,15 +100,10 @@ protocol.registerSchemesAsPrivileged([
     },
 ]);
 
-function isOlderVersion(current, minimum) {
-    const a = current.split('.').map(Number);
-    const b = minimum.split('.').map(Number);
-
-    for (let i = 0; i < 3; i++) {
-        if ((a[i] ?? 0) !== (b[i] ?? 0)) return (a[i] ?? 0) < (b[i] ?? 0);
+function sendToWindow(channel, payload) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(channel, payload);
     }
-
-    return false;
 }
 
 async function checkAppStatus() {
@@ -133,29 +116,6 @@ async function checkAppStatus() {
     } catch (err) {
         console.error('Status check failed:', err);
     }
-}
-
-async function fetchWithTimeout(url, ms = 5000) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), ms);
-
-    try {
-        return await fetch(url, {
-            signal: controller.signal,
-        });
-    } finally {
-        clearTimeout(timeout);
-    }
-}
-
-async function fetchJson(url) {
-    const response = await fetchWithTimeout(url);
-
-    if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-    }
-
-    return response.json();
 }
 
 async function readJson(file) {
@@ -171,121 +131,28 @@ async function writeJson(file, data) {
     await fs.rename(tempFile, file);
 }
 
-function validateGameData({ config, tasks }) {
-    createResetProcessor(config, tasks);
-}
+const gameData = createGameDataLoader({
+    readCache: async () => {
+        const [config, tasks] = await Promise.all([readJson(CONFIG_CACHE), readJson(TASKS_CACHE)]);
 
-async function fetchGameData() {
-    const [config, tasks] = await Promise.all([fetchJson(CONFIG_BASE), fetchJson(TASKS_BASE)]);
-
-    return { config, tasks };
-}
-
-async function readCachedGameData() {
-    const [config, tasks] = await Promise.all([readJson(CONFIG_CACHE), readJson(TASKS_CACHE)]);
-    const data = { config, tasks };
-
-    validateGameData(data);
-
-    return data;
-}
-
-async function cacheGameData({ config, tasks }) {
-    try {
-        await Promise.all([writeJson(CONFIG_CACHE, config), writeJson(TASKS_CACHE, tasks)]);
-    } catch (err) {
-        console.error('Failed to cache game data:', err);
-    }
-}
-
-async function loadGameData() {
-    try {
-        return { ...(await readCachedGameData()), fromCache: true };
-    } catch (cacheError) {
-        try {
-            const data = await fetchGameData();
-
-            validateGameData(data);
-            await cacheGameData(data);
-
-            return { ...data, fromCache: false };
-        } catch (remoteError) {
-            throw new Error(
-                `Failed to load game data.\n\nOnline: ${remoteError.message}\nCached: ${cacheError.message}`,
-                { cause: remoteError },
-            );
-        }
-    }
-}
-
-function applyGameData({ config, tasks }) {
-    setGameData({ config, tasks });
-
-    GAME_CONFIG = config;
-    GAME_TASKS = tasks;
-
-    if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('game-data-updated');
-    }
-}
-
-async function updateGameData() {
-    let data;
-
-    try {
-        data = await fetchGameData();
-    } catch (err) {
-        console.error('Game data refresh failed:', err);
-        return;
-    }
-
-    if (isDeepStrictEqual(data, { config: GAME_CONFIG, tasks: GAME_TASKS })) return;
-    if (isDeepStrictEqual(data, rejectedGameData)) return;
-
-    try {
-        validateGameData(data);
-    } catch (err) {
-        rejectedGameData = data;
-        console.error('Game data update rejected:', err);
-
+        return { config, tasks };
+    },
+    writeCache: ({ config, tasks }) => Promise.all([writeJson(CONFIG_CACHE, config), writeJson(TASKS_CACHE, tasks)]),
+    onUpdate: (data) => {
+        accounts.setGameData(data);
+        sendToWindow('game-data-updated');
+    },
+    onRejected: () => {
         new Notification({
             title: 'Game data update skipped',
             body: 'The latest game data was invalid, so the last working version is being used.',
         }).show();
-
-        return;
-    }
-
-    rejectedGameData = null;
-
-    await cacheGameData(data);
-
-    try {
-        applyGameData(data);
-    } catch (err) {
-        console.error('Failed to apply game data:', err);
-    }
-}
-
-function refreshGameData() {
-    refreshingGameData ??= updateGameData().finally(() => {
-        refreshingGameData = null;
-    });
-
-    return refreshingGameData;
-}
+    },
+});
 
 function handleGameDetected(gameName) {
     try {
-        const accountIds = getAccountIds('automaticDailies', gameName);
-
-        const changed = completeAutomaticDailies(gameName, accountIds);
-
-        if (!changed) return;
-
-        if (mainWindow && !mainWindow.isDestroyed()) {
-            mainWindow.webContents.send('dailies-completed');
-        }
+        if (accounts.completeAutomaticDailies(gameName)) sendToWindow('dailies-completed');
     } catch (err) {
         console.error('Automatic daily failed:', err);
     }
@@ -320,8 +187,8 @@ function getRunningProcesses() {
 async function checkProcesses() {
     if (checkingProcesses) return;
 
-    const gamesToCheck = Object.entries(GAME_CONFIG).filter(
-        ([gameName]) => getAccountIds('automaticDailies', gameName).length > 0,
+    const gamesToCheck = Object.entries(gameData.current.config).filter(
+        ([gameName]) => accounts.getAccountIds('automaticDailies', gameName).length > 0,
     );
 
     if (gamesToCheck.length === 0) return;
@@ -354,6 +221,14 @@ function startMonitoring() {
 function stopMonitoring() {
     clearInterval(monitorInterval);
     monitorInterval = null;
+}
+
+function syncMonitoring() {
+    if (store.get('checkGachaProcesses', DEFAULT_SETTINGS.checkGachaProcesses)) {
+        startMonitoring();
+    } else {
+        stopMonitoring();
+    }
 }
 
 async function deleteCacheFiles(months = 4) {
@@ -401,17 +276,13 @@ async function deleteCacheFiles(months = 4) {
     await cleanDirectory(ASSETS_CACHE);
 }
 
-function encodePath(relativePath) {
-    return relativePath.split('/').map(encodeURIComponent).join('/');
-}
-
 async function downloadAsset(filename, localPath) {
     const retryAt = missingAssets.get(filename);
 
     if (retryAt && Date.now() < retryAt) return;
 
     try {
-        const response = await fetchWithTimeout(`${ASSETS_BASE}/${encodePath(filename)}`, 10000);
+        const response = await fetchWithTimeout(assetUrl(filename), 10000);
 
         if (!response.ok) {
             missingAssets.set(filename, Date.now() + MISSING_ASSET_RETRY_MS);
@@ -429,6 +300,46 @@ async function downloadAsset(filename, localPath) {
     } catch {
         missingAssets.set(filename, Date.now() + NETWORK_RETRY_MS);
     }
+}
+
+async function getImageUrl(filename) {
+    if (typeof filename !== 'string') {
+        throw new Error('Invalid filename');
+    }
+
+    const localPath = resolveInside(ASSETS_CACHE, filename);
+
+    if (!localPath) {
+        throw new Error('Invalid filename');
+    }
+
+    try {
+        const stats = await fs.stat(localPath);
+
+        if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
+            const now = new Date();
+
+            fs.utimes(localPath, now, now).catch(() => {});
+        }
+    } catch {
+        if (!pendingDownloads.has(filename)) {
+            const download = downloadAsset(filename, localPath).finally(() => pendingDownloads.delete(filename));
+
+            pendingDownloads.set(filename, download);
+        }
+
+        await pendingDownloads.get(filename);
+
+        try {
+            await fs.access(localPath);
+        } catch {
+            return null;
+        }
+    }
+
+    const relativePath = path.relative(ASSETS_CACHE, localPath).split(path.sep).join('/');
+
+    return `asset://cache/${encodePath(relativePath)}`;
 }
 
 function registerProtocols() {
@@ -469,8 +380,34 @@ function registerProtocols() {
     });
 }
 
+async function exportAccountsToFile() {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+        defaultPath: path.join(app.getPath('documents'), backupFileName()),
+        filters: [{ name: 'Accounts backup', extensions: ['json'] }],
+    });
+
+    if (canceled || !filePath) return false;
+
+    await fs.writeFile(filePath, accounts.exportAccounts(), 'utf-8');
+
+    return true;
+}
+
+async function importAccountsFromFile() {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openFile'],
+        filters: [{ name: 'Accounts backup', extensions: ['json'] }],
+    });
+
+    if (canceled || filePaths.length === 0) return false;
+
+    accounts.importAccounts(await fs.readFile(filePaths[0], 'utf-8'));
+
+    return true;
+}
+
 function isAutomaticUpdates() {
-    return store.get('automaticUpdates', false);
+    return store.get('automaticUpdates', DEFAULT_SETTINGS.automaticUpdates);
 }
 
 function getUpdateState() {
@@ -485,9 +422,7 @@ function getUpdateState() {
 function setUpdateState(changes) {
     updateState = { ...updateState, ...changes };
 
-    if (mainWindow && !mainWindow.isDestroyed()) {
-        mainWindow.webContents.send('update-state', getUpdateState());
-    }
+    sendToWindow('update-state', getUpdateState());
 }
 
 function summarizeReleaseNotes(notes) {
@@ -569,6 +504,12 @@ function setupAutoUpdates() {
 
     checkForUpdates();
     setInterval(checkForUpdates, UPDATE_CHECK_MS);
+}
+
+function showDeadlineNotification({ title, body }) {
+    deadlineNotification = new Notification({ title, body });
+    deadlineNotification.on('click', showWindow);
+    deadlineNotification.show();
 }
 
 // --- Window Management ---
@@ -666,22 +607,17 @@ function createTray() {
 
 // --- IPC Handlers ---
 
-ipcMain.on('hideToTray', hideToTray);
-
-ipcMain.handle('relaunchApp', () => {
-    app.relaunch();
-    app.quit();
-});
-
 function handle(channel, handler) {
     ipcMain.handle(channel, async (_event, payload) => {
         try {
-            return { success: true, ...(await handler(payload)) };
+            return { success: true, data: await handler(payload) };
         } catch (error) {
             return { success: false, error: error.message };
         }
     });
 }
+
+ipcMain.on('hideToTray', hideToTray);
 
 ipcMain.on('setTitleBarColors', (_event, { color, symbolColor } = {}) => {
     if (process.platform === 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
@@ -692,150 +628,84 @@ ipcMain.on('setTitleBarColors', (_event, { color, symbolColor } = {}) => {
     mainWindow.setTitleBarOverlay({ color, symbolColor });
 });
 
-ipcMain.handle('getGameConfig', () => GAME_CONFIG);
+handle('getGameData', () => gameData.current);
 
-ipcMain.handle('getGameTasks', () => GAME_TASKS);
+handle('getImageUrl', getImageUrl);
 
-ipcMain.handle('getGroupedAccounts', () => getGroupedAccounts());
+handle('clearImageCache', () => deleteCacheFiles(0));
 
-ipcMain.handle('getGamesWithoutAccounts', () => {
-    const accounts = getAccounts();
+handle('getGroupedAccounts', () => accounts.getGroupedAccounts());
 
-    return Object.keys(GAME_CONFIG).filter((gameName) => !accounts[gameName]?.length);
-});
+handle('insertAccounts', (gameList) => accounts.insertAccounts(gameList));
 
-ipcMain.handle('cacheImage', async (_event, filename) => {
-    if (typeof filename !== 'string') {
-        throw new Error('Invalid filename');
-    }
+handle('updateAccount', ({ gameName, id, changes }) => accounts.updateAccount(gameName, id, changes));
 
-    const localPath = resolveInside(ASSETS_CACHE, filename);
+handle('deleteAccount', ({ gameName, id }) => accounts.deleteAccount(gameName, id));
 
-    if (!localPath) {
-        throw new Error('Invalid filename');
-    }
+handle('setTaskCompleted', ({ gameName, taskId, accountId, completed }) =>
+    accounts.setTaskCompleted(gameName, taskId, accountId, completed),
+);
 
-    try {
-        const stats = await fs.stat(localPath);
+handle('syncCalendarMonthlySubs', () => accounts.syncCalendarMonthlySubs());
 
-        if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
-            const now = new Date();
+handle('exportAccounts', exportAccountsToFile);
 
-            fs.utimes(localPath, now, now).catch(() => {});
-        }
-    } catch {
-        if (!pendingDownloads.has(filename)) {
-            const download = downloadAsset(filename, localPath).finally(() => pendingDownloads.delete(filename));
+handle('importAccounts', importAccountsFromFile);
 
-            pendingDownloads.set(filename, download);
-        }
-
-        await pendingDownloads.get(filename);
-
-        try {
-            await fs.access(localPath);
-        } catch {
-            return null;
-        }
-    }
-
-    const relativePath = path.relative(ASSETS_CACHE, localPath).split(path.sep).join('/');
-
-    return `asset://cache/${encodePath(relativePath)}`;
-});
-
-handle('insertAccounts', (gameList) => ({
-    data: insertAccounts(gameList),
-}));
-
-handle('updateAccount', ({ gameName, id, changes }) => ({
-    account: updateAccount(gameName, id, changes),
-}));
-
-handle('deleteAccount', ({ gameName, id }) => {
-    deleteAccount(gameName, id);
-});
-
-handle('setTaskCompleted', ({ gameName, taskId, accountId, completed }) => ({
-    account: setTaskCompleted(gameName, taskId, accountId, completed),
-}));
-
-handle('loadSettings', () => ({
-    data: store.store,
-}));
+handle('loadSettings', () => store.store);
 
 handle('saveSettings', (settings) => {
-    const monthlySubModeChanged =
-        settings.monthlySubCheck !== undefined && settings.monthlySubCheck !== store.get('monthlySubCheck', 'calendar');
+    const result = accounts.saveSettings(settings);
 
-    if (monthlySubModeChanged) syncCalendarMonthlySubs();
-
-    store.set(settings);
-
-    if (monthlySubModeChanged) restartMonthlySubCount();
-
-    if (settings.checkGachaProcesses) {
-        startMonitoring();
-    } else {
-        stopMonitoring();
-    }
-
-    updateNextNotification();
+    syncMonitoring();
     setupAutoUpdates();
 
     return {
-        accountsChanged: monthlySubModeChanged,
-        restartRequired: store.get('hardwareAcceleration', false) !== HARDWARE_ACCELERATION,
+        ...result,
+        restartRequired:
+            store.get('hardwareAcceleration', DEFAULT_SETTINGS.hardwareAcceleration) !== HARDWARE_ACCELERATION,
     };
 });
 
-handle('deleteCacheAssets', async () => {
-    await deleteCacheFiles(0);
-});
+handle('getUpdateState', getUpdateState);
 
-handle('syncCalendarMonthlySubs', () => ({
-    changed: syncCalendarMonthlySubs(),
-}));
+handle('downloadUpdate', downloadUpdate);
 
-ipcMain.handle('getUpdateState', () => getUpdateState());
-
-ipcMain.handle('downloadUpdate', () => downloadUpdate());
-
-ipcMain.handle('installUpdate', () => {
+handle('installUpdate', () => {
     if (updateState.status !== 'ready') return;
 
     setImmediate(() => autoUpdater.quitAndInstall(true, true));
 });
 
-ipcMain.handle('dismissUpdate', () => {
+handle('dismissUpdate', () => {
     updateDismissed = true;
     setUpdateState({});
 });
 
-ipcMain.handle('openReleasesPage', () => shell.openExternal(RELEASES_URL));
+handle('openReleasesPage', () => shell.openExternal(RELEASES_URL));
+
+handle('relaunchApp', () => {
+    app.relaunch();
+    app.quit();
+});
 
 // --- App Entry Point ---
 
 async function startApp() {
-    let gameData;
+    let initialData;
 
     try {
-        gameData = await loadGameData();
+        initialData = await gameData.load();
     } catch (err) {
         dialog.showErrorBox('Startup failed', err.message);
         app.quit();
         return;
     }
 
-    GAME_CONFIG = gameData.config;
-    GAME_TASKS = gameData.tasks;
-
     try {
-        initializeAccounts({
-            tasks: GAME_TASKS,
-            config: GAME_CONFIG,
-            settingsStore: store,
-            onNotificationClick: showWindow,
+        accounts = createAccountService({
+            storage: createAccountsFileStorage(ACCOUNTS_FILE),
+            settings: store,
         });
     } catch (err) {
         if (!err.userDeclined) {
@@ -846,14 +716,23 @@ async function startApp() {
         return;
     }
 
+    notifier = createDeadlineNotifier({
+        computeGroups: (now) => accounts.computeGroups(now),
+        enabledAccountIds: (gameName) => accounts.getAccountIds('windowsNotifications', gameName),
+        notify: showDeadlineNotification,
+    });
+
+    accounts.onChange(notifier.refresh);
+    accounts.setGameData(gameData.current);
+
     powerMonitor.on('resume', () => {
-        syncCalendarMonthlySubs();
-        updateNextNotification();
-        refreshGameData();
+        accounts.syncCalendarMonthlySubs();
+        notifier.refresh();
+        gameData.refresh();
         checkAppStatus();
     });
 
-    syncCalendarMonthlySubs();
+    accounts.syncCalendarMonthlySubs();
 
     setupAutoUpdates();
 
@@ -865,16 +744,14 @@ async function startApp() {
 
     deleteCacheFiles();
 
-    if (store.get('checkGachaProcesses', false)) {
-        startMonitoring();
-    }
+    syncMonitoring();
 
     checkAppStatus();
 
-    if (gameData.fromCache) refreshGameData();
+    if (initialData.fromCache) gameData.refresh();
 
     setInterval(() => {
-        refreshGameData();
+        gameData.refresh();
         checkAppStatus();
     }, GAME_DATA_REFRESH_MS);
 }

@@ -55,9 +55,9 @@ export function createScheduleProcessor(GAME_CONFIG) {
             );
 
         const secondPhaseAt = (dateKey) => {
-            const offset = clock.secondPhase.scope === 'server' ? clock.servers[server].offset : clock.globalOffset;
+            const zone = clock.secondPhase.scope === 'server' ? clock.servers[server].zone : clock.globalOffset;
 
-            return zonedInstant(dateKey, clock.secondPhase.minutes, offset);
+            return zonedInstant(dateKey, clock.secondPhase.minutes, zone);
         };
 
         const currentStart = toDateKey(gameData.current.version_start);
@@ -266,6 +266,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
 
         for (const prefix of PATCHES) {
             const patchData = gameData[prefix];
+            const confirmed = patchData.special_phase_confirmed ?? true;
 
             for (const [index, { date, characters }] of (patchData.special_phases ?? []).entries()) {
                 const phaseDate = timeline.secondPhaseAt(date);
@@ -280,7 +281,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                         label: title,
                         title,
                         imgFiles: [gameImg(game, patchData.version), defaultImg(game)],
-                        confirmed: true,
+                        confirmed: confirmed,
                     };
                     continue;
                 }
@@ -293,7 +294,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                         label: characters.length > 1 ? `${character} Release` : `${title} - ${character} Release`,
                         title: characters.length > 1 ? character : title,
                         imgFiles: [characterImg(character), ...patchImgs(game, gameData, patchData.version)],
-                        confirmed: true,
+                        confirmed: confirmed,
                     };
                 }
             }
@@ -344,7 +345,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
         if (!gameData.drip) return {};
 
         const { dates, globalAt } = timeline;
-        const { anchor, distance, week_start_rule, same_day } = gameData.drip;
+        const { anchor, distance, week_start_rule, same_day, confirmed } = gameData.drip;
 
         const dripMarketingEntries = [
             {
@@ -395,7 +396,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                     label: `${gameData.abbr} ${versionNumber} 5★ Drip Marketing`,
                     title: `${gameData.abbr} ${versionNumber} Drip`,
                     imgFiles: patchImgs(game, gameData, imgVersion),
-                    confirmed: true,
+                    confirmed: confirmed ?? null,
                 };
             }
         }

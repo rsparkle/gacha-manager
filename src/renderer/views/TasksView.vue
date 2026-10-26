@@ -252,6 +252,7 @@
 <script setup>
 import '../styles/tasks.css';
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue';
+import platform from '#platform';
 import { useNotification } from '../composables/useNotification.js';
 import { useConfirm } from '../composables/useConfirm.js';
 import { useSettings } from '../composables/useSettings.js';
@@ -552,7 +553,7 @@ const toggleAndSaveSetting = (map, gameName, accountId) => {
 const loadGameImage = async (game) => {
     const usingDefault = failedImages.value.has(game.name);
     const version = usingDefault ? 'default' : game.game_version;
-    const url = await window.api.cacheImage(`games/${slugify(game.name)}_${version}.webp`);
+    const url = await platform.images.getUrl(`games/${slugify(game.name)}_${version}.webp`);
 
     if (!url && !usingDefault) {
         handleImageError(game);
@@ -563,7 +564,7 @@ const loadGameImage = async (game) => {
 };
 
 const loadSidebarIcon = async (game) => {
-    sidebarIcons.value[game.name] = await window.api.cacheImage(`games/${slugify(game.name)}_icon.webp`);
+    sidebarIcons.value[game.name] = await platform.images.getUrl(`games/${slugify(game.name)}_icon.webp`);
 };
 
 const getGameImageBackgroundUrl = (game) => {

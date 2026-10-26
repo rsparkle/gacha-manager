@@ -9,6 +9,12 @@ export function slugify(name) {
         .replace(/^_|_$/g, '');
 }
 
+export function thumbnailPath(file) {
+    const slash = file.lastIndexOf('/');
+
+    return `${file.slice(0, slash + 1)}thumbs/${file.slice(slash + 1)}`;
+}
+
 export function formatCountdown(ms) {
     const days = Math.floor(ms / DAY);
     const hours = Math.floor((ms % DAY) / HOUR);

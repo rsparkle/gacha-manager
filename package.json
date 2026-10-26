@@ -1,7 +1,7 @@
 {
   "name": "gacha-manager",
   "productName": "Gacha Manager",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "A calendar and task manager for gacha game dailies, resets and schedules",
   "main": ".vite/build/main.js",
   "private": true,
@@ -9,9 +9,17 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "publish": "vitest run && electron-forge publish",
+    "web:dev": "vite --config vite.web.config.mjs",
+    "web:build": "vite build --config vite.web.config.mjs",
+    "web:preview": "vite preview --config vite.web.config.mjs",
     "lint": "eslint .",
-    "format": "prettier --write src"
+    "format": "prettier --write src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:data": "vitest run tests/data/gameData.test.js --mode assets",
+    "test:remote": "vitest run tests/data/gameData.test.js --mode remote",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": {
@@ -29,6 +37,7 @@
     "@electron/fuses": "^1.8.0",
     "@eslint/js": "^10.0.1",
     "@vitejs/plugin-vue": "^6.0.4",
+    "@vitest/coverage-v8": "^3.2.7",
     "electron": "40.4.1",
     "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
@@ -37,6 +46,7 @@
     "js-yaml": "^4.1.1",
     "prettier": "^3.9.10",
     "vite": "^5.4.21",
+    "vitest": "^3.2.7",
     "vue": "^3.5.44"
   },
   "dependencies": {

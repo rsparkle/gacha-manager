@@ -3,7 +3,6 @@
         <div class="setup-inner">
             <div class="setup-header">
                 <h1 class="setup-title">Choose Your Games</h1>
-                <p class="setup-subtitle">Select which games you want to track (you can add more later).</p>
             </div>
 
             <div v-if="!showLoader" class="game-grid">
@@ -59,6 +58,7 @@
 import '../styles/setup.css';
 
 import { ref, computed, onMounted } from 'vue';
+import platform from '#platform';
 
 import { useNotification } from '../composables/useNotification.js';
 import { useSettings } from '../composables/useSettings.js';
@@ -69,7 +69,7 @@ import { getLiveVersion } from '../../shared/liveVersion.js';
 
 const emit = defineEmits(['done']);
 
-const { gameConfig, insertAccounts } = useAccounts();
+const { gameConfig, gamesWithoutAccounts, insertAccounts } = useAccounts();
 const GAME_CONFIG = gameConfig.value;
 
 const { createNotification } = useNotification();
@@ -164,16 +164,14 @@ const submit = async () => {
 };
 
 const loadGames = async () => {
-    const gameNames = await window.api.getGamesWithoutAccounts();
-
-    gameList.value = gameNames.map((name) => ({
+    gameList.value = gamesWithoutAccounts.value.map((name) => ({
         name,
         currentVersion: getLiveVersion(GAME_CONFIG[name]),
     }));
 
     await Promise.all(
         gameList.value.map(async (game) => {
-            gameImages.value[game.name] = await window.api.cacheImage(`games/${slugify(game.name)}_icon.webp`);
+            gameImages.value[game.name] = await platform.images.getUrl(`games/${slugify(game.name)}_icon.webp`);
         }),
     );
 };

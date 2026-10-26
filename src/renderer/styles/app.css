@@ -64,6 +64,10 @@ input {
     --titlebar-symbol: #b0b0b8;
 }
 
+:root[data-platform='web'] {
+    --titlebar-h: 0px;
+}
+
 .title-bar {
     position: fixed;
     inset: 0 0 auto;
@@ -266,6 +270,32 @@ input {
 
 .hidden {
     display: none !important;
+}
+
+.startup-error {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: calc(120px + var(--titlebar-h)) 24px 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+}
+
+.startup-error-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.startup-error-detail {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--muted);
+    white-space: pre-line;
 }
 
 ::-webkit-scrollbar-track {

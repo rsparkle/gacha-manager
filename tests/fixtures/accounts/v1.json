@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "accounts": {
+    "Genshin Impact": [
+      {
+        "id": "8c1f2a4e-0b7d-4a51-9a2f-3d4c5b6a7e81",
+        "uid": "712345678",
+        "server": "Europe",
+        "label": "Main",
+        "tasks": {
+          "gi-original-resin": "2026-10-24T21:15:00.000Z",
+          "gi-weekly-bosses": "2026-10-20T18:00:00.000Z"
+        },
+        "monthlySubRemaining": 23,
+        "lastMonthlySubEditedDay": "2026-10-24T21:15:00.000Z"
+      }
+    ],
+    "Honkai: Star Rail": [
+      {
+        "id": "2b9d7c61-5e4f-4c3a-8b2d-1a0f9e8d7c6b",
+        "uid": "",
+        "server": "Europe",
+        "label": "",
+        "tasks": {}
+      }
+    ],
+    "Neverness To Everness": []
+  }
+}

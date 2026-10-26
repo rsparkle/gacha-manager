@@ -48,12 +48,61 @@ export function secondPhaseDay(patch) {
     return Math.ceil(patch.version_duration / 2) + (patch.second_phase_offset ?? 0);
 }
 
-export function zonedInstant(dateKey, minutes, utcOffset) {
-    return new Date(Date.parse(`${dateKey}T00:00:00Z`) + minutes * MINUTE - utcOffset * HOUR);
+const ZONE_FORMATTERS = new Map();
+
+function zoneFormatter(zone) {
+    let formatter = ZONE_FORMATTERS.get(zone);
+
+    if (!formatter) {
+        formatter = new Intl.DateTimeFormat('en-US', {
+            timeZone: zone,
+            hourCycle: 'h23',
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+        });
+        ZONE_FORMATTERS.set(zone, formatter);
+    }
+
+    return formatter;
 }
 
-export function localDate(instant, utcOffset) {
-    return new Date(instant.getTime() + utcOffset * HOUR);
+export function offsetAt(zone, instant) {
+    if (typeof zone === 'number') return zone;
+
+    const time = Math.floor(new Date(instant).getTime() / MINUTE) * MINUTE;
+    const parts = Object.fromEntries(
+        zoneFormatter(zone)
+            .formatToParts(new Date(time))
+            .map(({ type, value }) => [type, Number(value)]),
+    );
+    const wall = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
+
+    return (wall - time) / HOUR;
+}
+
+export function zonedInstant(dateKey, minutes, zone) {
+    const wall = Date.parse(`${dateKey}T00:00:00Z`) + minutes * MINUTE;
+
+    if (typeof zone === 'number') return new Date(wall - zone * HOUR);
+
+    const guess = wall - offsetAt(zone, wall) * HOUR;
+
+    return new Date(wall - offsetAt(zone, guess) * HOUR);
+}
+
+export function localDate(instant, zone) {
+    return new Date(instant.getTime() + offsetAt(zone, instant) * HOUR);
+}
+
+export function addZonedDays(instant, days, zone) {
+    const local = localDate(instant, zone);
+    const dateKey = toDateKey(local);
+    const minutes = (local.getTime() - Date.parse(`${dateKey}T00:00:00Z`)) / MINUTE;
+
+    return zonedInstant(shiftDate(dateKey, days), minutes, zone);
 }
 
 export function compileGameClock(name, game) {
@@ -64,6 +113,18 @@ export function compileGameClock(name, game) {
     const readOffset = (value, label) => {
         if (!Number.isFinite(value)) fail(`${label} must be a number`);
         return value;
+    };
+
+    const readZone = (server, serverName) => {
+        if (server.timezone === undefined) return readOffset(server.utc_offset, `${serverName} utc_offset`);
+
+        try {
+            zoneFormatter(server.timezone);
+        } catch {
+            fail(`${serverName} timezone "${server.timezone}" is not a valid IANA time zone`);
+        }
+
+        return server.timezone;
     };
 
     const globalOffset = readOffset(game.global_utc_offset, 'global_utc_offset');
@@ -135,10 +196,10 @@ export function compileGameClock(name, game) {
     const servers = {};
 
     for (const [serverName, server] of Object.entries(game.servers)) {
-        const offset = readOffset(server.utc_offset, `${serverName} utc_offset`);
+        const zone = readZone(server, serverName);
         const resetMinutes = parseClock(server.daily_reset ?? game.daily_reset, `${name} ${serverName} daily_reset`);
 
-        servers[serverName] = { offset, resetMinutes };
+        servers[serverName] = { zone, resetMinutes };
     }
 
     return {

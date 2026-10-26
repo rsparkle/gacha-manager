@@ -1,8 +1,6 @@
 import {
     DAY,
-    HOUR,
-    MINUTE,
-    addDays,
+    addZonedDays,
     compileGameClock,
     localDate,
     mod,
@@ -40,7 +38,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     function clockFor(time, { clock, server }) {
         const scoped = (spec) => ({
             minutes: spec.minutes,
-            offset: spec.scope === 'server' ? server.offset : clock.globalOffset,
+            zone: spec.scope === 'server' ? server.zone : clock.globalOffset,
         });
 
         const literal = literalTime(time);
@@ -51,9 +49,9 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
 
         switch (time) {
             case 'maintenanceStart':
-                return { minutes: maintenance.startMinutes, offset: clock.globalOffset };
+                return { minutes: maintenance.startMinutes, zone: clock.globalOffset };
             case 'maintenanceEnd':
-                return { minutes: maintenance.startMinutes + maintenance.durationMinutes, offset: clock.globalOffset };
+                return { minutes: maintenance.startMinutes + maintenance.durationMinutes, zone: clock.globalOffset };
             case 'secondPhase':
                 return scoped(clock.secondPhase);
             case 'eventStart':
@@ -61,14 +59,14 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
             case 'eventEnd':
                 return scoped(clock.eventEnd);
             default:
-                return { minutes: server.resetMinutes, offset: server.offset };
+                return { minutes: server.resetMinutes, zone: server.zone };
         }
     }
 
     function atLabel(label, time, context) {
-        const { minutes, offset } = clockFor(time, context);
+        const { minutes, zone } = clockFor(time, context);
 
-        return zonedInstant(toDateKey(label), minutes, offset);
+        return zonedInstant(toDateKey(label), minutes, zone);
     }
 
     function resolveDate(value, { gameConfig }) {
@@ -92,37 +90,33 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     }
 
     function getLastDailyReset(now, server) {
-        const offsetMs = server.offset * HOUR;
-        const localDayStart = Math.floor((now.getTime() + offsetMs) / DAY) * DAY;
-        const reset = localDayStart + server.resetMinutes * MINUTE - offsetMs;
+        const today = toDateKey(localDate(now, server.zone));
+        const reset = zonedInstant(today, server.resetMinutes, server.zone);
 
-        return new Date(reset > now.getTime() ? reset - DAY : reset);
+        return reset > now ? zonedInstant(shiftDate(today, -1), server.resetMinutes, server.zone) : reset;
     }
 
     function getWeeklyWindow({ gameConfig, lastDailyReset, server, reset }) {
         const weekday = reset.weekday ?? gameConfig.weekly_reset_weekday;
-        const serverWeekday = localDate(lastDailyReset, server.offset).getUTCDay();
-        const last = addDays(lastDailyReset, -mod(serverWeekday - weekday, 7));
+        const serverWeekday = localDate(lastDailyReset, server.zone).getUTCDay();
+        const last = addZonedDays(lastDailyReset, -mod(serverWeekday - weekday, 7), server.zone);
 
-        return { last, next: addDays(last, 7) };
+        return { last, next: addZonedDays(last, 7, server.zone) };
     }
 
     function getMonthlyWindow({ now, server, lastDailyReset, reset }) {
-        const local = localDate(lastDailyReset, server.offset);
+        const local = localDate(lastDailyReset, server.zone);
         const year = local.getUTCFullYear();
         const month = local.getUTCMonth();
         const boundaries = [];
 
-        for (const offset of [-1, 0, 1]) {
-            const monthLength = new Date(Date.UTC(year, month + offset + 1, 0)).getUTCDate();
+        for (const shift of [-1, 0, 1]) {
+            const monthLength = new Date(Date.UTC(year, month + shift + 1, 0)).getUTCDate();
 
             for (const day of reset.monthDays) {
-                boundaries.push(
-                    new Date(
-                        Date.UTC(year, month + offset, Math.min(day, monthLength), 0, server.resetMinutes) -
-                            server.offset * HOUR,
-                    ),
-                );
+                const dateKey = toDateKey(Date.UTC(year, month + shift, Math.min(day, monthLength)));
+
+                boundaries.push(zonedInstant(dateKey, server.resetMinutes, server.zone));
             }
         }
 
@@ -139,13 +133,21 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     function getIntervalWindow(context) {
         const { now, reset } = context;
 
-        const anchor = atLabel(reset.anchor, reset.startTime ?? 'dailyReset', context);
-        const intervalMs = reset.intervalDays * DAY;
-        const cycles = Math.floor((now - anchor) / intervalMs);
+        const startTime = reset.startTime ?? 'dailyReset';
+        const { zone } = clockFor(startTime, context);
+        const anchor = atLabel(reset.anchor, startTime, context);
+        const cycles = Math.floor((now - anchor) / (reset.intervalDays * DAY));
 
-        const last = new Date(anchor.getTime() + cycles * intervalMs);
+        let last = addZonedDays(anchor, cycles * reset.intervalDays, zone);
 
-        let next = addDays(last, reset.intervalDays);
+        if (last > now) last = addZonedDays(last, -reset.intervalDays, zone);
+
+        let next = addZonedDays(last, reset.intervalDays, zone);
+
+        if (next <= now) {
+            last = next;
+            next = addZonedDays(last, reset.intervalDays, zone);
+        }
 
         if (reset.patchCollision) {
             const maintenanceStart = getNextPatchMaintenanceStart(context);
@@ -174,9 +176,9 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     }
 
     const RESET_HANDLERS = {
-        daily: ({ lastDailyReset }) => ({
+        daily: ({ lastDailyReset, server }) => ({
             last: lastDailyReset,
-            next: addDays(lastDailyReset, 1),
+            next: addZonedDays(lastDailyReset, 1, server.zone),
         }),
         weekly: getWeeklyWindow,
         monthly: getMonthlyWindow,

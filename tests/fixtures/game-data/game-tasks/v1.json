@@ -1,0 +1,430 @@
+{
+  "Genshin Impact": {
+    "tasks": [
+      {
+        "id": "gi-original-resin",
+        "label": "Original Resin, Assignments",
+        "type": "Daily",
+        "reset": {
+          "kind": "daily"
+        }
+      },
+      {
+        "id": "gi-weekly-bosses",
+        "label": "Weekly Bosses",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "gi-spiral-abyss",
+        "label": "Spiral Abyss",
+        "type": "Endgame",
+        "reset": {
+          "kind": "monthly",
+          "monthDays": [
+            16
+          ]
+        }
+      },
+      {
+        "id": "gi-imaginarium-theater",
+        "label": "Imaginarium Theater",
+        "type": "Endgame",
+        "reset": {
+          "kind": "monthly",
+          "monthDays": [
+            1
+          ]
+        }
+      },
+      {
+        "id": "gi-stygian-onslaught",
+        "label": "Stygian Onslaught",
+        "type": "Endgame",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart+7",
+          "endDate": "patchEnd-1",
+          "startTime": "dailyReset",
+          "endTime": "dailyReset"
+        }
+      },
+      {
+        "id": "gi-main-event",
+        "label": "Silverwing in Pursuit of the Moon",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-09-24",
+          "endDate": "2026-10-12"
+        }
+      },
+      {
+        "id": "gi-side-event-1",
+        "label": "Predictive Victory Dynamics",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-12",
+          "endDate": "2026-10-20",
+          "startTime": "10:00@global",
+          "endTime": "09:59@global"
+        }
+      },
+      {
+        "id": "gi-side-event-2",
+        "label": "Carefree Snowball Fight",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-21",
+          "endDate": "2026-11-02"
+        }
+      }
+    ]
+  },
+  "Honkai: Star Rail": {
+    "tasks": [
+      {
+        "id": "hsr-trailblaze-power",
+        "label": "Trailblaze Power, Assignments",
+        "type": "Daily",
+        "reset": {
+          "kind": "daily"
+        }
+      },
+      {
+        "id": "hsr-weekly-bosses",
+        "label": "Weekly Bosses",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "hsr-divergent-universe",
+        "label": "Divergent Universe / Currency Wars",
+        "type": "Weekly",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-02-09",
+          "intervalDays": 14
+        }
+      },
+      {
+        "id": "hsr-memory-of-chaos",
+        "label": "Memory of Chaos",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-09-28",
+          "intervalDays": 35,
+          "patchCollision": true
+        }
+      },
+      {
+        "id": "hsr-pure-fiction",
+        "label": "Pure Fiction",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-10-19",
+          "intervalDays": 42,
+          "patchCollision": true
+        }
+      },
+      {
+        "id": "hsr-apocalyptic-shadow",
+        "label": "Apocalyptic Shadow",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-10-05",
+          "intervalDays": 42,
+          "patchCollision": true
+        }
+      },
+      {
+        "id": "hsr-anomaly-arbitration",
+        "label": "Anomaly Arbitration",
+        "type": "Endgame",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart",
+          "endDate": "patchEnd",
+          "startTime": "maintenanceEnd",
+          "endTime": "maintenanceStart"
+        }
+      },
+      {
+        "id": "hsr-main-event",
+        "label": "Love, Ghosts & Robots",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart",
+          "endDate": "patchEnd",
+          "startTime": "maintenanceEnd"
+        }
+      },
+      {
+        "id": "hsr-side-event-1",
+        "label": "Interastral Peace Gala: One Take",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "secondPhase",
+          "endDate": "patchEnd"
+        }
+      }
+    ]
+  },
+  "Zenless Zone Zero": {
+    "tasks": [
+      {
+        "id": "zzz-battery-charge",
+        "label": "Battery Charge",
+        "type": "Daily",
+        "reset": {
+          "kind": "daily"
+        }
+      },
+      {
+        "id": "zzz-weekly-bosses",
+        "label": "Weekly Bosses",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "zzz-hollow-zero",
+        "label": "Hollow Zero / Operation Bagel",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "zzz-shiyu-defense",
+        "label": "Shiyu Defense",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-02-20",
+          "intervalDays": 14
+        }
+      },
+      {
+        "id": "zzz-deadly-assault",
+        "label": "Deadly Assault",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-02-13",
+          "intervalDays": 14
+        }
+      },
+      {
+        "id": "zzz-battle-trial",
+        "label": "Battle Trial",
+        "type": "Seasonal",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-03-24",
+          "endDate": null,
+          "startTime": "maintenanceEnd",
+          "endTime": "maintenanceStart"
+        }
+      },
+      {
+        "id": "zzz-threshold-simulation",
+        "label": "Threshold Simulation",
+        "type": "Seasonal",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-02-06",
+          "endDate": null,
+          "startTime": "maintenanceEnd",
+          "endTime": "maintenanceStart"
+        }
+      },
+      {
+        "id": "zzz-annihilation-simulacrum",
+        "label": "Annihilation Simulacrum",
+        "type": "Seasonal",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-21",
+          "endDate": null,
+          "startTime": "maintenanceEnd",
+          "endTime": "maintenanceStart"
+        }
+      },
+      {
+        "id": "zzz-main-event",
+        "label": "Spooky Funhouse Tales",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart+1",
+          "endDate": "patchEnd-2"
+        }
+      }
+    ]
+  },
+  "Neverness To Everness": {
+    "tasks": [
+      {
+        "id": "nte-character-pixel",
+        "label": "Character Pixel",
+        "type": "Daily",
+        "reset": {
+          "kind": "daily"
+        }
+      },
+      {
+        "id": "nte-weekly-bosses",
+        "label": "Weekly Bosses",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "nte-city-stamina",
+        "label": "City Stamina",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "nte-pink-paws-heist",
+        "label": "Pink Paws Heist",
+        "type": "Weekly",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-05-25",
+          "intervalDays": 14
+        }
+      },
+      {
+        "id": "nte-beyond-the-rails",
+        "label": "Beyond The Rails",
+        "type": "Endgame",
+        "reset": {
+          "kind": "interval",
+          "anchor": "2026-10-22",
+          "intervalDays": 14,
+          "startTime": "05:00@global"
+        }
+      },
+      {
+        "id": "nte-coal-lump-treasure",
+        "label": "Coal Lump's Treasure",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-08",
+          "endDate": "patchEnd"
+        }
+      },
+      {
+        "id": "nte-snap-golden-crackshot",
+        "label": "Snap! Golden Crackshot",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "secondPhase",
+          "endDate": "patchEnd",
+          "startTime": "secondPhase"
+        }
+      },
+      {
+        "id": "nte-puka-lucky-flip",
+        "label": "Puka Lucky Flip",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-29",
+          "endDate": "patchEnd"
+        }
+      }
+    ]
+  },
+  "Infinity Nikki": {
+    "tasks": [
+      {
+        "id": "in-daily-wishes",
+        "label": "Vital Energy, Daily Wishes, Starlit Moments, Star Collecting",
+        "type": "Daily",
+        "reset": {
+          "kind": "daily"
+        }
+      },
+      {
+        "id": "in-weekly-activities",
+        "label": "Weekly Realm, Starlit Pursuit, Merit Arena",
+        "type": "Weekly",
+        "reset": {
+          "kind": "weekly"
+        }
+      },
+      {
+        "id": "in-mira-crown",
+        "label": "Mira Crown",
+        "type": "Endgame",
+        "reset": {
+          "kind": "monthly",
+          "monthDays": [
+            1,
+            16
+          ]
+        }
+      },
+      {
+        "id": "in-adventure-a-golden-city-of-dreams",
+        "label": "Adventure! A Golden City of Dreams",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart",
+          "endDate": "patchEnd"
+        }
+      },
+      {
+        "id": "in-when-petal-rain-meets-ink",
+        "label": "When Petal Rain Meets Ink",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "patchStart",
+          "endDate": "patchEnd"
+        }
+      },
+      {
+        "id": "in-justice-in-golden-light",
+        "label": "Justice In Golden Light",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "secondPhase",
+          "endDate": "patchEnd"
+        }
+      },
+      {
+        "id": "in-alison-travel-shop",
+        "label": "Alison's Travel Shop",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "secondPhase",
+          "endDate": "patchEnd"
+        }
+      }
+    ]
+  }
+}
