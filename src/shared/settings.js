@@ -8,4 +8,5 @@ export const DEFAULT_SETTINGS = {
     checkGachaProcesses: false,
     automaticUpdates: false,
     hardwareAcceleration: false,
+    favoriteGame: null,
 };

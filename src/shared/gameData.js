@@ -1,6 +1,6 @@
 export const ASSETS_BASE = 'https://raw.githubusercontent.com/rsparkle/gacha-manager-assets/refs/heads/main';
 
-export const GAME_CONFIG_VERSION = 1;
+export const GAME_CONFIG_VERSION = 2;
 export const GAME_TASKS_VERSION = 1;
 
 export const GAME_CONFIG_PATH = `game-config/v${GAME_CONFIG_VERSION}.json`;

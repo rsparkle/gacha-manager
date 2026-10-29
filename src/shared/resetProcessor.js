@@ -5,11 +5,18 @@ import {
     localDate,
     mod,
     parseClock,
-    secondPhaseDay,
     shiftDate,
     toDateKey,
     zonedInstant,
 } from './serverTime.js';
+import {
+    currentPatch,
+    patchEndDate,
+    patchOn,
+    patchSecondPhaseDate,
+    patchStartDate,
+    validatePatches,
+} from './patches.js';
 
 const LITERAL_TIME = /^(\d{1,2}:\d{2})@(server|global)$/;
 const PATCH_DATE = /^(patchStart|secondPhase|patchEnd)([+-]\d+)?$/;
@@ -69,24 +76,32 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         return zonedInstant(toDateKey(label), minutes, zone);
     }
 
-    function resolveDate(value, { gameConfig }) {
+    function windowPatch({ gameConfig, now, reset }) {
+        if (PLAIN_DATE.test(reset.startDate)) return patchOn(gameConfig, reset.startDate);
+
+        if (PLAIN_DATE.test(reset.endDate ?? '')) return patchOn(gameConfig, shiftDate(reset.endDate, -1));
+
+        return currentPatch(gameConfig, now);
+    }
+
+    function resolveDate(value, context, patch = currentPatch(context.gameConfig, context.now)) {
         const match = PATCH_DATE.exec(value);
 
         if (!match) return value;
 
-        const patch = gameConfig.current;
-        const patchStart = toDateKey(patch.version_start);
         const base = {
-            patchStart,
-            secondPhase: shiftDate(patchStart, secondPhaseDay(patch)),
-            patchEnd: shiftDate(patchStart, patch.version_duration),
+            patchStart: patchStartDate(patch),
+            secondPhase: patchSecondPhaseDate(patch),
+            patchEnd: patchEndDate(patch),
         }[match[1]];
 
         return shiftDate(base, Number(match[2] ?? 0));
     }
 
-    function getNextPatchMaintenanceStart(context) {
-        return atLabel(resolveDate('patchEnd', context), 'maintenanceStart', context);
+    function getPatchMaintenanceStarts(context) {
+        return ['patchStart', 'patchEnd'].map((label) =>
+            atLabel(resolveDate(label, context), 'maintenanceStart', context),
+        );
     }
 
     function getLastDailyReset(now, server) {
@@ -150,11 +165,11 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         }
 
         if (reset.patchCollision) {
-            const maintenanceStart = getNextPatchMaintenanceStart(context);
+            const maintenanceStart = getPatchMaintenanceStarts(context).find(
+                (start) => Math.abs(next.getTime() - start.getTime()) <= DAY,
+            );
 
-            if (Math.abs(next.getTime() - maintenanceStart.getTime()) <= DAY) {
-                next = maintenanceStart;
-            }
+            if (maintenanceStart) next = maintenanceStart;
         }
 
         return { last, next, isDisabled: now >= next };
@@ -162,10 +177,11 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
 
     function getWindow(context) {
         const { now, reset } = context;
+        const patch = windowPatch(context);
 
-        const last = atLabel(resolveDate(reset.startDate, context), reset.startTime ?? 'eventStart', context);
+        const last = atLabel(resolveDate(reset.startDate, context, patch), reset.startTime ?? 'eventStart', context);
         const next = reset.endDate
-            ? atLabel(resolveDate(reset.endDate, context), reset.endTime ?? 'eventEnd', context)
+            ? atLabel(resolveDate(reset.endDate, context, patch), reset.endTime ?? 'eventEnd', context)
             : null;
 
         return {
@@ -274,6 +290,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
             throw new Error(`Missing task configuration: ${gameName}`);
         }
 
+        validatePatches(gameName, gameConfig);
         CLOCKS.set(gameName, compileGameClock(gameName, gameConfig));
     }
 

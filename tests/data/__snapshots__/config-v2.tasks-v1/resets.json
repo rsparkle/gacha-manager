@@ -428,7 +428,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T08:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T08:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / America @ 2026-11-01T21:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T09:00:00.000Z after 24h",
@@ -439,7 +440,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T08:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T08:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-16T08:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / America @ 2026-11-01T12:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T09:00:00.000Z after 24h",
@@ -450,7 +452,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T08:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T08:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-16T08:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / America @ 2027-01-01T00:00:00.000Z": {
     "zzz-battery-charge": "2027-01-01T09:00:00.000Z after 24h",
@@ -461,7 +464,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "2027-01-11T08:59:00.000Z after 929h 59m",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / America @ 2027-03-29T03:00:00.000Z": {
     "zzz-battery-charge": "2027-03-29T09:00:00.000Z after 24h",
@@ -472,7 +476,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "disabled",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Europe @ 2026-10-25T12:00:00.000Z": {
     "zzz-battery-charge": "2026-10-26T03:00:00.000Z after 24h (completed)",
@@ -483,7 +488,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T02:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T02:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Europe @ 2026-11-01T21:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T03:00:00.000Z after 24h",
@@ -494,7 +500,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T02:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T02:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-16T02:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / Europe @ 2026-11-01T12:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T03:00:00.000Z after 24h",
@@ -505,7 +512,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-29T02:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-30T02:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-16T02:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / Europe @ 2027-01-01T00:00:00.000Z": {
     "zzz-battery-charge": "2027-01-01T03:00:00.000Z after 24h",
@@ -516,7 +524,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "2027-01-11T02:59:00.000Z after 929h 59m",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Europe @ 2027-03-29T03:00:00.000Z": {
     "zzz-battery-charge": "2027-03-30T03:00:00.000Z after 24h",
@@ -527,7 +536,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "disabled",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Asia @ 2026-10-25T12:00:00.000Z": {
     "zzz-battery-charge": "2026-10-25T20:00:00.000Z after 24h (completed)",
@@ -538,7 +548,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Asia @ 2026-11-01T21:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T20:00:00.000Z after 24h",
@@ -549,7 +560,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-15T19:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / Asia @ 2026-11-01T12:00:00.000Z": {
     "zzz-battery-charge": "2026-11-01T20:00:00.000Z after 24h",
@@ -560,7 +572,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-15T19:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / Asia @ 2027-01-01T00:00:00.000Z": {
     "zzz-battery-charge": "2027-01-01T20:00:00.000Z after 24h",
@@ -571,7 +584,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "2027-01-10T19:59:00.000Z after 929h 59m",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / Asia @ 2027-03-29T03:00:00.000Z": {
     "zzz-battery-charge": "2027-03-29T20:00:00.000Z after 24h",
@@ -582,7 +596,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "disabled",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / TW/HK/MO @ 2026-10-25T12:00:00.000Z": {
     "zzz-battery-charge": "2026-10-25T20:00:00.000Z after 24h (completed)",
@@ -593,7 +608,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / TW/HK/MO @ 2026-11-01T21:00:00.000Z": {
     "zzz-battery-charge": "2026-11-02T20:00:00.000Z after 24h",
@@ -604,7 +620,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-15T19:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / TW/HK/MO @ 2026-11-01T12:00:00.000Z": {
     "zzz-battery-charge": "2026-11-01T20:00:00.000Z after 24h",
@@ -615,7 +632,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "2026-11-28T19:59:00.000Z after 905h 59m (completed)"
+    "zzz-main-event": "2026-11-29T19:59:00.000Z after 929h 59m (completed)",
+    "zzz-side-event-1": "2026-11-15T19:59:00.000Z after 449h 59m"
   },
   "Zenless Zone Zero / TW/HK/MO @ 2027-01-01T00:00:00.000Z": {
     "zzz-battery-charge": "2027-01-01T20:00:00.000Z after 24h",
@@ -626,7 +644,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "2027-01-10T19:59:00.000Z after 929h 59m",
+    "zzz-side-event-1": "disabled"
   },
   "Zenless Zone Zero / TW/HK/MO @ 2027-03-29T03:00:00.000Z": {
     "zzz-battery-charge": "2027-03-29T20:00:00.000Z after 24h",
@@ -637,7 +656,8 @@
     "zzz-battle-trial": "open (completed)",
     "zzz-threshold-simulation": "open (completed)",
     "zzz-annihilation-simulacrum": "open (completed)",
-    "zzz-main-event": "disabled"
+    "zzz-main-event": "disabled",
+    "zzz-side-event-1": "disabled"
   },
   "Neverness To Everness / America @ 2026-10-25T12:00:00.000Z": {
     "nte-character-pixel": "2026-10-26T09:00:00.000Z after 24h (completed)",
@@ -852,8 +872,8 @@
     "in-daily-wishes": "2026-11-02T11:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-02T11:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-16T11:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -861,8 +881,8 @@
     "in-daily-wishes": "2026-11-02T11:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-02T11:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-16T11:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -897,8 +917,8 @@
     "in-daily-wishes": "2026-11-02T02:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-02T02:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-16T02:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -906,8 +926,8 @@
     "in-daily-wishes": "2026-11-02T02:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-02T02:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-16T02:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -942,8 +962,8 @@
     "in-daily-wishes": "2026-11-02T20:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-08T20:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-15T20:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -951,8 +971,8 @@
     "in-daily-wishes": "2026-11-01T20:00:00.000Z after 24h",
     "in-weekly-activities": "2026-11-01T20:00:00.000Z after 168h",
     "in-mira-crown": "2026-11-15T20:00:00.000Z after 360h",
-    "in-adventure-a-golden-city-of-dreams": "disabled",
-    "in-when-petal-rain-meets-ink": "disabled",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
     "in-justice-in-golden-light": "disabled",
     "in-alison-travel-shop": "disabled"
   },
@@ -966,6 +986,51 @@
     "in-alison-travel-shop": "disabled"
   },
   "Infinity Nikki / Asia @ 2027-03-29T03:00:00.000Z": {
+    "in-daily-wishes": "2027-03-29T20:00:00.000Z after 24h",
+    "in-weekly-activities": "2027-04-04T20:00:00.000Z after 168h",
+    "in-mira-crown": "2027-03-31T20:00:00.000Z after 384h",
+    "in-adventure-a-golden-city-of-dreams": "disabled",
+    "in-when-petal-rain-meets-ink": "disabled",
+    "in-justice-in-golden-light": "disabled",
+    "in-alison-travel-shop": "disabled"
+  },
+  "Infinity Nikki / HK/TW/Macau @ 2026-10-25T12:00:00.000Z": {
+    "in-daily-wishes": "2026-10-25T20:00:00.000Z after 24h (completed)",
+    "in-weekly-activities": "2026-10-25T20:00:00.000Z after 168h (completed)",
+    "in-mira-crown": "2026-10-31T20:00:00.000Z after 384h (completed)",
+    "in-adventure-a-golden-city-of-dreams": "2026-10-29T19:49:00.000Z after 856h 49m (completed)",
+    "in-when-petal-rain-meets-ink": "2026-10-29T19:49:00.000Z after 856h 49m (completed)",
+    "in-justice-in-golden-light": "2026-10-29T19:49:00.000Z after 424h 49m (completed)",
+    "in-alison-travel-shop": "2026-10-29T19:49:00.000Z after 424h 49m (completed)"
+  },
+  "Infinity Nikki / HK/TW/Macau @ 2026-11-01T21:00:00.000Z": {
+    "in-daily-wishes": "2026-11-02T20:00:00.000Z after 24h",
+    "in-weekly-activities": "2026-11-08T20:00:00.000Z after 168h",
+    "in-mira-crown": "2026-11-15T20:00:00.000Z after 360h",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-justice-in-golden-light": "disabled",
+    "in-alison-travel-shop": "disabled"
+  },
+  "Infinity Nikki / HK/TW/Macau @ 2026-11-01T12:00:00.000Z": {
+    "in-daily-wishes": "2026-11-01T20:00:00.000Z after 24h",
+    "in-weekly-activities": "2026-11-01T20:00:00.000Z after 168h",
+    "in-mira-crown": "2026-11-15T20:00:00.000Z after 360h",
+    "in-adventure-a-golden-city-of-dreams": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-when-petal-rain-meets-ink": "2026-11-26T19:49:00.000Z after 664h 49m",
+    "in-justice-in-golden-light": "disabled",
+    "in-alison-travel-shop": "disabled"
+  },
+  "Infinity Nikki / HK/TW/Macau @ 2027-01-01T00:00:00.000Z": {
+    "in-daily-wishes": "2027-01-01T20:00:00.000Z after 24h",
+    "in-weekly-activities": "2027-01-03T20:00:00.000Z after 168h",
+    "in-mira-crown": "2027-01-15T20:00:00.000Z after 360h",
+    "in-adventure-a-golden-city-of-dreams": "disabled",
+    "in-when-petal-rain-meets-ink": "disabled",
+    "in-justice-in-golden-light": "disabled",
+    "in-alison-travel-shop": "disabled"
+  },
+  "Infinity Nikki / HK/TW/Macau @ 2027-03-29T03:00:00.000Z": {
     "in-daily-wishes": "2027-03-29T20:00:00.000Z after 24h",
     "in-weekly-activities": "2027-04-04T20:00:00.000Z after 168h",
     "in-mira-crown": "2027-03-31T20:00:00.000Z after 384h",

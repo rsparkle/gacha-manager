@@ -151,8 +151,7 @@ export function compileGameClock(name, game) {
         : parseClock(game.trailer_time, `${name} trailer_time`);
 
     const needsLivestream = Boolean(
-        game.livestream.is_predictable ||
-        [game.previous, game.current, game.next].some((patch) => patch?.livestream_date),
+        game.livestream.is_predictable || (game.patches ?? []).some((patch) => patch?.livestream_date),
     );
     const livestreamMinutes = game.livestream.time ? parseClock(game.livestream.time, `${name} livestream.time`) : null;
 

@@ -1,28 +1,28 @@
-import { parseClock, parseMinutes, shiftDate, toDateKey, zonedInstant } from './serverTime.js';
+import { currentPatchIndex, isDated, maintenanceMinutes, patchEndDate, patchStartDate } from './patches.js';
+import { zonedInstant } from './serverTime.js';
 
 export function getLiveVersion(game, now = new Date()) {
-    const { current, next } = game;
-    const maintenance = game.maintenance?.first_phase;
+    const patches = game.patches ?? [];
+    const index = currentPatchIndex(game, now);
+    const current = patches[index];
 
-    if (!next?.version || !maintenance) return current.version;
+    if (!current) return null;
 
-    const openMinutes =
-        parseClock(maintenance.start, 'maintenance start') + parseMinutes(maintenance.duration, 'maintenance duration');
+    const minutes = maintenanceMinutes(game);
 
-    const nextStart = shiftDate(toDateKey(current.version_start), current.version_duration);
-    const nextOpensAt = zonedInstant(nextStart, openMinutes, game.global_utc_offset);
+    if (!minutes) return current.version;
 
-    if (now < nextOpensAt) return current.version;
+    const opensAt = (dateKey) => zonedInstant(dateKey, minutes.open, game.global_utc_offset);
 
-    if (next.future_livestream_version && next.version_duration) {
-        const afterNextOpensAt = zonedInstant(
-            shiftDate(nextStart, next.version_duration),
-            openMinutes,
-            game.global_utc_offset,
-        );
-
-        if (now >= afterNextOpensAt) return next.future_livestream_version;
+    if (now < opensAt(patchStartDate(current))) {
+        return patches[index - 1]?.version ?? current.version;
     }
 
-    return next.version;
+    const successor = patches[index + 1];
+
+    if (successor && !isDated(successor) && now >= opensAt(patchEndDate(current))) {
+        return successor.version;
+    }
+
+    return current.version;
 }

@@ -1,6 +1,7 @@
 import { createResetProcessor } from '../resetProcessor.js';
 import { DEFAULT_SETTINGS } from '../settings.js';
 import { parseAccounts, serializeAccounts } from './accountsFile.js';
+import { getLiveVersion } from '../liveVersion.js';
 
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
 const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'windowsNotifications'];
@@ -89,7 +90,7 @@ export function createAccountService({ storage, settings }) {
     function getGroupedAccounts() {
         return Object.entries(gameConfig).map(([gameName, config]) => ({
             name: gameName,
-            game_version: config.current.version,
+            game_version: getLiveVersion(config),
             accounts: (accounts[gameName] ?? []).map((account) => toUIAccount(gameName, account)),
         }));
     }

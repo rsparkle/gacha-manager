@@ -272,6 +272,16 @@
           "startDate": "patchStart+1",
           "endDate": "patchEnd-2"
         }
+      },
+      {
+        "id": "zzz-side-event-1",
+        "label": "Cyber Miracle Healer, on Duty!",
+        "type": "Event",
+        "reset": {
+          "kind": "window",
+          "startDate": "2026-10-28",
+          "endDate": "2026-11-16"
+        }
       }
     ]
   },

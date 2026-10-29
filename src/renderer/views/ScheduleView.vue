@@ -210,6 +210,7 @@ import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { slugify, formatCountdown, thumbnailPath } from '../../shared/format.js';
 import { SCHEDULE_SERVERS } from '../../shared/gameData.js';
+import { earliestPatchStart } from '../../shared/patches.js';
 import { themeAsset } from '../themes.js';
 
 const { settings, saveSettings } = useSettings();
@@ -218,6 +219,9 @@ const GAME_CONFIG = computed(() => gameConfig.value ?? {});
 
 let computeScheduleData;
 let clockTimer;
+let scheduleBuiltAt = 0;
+
+const SCHEDULE_REBUILD_MS = 60 * 60 * 1000;
 
 const today = new Date();
 const now = ref(new Date());
@@ -253,9 +257,17 @@ const monthNames = [
 const monthName = computed(() => monthNames[currentMonth.value]);
 const gameList = computed(() => Object.keys(scheduleData.value));
 
-const minDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+const minDate = computed(() => {
+    const starts = Object.values(GAME_CONFIG.value).map(earliestPatchStart).filter(Boolean).sort();
 
-const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate);
+    if (!starts.length) return new Date(today.getFullYear(), today.getMonth() - 1, 1);
+
+    const [year, month] = starts[0].split('-').map(Number);
+
+    return new Date(year, month - 1, 1);
+});
+
+const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate.value);
 
 const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
 
@@ -313,17 +325,26 @@ const loadGameIcons = () =>
             }),
     );
 
-const loadEventImages = () => {
-    const files = new Set(
-        Object.values(scheduleData.value)
-            .flatMap((events) => Object.values(events))
-            .flatMap((event) => event.imgFiles ?? []),
-    );
+const visibleImageFiles = computed(
+    () =>
+        new Set(
+            weeks.value
+                .flat()
+                .filter(Boolean)
+                .flatMap((day) => day.events)
+                .flatMap((event) => event.imgFiles ?? []),
+        ),
+);
 
-    return Promise.all(
-        [...files]
-            .filter((file) => !imageUrls[file])
+const pendingImages = new Set();
+
+const loadEventImages = () =>
+    Promise.all(
+        [...visibleImageFiles.value]
+            .filter((file) => !imageUrls[file] && !pendingImages.has(file))
             .map(async (file) => {
+                pendingImages.add(file);
+
                 try {
                     const url =
                         (await platform.images.getUrl(thumbnailPath(file))) ?? (await platform.images.getUrl(file));
@@ -331,10 +352,11 @@ const loadEventImages = () => {
                     if (url) imageUrls[file] = url;
                 } catch (err) {
                     console.error(`Failed to load ${file}:`, err);
+                } finally {
+                    pendingImages.delete(file);
                 }
             }),
     );
-};
 
 const getBackgroundImageWithFallbacks = (event) =>
     (event?.imgFiles ?? [])
@@ -498,13 +520,13 @@ const loadSchedule = () => {
 
     try {
         scheduleData.value = computeScheduleData(selectedServer.value);
+        scheduleBuiltAt = Date.now();
     } catch (err) {
         console.error('Failed to build schedule:', err);
         return;
     }
 
     loadGameIcons();
-    loadEventImages();
 };
 
 watch(
@@ -518,6 +540,8 @@ watch(
     { immediate: true },
 );
 
+watch(visibleImageFiles, () => loadEventImages(), { immediate: true });
+
 watch(selectedServer, (server) => {
     settings.value.server = server;
     saveSettings(true);
@@ -527,6 +551,12 @@ watch(selectedServer, (server) => {
 onMounted(() => {
     clockTimer = window.setInterval(() => {
         now.value = new Date();
+
+        if (!hoveredEvent.value && Date.now() - scheduleBuiltAt >= SCHEDULE_REBUILD_MS) {
+            loadSchedule();
+            return;
+        }
+
         loadGameIcons();
         loadEventImages();
     }, 30_000);

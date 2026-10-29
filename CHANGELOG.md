@@ -1,4 +1,21 @@
 # Changelog
+
+## [1.2.1] - 2026-10-29
+### Added
+- The schedule now goes back through every stored patch, so past months show every single stored event
+- Favorite game: star a game in Tasks to have it open first
+- Automatic dailies can now also be quickly toggled per account in Tasks, next to the notifications bell
+### Changed
+- The current patch is now worked out from today's date, so the schedule, versions and tasks move to the new patch on their own when it starts
+- Tasks tied to patch dates (patchStart / patchEnd) now repeat every patch, and events with a fixed start date use the end of the patch they started in
+- Schedule pictures only load for the month on screen
+- Past patch events no longer fall back to the current patch's artwork
+- Game data now holds a list of patches instead of previous / current / next
+- Uninstalling the app now also removes the cached img assets
+- UIDs can now have more than one valid length, and server detection supports longer prefixes
+### Fixed
+- ZZZ UIDs are now accepted and pick the right server automatically
+
 ## [1.2.0] - 2026-10-26
 ### Added
 - Web version: the schedule and task tracking now also run in the browser, with accounts saved in the browser

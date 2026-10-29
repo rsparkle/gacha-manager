@@ -204,6 +204,42 @@
     mask-image: linear-gradient(to right, transparent 0%, #000 24%);
 }
 
+.hero-title-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: -6px;
+}
+
+.btn-favorite {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted2);
+    cursor: pointer;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+
+.btn-favorite:hover {
+    background: var(--panel-hover);
+    color: var(--text);
+}
+
+.btn-favorite.active {
+    color: var(--accent);
+}
+
 .hero-title {
     position: relative;
     z-index: 1;
@@ -312,7 +348,7 @@
     gap: 6px;
 }
 
-.btn-bell,
+.btn-icon,
 .btn-edit,
 .btn-delete {
     min-height: 29px;
@@ -329,7 +365,7 @@
         color 120ms ease;
 }
 
-.btn-bell {
+.btn-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -342,14 +378,14 @@
     padding: 5px 11px;
 }
 
-.btn-bell:hover,
+.btn-icon:hover,
 .btn-edit:hover {
     background: var(--panel-hover);
     border-color: var(--accent);
     color: var(--text);
 }
 
-.btn-bell.active {
+.btn-icon.active {
     background: var(--panel-selected);
     border-color: var(--accent);
     color: var(--accent);
@@ -694,7 +730,8 @@
 
 .game-item:focus-visible,
 .add-game:focus-visible,
-.btn-bell:focus-visible,
+.btn-icon:focus-visible,
+.btn-favorite:focus-visible,
 .btn-edit:focus-visible,
 .btn-delete:focus-visible,
 .account-tab:focus-visible,

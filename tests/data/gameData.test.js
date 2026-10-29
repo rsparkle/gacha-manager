@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createResetProcessor } from '../../src/shared/resetProcessor.js';
 import { createScheduleProcessor } from '../../src/renderer/lib/scheduleProcessor.js';
 import { SCHEDULE_SERVERS } from '../../src/shared/gameData.js';
-import { DAY, HOUR, compileGameClock, localDate, shiftDate, toDateKey } from '../../src/shared/serverTime.js';
+import { DAY, HOUR, compileGameClock, localDate, toDateKey } from '../../src/shared/serverTime.js';
+import { currentPatchIndex, isDated, patchEndDate, patchSecondPhaseDate } from '../../src/shared/patches.js';
 import { makeAccount } from '../helpers/builders.js';
 import { loadGameData } from '../helpers/gameDataSource.js';
 
@@ -11,7 +12,6 @@ const games = Object.keys(config);
 
 const TASK_TYPES = ['Daily', 'Weekly', 'Endgame', 'Event', 'Seasonal'];
 const EVENT_TYPES = ['release', 'phase', 'trailer', 'drip', 'livestream'];
-const PATCHES = ['previous', 'current', 'next'];
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const SIMULATED_DAYS = 400;
 const SIMULATION_STEP = 5 * HOUR;
@@ -19,19 +19,6 @@ const MAX_PROBLEMS = 20;
 
 function isDateKey(value) {
     return typeof value === 'string' && DATE.test(value) && toDateKey(value) === value;
-}
-
-function patchStarts(game) {
-    const currentStart = toDateKey(game.current.version_start);
-    const previousStart = shiftDate(currentStart, -game.previous.version_duration);
-    const nextStart = shiftDate(currentStart, game.current.version_duration);
-    const afterNext = shiftDate(nextStart, game.next.version_duration);
-
-    return {
-        previous: [previousStart, currentStart],
-        current: [currentStart, nextStart],
-        next: [nextStart, afterNext],
-    };
 }
 
 function firstEvent(events, baseKey) {
@@ -165,7 +152,8 @@ describe(`game data from ${source}`, () => {
                 expect(game.process).toMatch(/\.exe$/i);
                 expect(game.monthlySub).toEqual(expect.any(String));
                 expect(game.monthlySub.trim()).not.toBe('');
-                expect(Number.isInteger(game.uid_digits) && game.uid_digits > 0).toBe(true);
+                expect(Array.isArray(game.uid_digits) && game.uid_digits.length > 0).toBe(true);
+                expect(game.uid_digits.every((value) => Number.isInteger(value) && value > 0)).toBe(true);
                 expect(typeof game.has_uid_pattern).toBe('boolean');
                 expect(game.global_utc_offset).toBeGreaterThanOrEqual(-12);
                 expect(game.global_utc_offset).toBeLessThanOrEqual(14);
@@ -184,9 +172,11 @@ describe(`game data from ${source}`, () => {
 
                 if (game.has_uid_pattern) {
                     const prefixes = servers.map(([, server]) => server.uid_prefix);
+                    const longest = Math.max(...game.uid_digits);
 
                     for (const prefix of prefixes) {
-                        expect(Number.isInteger(prefix) && prefix >= 0 && prefix <= 9).toBe(true);
+                        expect(Number.isInteger(prefix) && prefix >= 0, `prefix ${prefix}`).toBe(true);
+                        expect(String(prefix).length, `prefix ${prefix}`).toBeLessThan(longest);
                     }
 
                     expect(new Set(prefixes).size).toBe(prefixes.length);
@@ -198,18 +188,26 @@ describe(`game data from ${source}`, () => {
             });
 
             it('patches', () => {
-                const versions = PATCHES.map((key) => game[key].version);
+                const versions = game.patches.map((patch) => patch.version);
+                const dated = game.patches.filter(isDated);
 
-                expect(new Set([...versions, game.next.future_livestream_version]).size).toBe(4);
-                expect(isDateKey(game.current.version_start)).toBe(true);
-                expect(typeof game.next.future_livestream_version).toBe('string');
+                expect(new Set(versions).size).toBe(versions.length);
+                expect(dated.length).toBeGreaterThan(0);
 
-                for (const key of PATCHES) {
-                    const patch = game[key];
+                for (const [index, patch] of game.patches.entries()) {
+                    const key = `${patch.version} (patches[${index}])`;
 
                     expect(patch.version, key).toMatch(/^\d+\.\d+$/);
+
+                    if (!isDated(patch)) {
+                        expect(Object.keys(patch), key).toEqual(['version']);
+                        continue;
+                    }
+
+                    expect(isDateKey(patch.version_start), key).toBe(true);
                     expect(Number.isInteger(patch.version_duration) && patch.version_duration > 0, key).toBe(true);
                     expect(Number.isInteger(patch.second_phase_offset ?? 0), key).toBe(true);
+                    expect(typeof patch.is_version_duration_confirmed, key).toBe('boolean');
                     expect(patch.livestream_date == null || isDateKey(patch.livestream_date), key).toBe(true);
 
                     for (const characters of Object.values(patch.phase_characters ?? {})) {
@@ -224,40 +222,48 @@ describe(`game data from ${source}`, () => {
                         expect(isDateKey(phase.date), `${key} special phase date`).toBe(true);
                         expect(Array.isArray(phase.characters), `${key} special phase characters`).toBe(true);
                         if (patch.special_phase_confirmed !== undefined) {
-                            expect(typeof patch.special_phase_confirmed, `${key} special_phase_confirmed`).toBe('boolean');
+                            expect(typeof patch.special_phase_confirmed, `${key} special_phase_confirmed`).toBe(
+                                'boolean',
+                            );
                         }
                     }
                 }
 
-                for (const key of ['current', 'next']) {
-                    expect(typeof game[key].is_version_duration_confirmed, key).toBe('boolean');
+                for (let i = 1; i < dated.length; i++) {
+                    expect(dated[i].version_start, `${dated[i].version} starts when ${dated[i - 1].version} ends`).toBe(
+                        patchEndDate(dated[i - 1]),
+                    );
                 }
             });
 
-            it('dates fall inside their patch', () => {
-                const starts = patchStarts(game);
+            it('has the next patch and a version after it', () => {
+                const current = currentPatchIndex(game, now);
+                const next = game.patches[current + 1];
 
-                for (const key of PATCHES) {
-                    const [start, end] = starts[key];
-                    const second = shiftDate(
-                        start,
-                        Math.ceil(game[key].version_duration / 2) + (game[key].second_phase_offset ?? 0),
-                    );
+                expect(isDated(next), 'dated row after the current patch').toBe(true);
+                expect(game.patches[current + 2], 'row after the next patch').toBeDefined();
+            });
+
+            it('dates fall inside their patch', () => {
+                for (const patch of game.patches.filter(isDated)) {
+                    const start = toDateKey(patch.version_start);
+                    const end = patchEndDate(patch);
+                    const second = patchSecondPhaseDate(patch);
                     const inside = (date) => date > start && date < end;
 
-                    expect(inside(second), `${key} second phase ${second}`).toBe(true);
+                    expect(inside(second), `${patch.version} second phase ${second}`).toBe(true);
 
-                    for (const phase of game[key].special_phases ?? []) {
-                        expect(phase.date >= start && phase.date < end, `${key} special phase ${phase.date}`).toBe(
-                            true,
-                        );
+                    for (const phase of patch.special_phases ?? []) {
+                        expect(
+                            phase.date >= start && phase.date < end,
+                            `${patch.version} special phase ${phase.date}`,
+                        ).toBe(true);
                     }
 
-                    if (game[key].livestream_date) {
-                        expect(
-                            inside(game[key].livestream_date),
-                            `${key} livestream ${game[key].livestream_date}`,
-                        ).toBe(true);
+                    if (patch.livestream_date) {
+                        expect(inside(patch.livestream_date), `${patch.version} livestream ${patch.livestream_date}`).toBe(
+                            true,
+                        );
                     }
                 }
             });
@@ -300,14 +306,13 @@ describe(`game data from ${source}`, () => {
 
             it.each(servers)('events in order on %s', (server) => {
                 const events = createScheduleProcessor({ [gameName]: game }).computeScheduleData(server)[gameName];
-                const order = [
-                    'previousRelease',
-                    'previousSecondPhase',
-                    'release',
-                    'secondPhase',
-                    'nextPatchRelease',
-                    'nextPatchSecondPhase',
-                ].map((key) => [key, firstEvent(events, key)?.date.getTime()]);
+                const dated = game.patches.filter(isDated);
+                const order = dated.flatMap(({ version }) =>
+                    [`v${version}_release`, `v${version}_secondPhase`].map((key) => [
+                        key,
+                        firstEvent(events, key)?.date.getTime(),
+                    ]),
+                );
 
                 for (const [key, time] of order) {
                     expect(Number.isFinite(time), `${key} missing`).toBe(true);
@@ -317,13 +322,21 @@ describe(`game data from ${source}`, () => {
                     expect(order[i][1], `${order[i - 1][0]} -> ${order[i][0]}`).toBeGreaterThan(order[i - 1][1]);
                 }
 
-                if (events.livestream) {
-                    expect(events.livestream.date.getTime()).toBeGreaterThan(
-                        firstEvent(events, 'release').date.getTime(),
+                for (let i = 0; i < dated.length; i++) {
+                    const successor = game.patches[game.patches.indexOf(dated[i]) + 1];
+                    const livestream = successor && events[`v${successor.version}_livestream`];
+
+                    if (!livestream) continue;
+
+                    expect(livestream.date.getTime()).toBeGreaterThan(
+                        firstEvent(events, `v${dated[i].version}_release`).date.getTime(),
                     );
-                    expect(events.livestream.date.getTime()).toBeLessThan(
-                        firstEvent(events, 'nextPatchRelease').date.getTime(),
-                    );
+
+                    if (dated[i + 1]) {
+                        expect(livestream.date.getTime()).toBeLessThan(
+                            firstEvent(events, `v${dated[i + 1].version}_release`).date.getTime(),
+                        );
+                    }
                 }
             });
         });

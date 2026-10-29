@@ -1,3 +1,5 @@
+import { shiftDate } from '../../src/shared/serverTime.js';
+
 function isPlainObject(value) {
     return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -18,12 +20,14 @@ export function merge(base, overrides) {
     return result;
 }
 
-function patch(version, extra = {}) {
+export function patch(version, version_start, extra = {}) {
     return {
         version,
+        version_start,
         version_duration: 42,
         second_phase_offset: -1,
         phase_characters: { 1: [], 2: [] },
+        is_version_duration_confirmed: true,
         livestream_date: null,
         special_phases: [],
         ...extra,
@@ -35,11 +39,9 @@ export const BASE_GAME = {
     process: 'TestGame.exe',
     color: '#123456',
     monthlySub: 'Test Pass',
-    previous: patch('1.0'),
-    current: patch('1.1', { version_start: '2026-10-07', is_version_duration_confirmed: true }),
-    next: patch('1.2', { future_livestream_version: '1.3', is_version_duration_confirmed: true }),
+    patches: [patch('1.0', '2026-08-26'), patch('1.1', '2026-10-07'), patch('1.2', '2026-11-18'), { version: '1.3' }],
     has_uid_pattern: true,
-    uid_digits: 9,
+    uid_digits: [9],
     global_utc_offset: 8,
     daily_reset: '04:00',
     weekly_reset_weekday: 1,
@@ -72,8 +74,30 @@ export const DST_SERVERS = {
     Asia: { uid_prefix: null, utc_offset: 8 },
 };
 
+const SLOTS = ['previous', 'current', 'next', 'after'];
+
 export function makeGame(overrides = {}) {
-    return merge(BASE_GAME, overrides);
+    const slots = SLOTS.map((slot) => overrides[slot]);
+    const game = merge(
+        BASE_GAME,
+        Object.fromEntries(Object.entries(overrides).filter(([key]) => !SLOTS.includes(key))),
+    );
+
+    if (overrides.patches) return game;
+
+    game.patches = game.patches.map((entry, index) => merge(entry, slots[index]));
+
+    const [previous, current, next] = game.patches;
+
+    if (slots[0]?.version_start === undefined) {
+        previous.version_start = shiftDate(current.version_start, -previous.version_duration);
+    }
+
+    if (slots[2]?.version_start === undefined) {
+        next.version_start = shiftDate(current.version_start, current.version_duration);
+    }
+
+    return game;
 }
 
 export function makeConfig(games) {

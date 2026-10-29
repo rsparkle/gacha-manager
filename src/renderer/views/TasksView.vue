@@ -39,7 +39,31 @@
             <div v-if="selectedGame && selectedAccount" class="main-inner">
                 <div class="hero">
                     <img v-if="heroImage" :src="heroImage" class="hero-img" />
-                    <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
+                    <div class="hero-title-row">
+                        <button
+                            class="btn-favorite"
+                            :class="{ active: isFavorite }"
+                            :title="isFavorite ? 'Favorite game' : 'Set as favorite game'"
+                            :aria-pressed="isFavorite"
+                            @click="toggleFavorite"
+                        >
+                            <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                :fill="isFavorite ? 'currentColor' : 'none'"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            >
+                                <polygon
+                                    points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                                />
+                            </svg>
+                        </button>
+                        <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
+                    </div>
 
                     <div class="hero-bottom">
                         <div class="hero-account-info">
@@ -82,7 +106,7 @@
                                 v-model="editUidValue"
                                 class="account-uid account-uid-input"
                                 type="text"
-                                :maxlength="currentGameConfig?.uid_digits"
+                                :maxlength="uidMaxLength"
                                 inputmode="numeric"
                                 @keyup.enter="commitUidEdit(selectedAccount.id)"
                                 @blur="commitAndCancelUidEdit(selectedAccount.id)"
@@ -107,7 +131,7 @@
                             </button>
                             <button class="btn-delete" @click="deleteAccount">Delete Account</button>
                             <button
-                                class="btn-bell"
+                                class="btn-icon"
                                 :class="{ active: notificationsEnabled }"
                                 :title="notificationsEnabled ? 'Notifications on' : 'Notifications off'"
                                 @click="
@@ -132,6 +156,34 @@
                                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                     <line
                                         v-if="!notificationsEnabled"
+                                        x1="2"
+                                        y1="2"
+                                        x2="22"
+                                        y2="22"
+                                        stroke="currentColor"
+                                    />
+                                </svg>
+                            </button>
+                            <button
+                                v-if="desktop"
+                                class="btn-icon"
+                                :class="{ active: automationEnabled }"
+                                :title="automationEnabled ? 'Automatic dailies on' : 'Automatic dailies off'"
+                                @click="toggleAutomation"
+                            >
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    <line
+                                        v-if="!automationEnabled"
                                         x1="2"
                                         y1="2"
                                         x2="22"
@@ -273,6 +325,8 @@ const {
     setTaskCompleted,
 } = useAccounts();
 
+const desktop = platform.desktop;
+
 const defaultServer = (gameName) => Object.keys(gameConfig.value?.[gameName]?.servers ?? {})[0];
 
 const gameImages = ref({});
@@ -302,7 +356,15 @@ const currentGameConfig = computed(() => gameConfig.value?.[selectedGame.value?.
 const trackedGames = computed(() => accountsPerGame.value.filter((game) => game.accounts.length > 0));
 
 const selectedGame = computed(
-    () => trackedGames.value.find((g) => g.name === selectedGameName.value) ?? trackedGames.value[0] ?? null,
+    () =>
+        trackedGames.value.find((g) => g.name === selectedGameName.value) ??
+        trackedGames.value.find((g) => g.name === settings.value.favoriteGame) ??
+        trackedGames.value[0] ??
+        null,
+);
+
+const isFavorite = computed(
+    () => Boolean(selectedGame.value) && settings.value.favoriteGame === selectedGame.value.name,
 );
 
 const selectedAccount = computed(
@@ -316,6 +378,13 @@ const missingGames = computed(() => accountsPerGame.value.filter((g) => g.accoun
 
 const notificationsEnabled = computed(
     () => settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false,
+);
+
+const automationEnabled = computed(
+    () =>
+        (settings.value.checkGachaProcesses &&
+            settings.value.automaticDailies?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id)) ??
+        false,
 );
 
 const heroImage = computed(() => themeAsset(settings.value.theme, 'game_theme'));
@@ -406,6 +475,7 @@ const commitUidEdit = async (accountId) => {
     }
 
     const newUid = editUidValue.value;
+    const { uid_digits: uidDigits, has_uid_pattern: hasUidPattern, servers } = currentGameConfig.value;
     let server;
 
     if (!newUid) {
@@ -413,14 +483,15 @@ const commitUidEdit = async (accountId) => {
         return;
     }
 
-    if (newUid.length !== currentGameConfig.value.uid_digits) {
-        createNotification('error', `Your UID should have ${currentGameConfig.value.uid_digits} digits!`, 2000);
+    if (!uidDigits.includes(newUid.length)) {
+        createNotification('error', `Your UID should have ${formatDigitCounts(uidDigits)} digits!`, 2000);
         return;
     }
 
-    if (currentGameConfig.value.has_uid_pattern) {
-        const firstDigit = parseInt(newUid[0]);
-        server = Object.entries(currentGameConfig.value.servers).find(([, s]) => s.uid_prefix === firstDigit)?.[0];
+    if (hasUidPattern) {
+        server = Object.entries(servers)
+            .filter(([, s]) => s.uid_prefix != null && newUid.startsWith(String(s.uid_prefix)))
+            .sort(([, a], [, b]) => String(b.uid_prefix).length - String(a.uid_prefix).length)[0]?.[0];
 
         if (!server) {
             createNotification('error', 'Your UID is invalid.', 2000);
@@ -532,6 +603,11 @@ const saveMonthlySub = async () => {
 
 const availableServers = computed(() => Object.keys(currentGameConfig.value?.servers ?? {}));
 
+const formatDigitCounts = (counts) =>
+    counts.length === 1 ? `${counts[0]}` : `${counts.slice(0, -1).join(', ')} or ${counts.at(-1)}`;
+
+const uidMaxLength = computed(() => Math.max(...(currentGameConfig.value?.uid_digits ?? [])));
+
 const selectServer = async (server) => {
     editingServer.value = false;
     if (server === selectedAccount.value.server) return;
@@ -548,6 +624,30 @@ const handleClickOutside = (e) => {
 const toggleAndSaveSetting = (map, gameName, accountId) => {
     toggleSetting(map, gameName, accountId);
     saveSettings();
+};
+
+const toggleFavorite = () => {
+    settings.value.favoriteGame = isFavorite.value ? null : selectedGame.value.name;
+    saveSettings(true);
+};
+
+const toggleAutomation = () => {
+    const gameName = selectedGame.value.name;
+    const accountId = selectedAccount.value.id;
+
+    if (!settings.value.checkGachaProcesses) {
+        settings.value.checkGachaProcesses = true;
+
+        if (!Array.isArray(settings.value.automaticDailies[gameName])) settings.value.automaticDailies[gameName] = [];
+        if (!settings.value.automaticDailies[gameName].includes(accountId)) {
+            settings.value.automaticDailies[gameName].push(accountId);
+        }
+
+        saveSettings();
+        return;
+    }
+
+    toggleAndSaveSetting(settings.value.automaticDailies, gameName, accountId);
 };
 
 const loadGameImage = async (game) => {
