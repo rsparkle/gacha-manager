@@ -70,6 +70,9 @@ const SNOOZE_OPTIONS = [
     [240, '4 hours'],
 ];
 
+const STARTUP_ARG = '--startup';
+const LAUNCHED_AT_STARTUP = process.argv.includes(STARTUP_ARG);
+
 let accounts = null;
 let notifier = null;
 let updatesStarted = false;
@@ -248,6 +251,20 @@ function syncMonitoring() {
     } else {
         stopMonitoring();
     }
+}
+
+function isLaunchAtStartup() {
+    if (!app.isPackaged) return store.get('launchAtStartup', DEFAULT_SETTINGS.launchAtStartup);
+
+    const settings = app.getLoginItemSettings({ args: [STARTUP_ARG] });
+
+    return settings.executableWillLaunchAtLogin ?? settings.openAtLogin;
+}
+
+function setLaunchAtStartup(enabled) {
+    if (!app.isPackaged || typeof enabled !== 'boolean' || enabled === isLaunchAtStartup()) return;
+
+    app.setLoginItemSettings({ openAtLogin: enabled, args: [STARTUP_ARG] });
 }
 
 async function deleteCacheFiles(months = 4) {
@@ -566,7 +583,7 @@ const ICON_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'icon.ico')
     : path.join(__dirname, '../../build/icon.ico');
 
-const createMainWindow = () => {
+const createMainWindow = ({ minimized = false } = {}) => {
     hidingToTray = false;
 
     mainWindow = new BrowserWindow({
@@ -613,6 +630,12 @@ const createMainWindow = () => {
     }
 
     mainWindow.once('ready-to-show', () => {
+        if (minimized) {
+            mainWindow.once('restore', () => mainWindow.maximize());
+            mainWindow.minimize();
+            return;
+        }
+
         mainWindow.maximize();
         mainWindow.show();
     });
@@ -700,13 +723,14 @@ handle('exportAccounts', exportAccountsToFile);
 
 handle('importAccounts', importAccountsFromFile);
 
-handle('loadSettings', () => store.store);
+handle('loadSettings', () => ({ ...store.store, launchAtStartup: isLaunchAtStartup() }));
 
 handle('saveSettings', (settings) => {
     const result = accounts.saveSettings(settings);
 
     syncMonitoring();
     setupAutoUpdates();
+    setLaunchAtStartup(settings?.launchAtStartup);
 
     return {
         ...result,
@@ -786,7 +810,7 @@ async function startApp() {
 
     registerProtocols();
 
-    createMainWindow();
+    createMainWindow({ minimized: LAUNCHED_AT_STARTUP });
 
     appStarted = true;
 

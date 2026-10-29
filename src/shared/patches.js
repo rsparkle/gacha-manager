@@ -68,14 +68,14 @@ export function patchEndDate(patch) {
     return shiftDate(patchStartDate(patch), patch.version_duration);
 }
 
-export function maintenanceMinutes(game) {
-    const maintenance = game.maintenance?.first_phase;
+export function maintenanceMinutes(game, phase = 'first_phase') {
+    const maintenance = game.maintenance?.[phase];
 
     if (!maintenance) return null;
 
-    const start = parseClock(maintenance.start, 'maintenance start');
+    const start = parseClock(maintenance.start, `maintenance.${phase}.start`);
 
-    return { start, open: start + parseMinutes(maintenance.duration, 'maintenance duration') };
+    return { start, open: start + parseMinutes(maintenance.duration, `maintenance.${phase}.duration`) };
 }
 
 export function currentPatchIndex(game, now = new Date()) {

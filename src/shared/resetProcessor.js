@@ -1,5 +1,6 @@
 import {
     DAY,
+    MINUTE,
     addZonedDays,
     compileGameClock,
     localDate,
@@ -16,6 +17,7 @@ import {
     patchSecondPhaseDate,
     patchStartDate,
     validatePatches,
+    maintenanceMinutes
 } from './patches.js';
 
 const LITERAL_TIME = /^(\d{1,2}:\d{2})@(server|global)$/;
@@ -420,11 +422,42 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
 
     dryRun();
 
+    function getIncomingMaintenanceTime(gameGroup, now) {
+        const gameConfig = GAME_CONFIG[gameGroup.name];
+        const patch = currentPatch(gameConfig, now);
+
+        if (!patch) return null;
+
+        const zone = gameConfig.global_utc_offset;
+        const firstPhase = maintenanceMinutes(gameConfig);
+        const secondPhase = maintenanceMinutes(gameConfig, 'second_phase');
+
+        const cycles = [
+            { date: patchStartDate(patch), minutes: firstPhase },
+            { date: patchSecondPhaseDate(patch), minutes: secondPhase },
+            { date: patchEndDate(patch), minutes: firstPhase },
+        ];
+
+        for (const { date, minutes } of cycles) {
+            if (!minutes) continue;
+
+            const timeLeft = zonedInstant(date, minutes.start, zone) - now;
+            const duration = (minutes.open - minutes.start) * MINUTE;
+
+            if (timeLeft <= 0 && timeLeft > -duration) return { type: 'maintenance_ongoing', time: timeLeft + duration };
+            if (timeLeft > 0 && timeLeft <= DAY) return { type: 'maintenance_upcoming', time: timeLeft };
+        }
+
+        return null;
+    }
+
     function computeTaskResetData(gameGroups, now = new Date()) {
         gameGroups.forEach((gameGroup) => {
             gameGroup.accounts.forEach((account) => {
                 computeSingleAccountResetData(account, gameGroup.name, now);
             });
+
+            gameGroup.maintenance = getIncomingMaintenanceTime(gameGroup, now)
         });
 
         return gameGroups;

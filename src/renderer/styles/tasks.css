@@ -204,6 +204,39 @@
     mask-image: linear-gradient(to right, transparent 0%, #000 24%);
 }
 
+.maintenance-warning {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 29px;
+    margin-right: 6px;
+    padding: 0 11px;
+    border: 1px solid color-mix(in srgb, var(--mw) 45%, var(--border));
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--mw) 14%, var(--panel));
+    color: var(--mw);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.maintenance-warning--upcoming {
+    --mw: var(--urgent);
+}
+
+.maintenance-warning--ongoing {
+    --mw: var(--danger);
+    background: color-mix(in srgb, var(--mw) 24%, var(--panel));
+}
+
+.maintenance-dot {
+    width: 7px;
+    height: 7px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: currentColor;
+}
+
 .hero-title-row {
     position: relative;
     z-index: 1;

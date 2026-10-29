@@ -12,10 +12,34 @@
                         <div class="settings-row">
                             <div class="settings-row-label">
                                 <span class="settings-row-title">Automatic Updates</span>
-                                <small>Download and install new versions automatically</small>
+                                <small>Download and install new versions in the background</small>
                             </div>
                             <label class="toggle">
                                 <input v-model="draft.automaticUpdates" type="checkbox" />
+                                <span class="toggle-box">
+                                    <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
+                                        <path
+                                            d="M2 8.5L6 12L14 3"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            stroke-width="2.2"
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div v-if="desktop" class="settings-section settings-section--plain">
+                        <div class="settings-row">
+                            <div class="settings-row-label">
+                                <span class="settings-row-title">Start Automatically</span>
+                                <small>Launch when your computer starts</small>
+                            </div>
+                            <label class="toggle">
+                                <input v-model="draft.openAtLogin" type="checkbox" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path

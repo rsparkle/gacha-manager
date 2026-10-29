@@ -125,6 +125,16 @@
                             />
                         </div>
                         <div class="hero-actions">
+                            <div
+                                v-if="selectedGame.maintenance"
+                                class="maintenance-warning"
+                                :class="
+                                    maintenanceOngoing ? 'maintenance-warning--ongoing' : 'maintenance-warning--upcoming'
+                                "
+                            >
+                                <span class="maintenance-dot" />
+                                {{ maintenanceLabel }}
+                            </div>
                             <button v-if="!editingUid" class="btn-edit" @click="startUidEdit">Edit UID</button>
                             <button v-else class="btn-edit" @mousedown.prevent="cancelUidEdit" @click="cancelUidEdit">
                                 Cancel
@@ -251,7 +261,7 @@
                     </div>
                 </div>
 
-                <div class="tasks-area" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
+                <div class="tasks-area" :class="{ 'tasks-area--maintenance': selectedGame.maintenance }" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
                     <img
                         :key="selectedGame.name"
                         :src="gameImages[selectedGame.name]"
@@ -416,6 +426,18 @@ const completionPercentage = computed(() => {
     const done = active.filter((task) => task.isCompleted).length;
 
     return active.length > 0 ? Math.floor((done / active.length) * 100) : 0;
+});
+
+const maintenanceOngoing = computed(() => selectedGame.value?.maintenance?.type === 'maintenance_ongoing');
+
+const maintenanceLabel = computed(() => {
+    const maintenance = selectedGame.value?.maintenance;
+
+    if (!maintenance) return '';
+
+    const time = formatCountdown(maintenance.time);
+
+    return maintenanceOngoing.value ? `Maintenance ends in ${time}` : `Maintenance starts in ${time}`;
 });
 
 const run = async (action, successMessage, duration = 1000) => {

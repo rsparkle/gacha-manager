@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.3] - 2026-10-29
+### Added
+- Added a Launch at Startup setting
+- Maintenance notice per game: shows a countdown when a global maintenance starts within 24 hours (patch update or second phase), and how long is left while it's ongoing
+
 ## [1.2.2] - 2026-10-29
 ### Added
 - Schedule now shows events for games the app doesn't track yet, such as launch livestreams and release dates, under a new Others filter
