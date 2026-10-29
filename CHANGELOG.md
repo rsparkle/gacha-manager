@@ -3,7 +3,7 @@
 ## [1.2.3] - 2026-10-29
 ### Added
 - Added a Launch at Startup setting
-- Maintenance notice per game: shows a countdown when a global maintenance starts within 24 hours (patch update or second phase), and how long is left while it's ongoing
+- Maintenance countdown for upcoming and ongoing maintenance
 
 ## [1.2.2] - 2026-10-29
 ### Added
