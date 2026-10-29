@@ -48,6 +48,7 @@ describe('deadline notifications', () => {
         expect(notify).toHaveBeenCalledWith({
             title: 'Some tasks are approaching their deadline!',
             body: `There are 2 tasks approaching their deadlines in ${GAME}`,
+            deadline: new Date('2026-10-25T20:00:00Z').getTime(),
         });
 
         notifier.refresh();

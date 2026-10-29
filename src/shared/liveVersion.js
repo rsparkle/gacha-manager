@@ -1,4 +1,4 @@
-import { currentPatchIndex, isDated, maintenanceMinutes, patchEndDate, patchStartDate } from './patches.js';
+import { currentPatchIndex, maintenanceMinutes, patchStartDate } from './patches.js';
 import { zonedInstant } from './serverTime.js';
 
 export function getLiveVersion(game, now = new Date()) {
@@ -12,17 +12,7 @@ export function getLiveVersion(game, now = new Date()) {
 
     if (!minutes) return current.version;
 
-    const opensAt = (dateKey) => zonedInstant(dateKey, minutes.open, game.global_utc_offset);
+    const opensAt = zonedInstant(patchStartDate(current), minutes.open, game.global_utc_offset);
 
-    if (now < opensAt(patchStartDate(current))) {
-        return patches[index - 1]?.version ?? current.version;
-    }
-
-    const successor = patches[index + 1];
-
-    if (successor && !isDated(successor) && now >= opensAt(patchEndDate(current))) {
-        return successor.version;
-    }
-
-    return current.version;
+    return now < opensAt ? (patches[index - 1]?.version ?? current.version) : current.version;
 }

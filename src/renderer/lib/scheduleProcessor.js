@@ -1,4 +1,4 @@
-import { DAY, compileGameClock, shiftDate, weekdayOf, zonedInstant } from '../../shared/serverTime.js';
+import { DAY, compileGameClock, parseClock, shiftDate, weekdayOf, zonedInstant } from '../../shared/serverTime.js';
 import {
     currentPatchIndex,
     isDated,
@@ -8,7 +8,15 @@ import {
 } from '../../shared/patches.js';
 import { slugify } from '../../shared/format.js';
 
-export function createScheduleProcessor(GAME_CONFIG) {
+export const OTHERS = 'Others';
+export const OTHERS_COLOR = '#A07CC5';
+
+const INDEPENDENT_TYPES = { release: 'Release', livestream: 'Livestream' };
+const INDEPENDENT_UTC_OFFSET = 8;
+const DATE_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
+const CLOCK = /^\d{2}:\d{2}$/;
+
+export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
     const CLOCKS = Object.fromEntries(
         Object.entries(GAME_CONFIG).map(([game, data]) => [game, compileGameClock(game, data)]),
     );
@@ -294,7 +302,7 @@ export function createScheduleProcessor(GAME_CONFIG) {
                 portrait: false,
                 label: `${gameData.abbr} ${successor.version} Trailer`,
                 title: `${gameData.abbr} ${successor.version} Trailer`,
-                imgFiles: [gameImg(game, successor.version), defaultImg(game)],
+                imgFiles: timeline.imgsFor(successor.version, entry.index + 1),
                 confirmed: true,
             };
         }
@@ -399,6 +407,48 @@ export function createScheduleProcessor(GAME_CONFIG) {
         };
     }
 
+    function buildIndependentEvents() {
+        const events = {};
+
+        for (const entry of Array.isArray(INDEPENDENT_EVENTS) ? INDEPENDENT_EVENTS : []) {
+            const typeLabel = INDEPENDENT_TYPES[entry?.type];
+            const match = DATE_KEY.exec(entry?.date ?? '');
+
+            if (!typeLabel || !match || typeof entry.game !== 'string' || !entry.game) continue;
+
+            const label = `${entry.game} ${typeLabel}`;
+            let date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+            let allDay = true;
+
+            if (CLOCK.test(entry.time ?? '')) {
+                try {
+                    date = zonedInstant(
+                        entry.date,
+                        parseClock(entry.time, 'independent event time'),
+                        INDEPENDENT_UTC_OFFSET,
+                    );
+                    allDay = false;
+                } catch {
+                    continue;
+                }
+            }
+
+            events[`${slugify(entry.game)}_${entry.type}_${entry.date}`] = {
+                date,
+                allDay,
+                source: entry.game,
+                type: entry.type,
+                portrait: false,
+                label,
+                title: label,
+                imgFiles: [`games/${slugify(entry.game)}_${entry.type}.webp`],
+                confirmed: true,
+            };
+        }
+
+        return events;
+    }
+
     function computeScheduleData(server, now = new Date()) {
         const entries = Object.entries(GAME_CONFIG).map(([game, gameData]) => {
             try {
@@ -408,6 +458,10 @@ export function createScheduleProcessor(GAME_CONFIG) {
                 return [game, {}];
             }
         });
+
+        const independent = buildIndependentEvents();
+
+        if (Object.keys(independent).length > 0) entries.push([OTHERS, independent]);
 
         return Object.fromEntries(entries);
     }

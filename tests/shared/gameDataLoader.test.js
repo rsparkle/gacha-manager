@@ -1,21 +1,24 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createGameDataLoader } from '../../src/shared/gameDataLoader.js';
-import { CONFIG_URL, TASKS_URL } from '../../src/shared/remote.js';
+import { CONFIG_URL, INDEPENDENT_EVENTS_URL, TASKS_URL } from '../../src/shared/remote.js';
 import { makeConfig, makeTask, makeTasks } from '../helpers/builders.js';
 
 const valid = {
     config: makeConfig({ Test: {} }),
     tasks: makeTasks({ Test: [makeTask('daily', { kind: 'daily' })] }),
+    independentEvents: [],
 };
 
 const updated = {
     config: makeConfig({ Test: { abbr: 'NEW' } }),
     tasks: valid.tasks,
+    independentEvents: [],
 };
 
 const invalid = {
     config: makeConfig({ Test: { daily_reset: '25:00' } }),
     tasks: valid.tasks,
+    independentEvents: [],
 };
 
 let remote;
@@ -30,7 +33,11 @@ function stubFetch() {
         vi.fn(async (url) => {
             if (remote instanceof Error) throw remote;
 
-            const body = { [CONFIG_URL]: remote.config, [TASKS_URL]: remote.tasks }[url];
+            const body = {
+                [CONFIG_URL]: remote.config,
+                [TASKS_URL]: remote.tasks,
+                [INDEPENDENT_EVENTS_URL]: remote.independentEvents,
+            }[url];
 
             return { ok: body !== undefined, status: body ? 200 : 404, json: async () => structuredClone(body) };
         }),
@@ -152,6 +159,6 @@ describe('refresh', () => {
 
         await Promise.all([loader.refresh(), loader.refresh()]);
 
-        expect(fetch).toHaveBeenCalledTimes(2);
+        expect(fetch).toHaveBeenCalledTimes(3);
     });
 });

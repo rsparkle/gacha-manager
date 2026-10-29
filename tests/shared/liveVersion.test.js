@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getLiveVersion } from '../../src/shared/liveVersion.js';
-import { BASE_GAME, makeGame } from '../helpers/builders.js';
+import { makeGame } from '../helpers/builders.js';
 
 const at = (iso) => new Date(iso);
 
@@ -18,14 +18,9 @@ describe('getLiveVersion', () => {
         expect(getLiveVersion(game, at('2026-12-29T12:00:00Z'))).toBe('1.2');
     });
 
-    it('version-only row once the last dated patch ends', () => {
-        expect(getLiveVersion(game, at('2026-12-30T03:00:00Z'))).toBe('1.3');
-    });
-
-    it('stays on the last dated patch without a version-only row', () => {
-        const noPlaceholder = makeGame({ patches: BASE_GAME.patches.slice(0, 3) });
-
-        expect(getLiveVersion(noPlaceholder, at('2027-06-01T00:00:00Z'))).toBe('1.2');
+    it('stays on the last dated patch after it ends', () => {
+        expect(getLiveVersion(game, at('2026-12-30T03:00:00Z'))).toBe('1.2');
+        expect(getLiveVersion(game, at('2027-06-01T00:00:00Z'))).toBe('1.2');
     });
 
     it('older patches from the archive', () => {

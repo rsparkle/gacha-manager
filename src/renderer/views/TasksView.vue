@@ -418,10 +418,10 @@ const completionPercentage = computed(() => {
     return active.length > 0 ? Math.floor((done / active.length) * 100) : 0;
 });
 
-const run = async (action, successMessage) => {
+const run = async (action, successMessage, duration = 1000) => {
     try {
         await action();
-        createNotification('success', successMessage, 1000);
+        createNotification('success', successMessage, duration);
         return true;
     } catch (err) {
         createNotification('error', `Error: ${err.message}`, 2000);
@@ -490,12 +490,12 @@ const commitUidEdit = async (accountId) => {
 
     if (hasUidPattern) {
         server = Object.entries(servers)
-            .filter(([, s]) => s.uid_prefix != null && newUid.startsWith(String(s.uid_prefix)))
-            .sort(([, a], [, b]) => String(b.uid_prefix).length - String(a.uid_prefix).length)[0]?.[0];
+            .flatMap(([name, s]) => (s.uid_prefix ?? []).map((prefix) => [name, prefix]))
+            .filter(([, prefix]) => newUid.startsWith(prefix))
+            .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
 
         if (!server) {
-            createNotification('error', 'Your UID is invalid.', 2000);
-            return;
+            createNotification('error', "Couldn't detect server, pick it manually.", 2000);
         }
     } else {
         server = selectedAccount.value.server;
@@ -503,7 +503,8 @@ const commitUidEdit = async (accountId) => {
 
     const saved = await run(
         () => updateAccount(selectedGame.value.name, accountId, { uid: newUid, server }),
-        'Account updated!',
+        server ? 'Account updated!' : "UID saved, but the server couldn't be detected. Pick it manually.",
+        server ? 1000 : 3000,
     );
 
     if (saved) editingUid.value = false;
@@ -627,27 +628,40 @@ const toggleAndSaveSetting = (map, gameName, accountId) => {
 };
 
 const toggleFavorite = () => {
+    selectedGameName.value = selectedGame.value.name;
     settings.value.favoriteGame = isFavorite.value ? null : selectedGame.value.name;
     saveSettings(true);
 };
 
-const toggleAutomation = () => {
+const toggleAutomation = async () => {
     const gameName = selectedGame.value.name;
     const accountId = selectedAccount.value.id;
 
-    if (!settings.value.checkGachaProcesses) {
-        settings.value.checkGachaProcesses = true;
-
-        if (!Array.isArray(settings.value.automaticDailies[gameName])) settings.value.automaticDailies[gameName] = [];
-        if (!settings.value.automaticDailies[gameName].includes(accountId)) {
-            settings.value.automaticDailies[gameName].push(accountId);
-        }
-
-        saveSettings();
+    if (settings.value.checkGachaProcesses) {
+        toggleAndSaveSetting(settings.value.automaticDailies, gameName, accountId);
         return;
     }
 
-    toggleAndSaveSetting(settings.value.automaticDailies, gameName, accountId);
+    const othersActive = Object.entries(settings.value.automaticDailies ?? {}).some(([game, ids]) =>
+        ids.some((id) => game !== gameName || id !== accountId),
+    );
+
+    const ok = await confirm(
+        'Automatic dailies use game detection, which checks your running programs every 30 seconds to see if a game is open. The list of programs is never saved or sent anywhere.' +
+            (othersActive ? ' Accounts you set up for it before will be active again too.' : ''),
+        { confirmText: 'Turn on' },
+    );
+
+    if (!ok) return;
+
+    settings.value.checkGachaProcesses = true;
+
+    if (!Array.isArray(settings.value.automaticDailies[gameName])) settings.value.automaticDailies[gameName] = [];
+    if (!settings.value.automaticDailies[gameName].includes(accountId)) {
+        settings.value.automaticDailies[gameName].push(accountId);
+    }
+
+    saveSettings();
 };
 
 const loadGameImage = async (game) => {

@@ -62,16 +62,16 @@ export const BASE_GAME = {
         confirmed: true,
     },
     servers: {
-        America: { uid_prefix: 6, utc_offset: -5 },
-        Europe: { uid_prefix: 7, utc_offset: 1 },
-        Asia: { uid_prefix: 8, utc_offset: 8 },
+        America: { uid_prefix: ['6'], utc_offset: -5 },
+        Europe: { uid_prefix: ['7'], utc_offset: 1 },
+        Asia: { uid_prefix: ['8'], utc_offset: 8 },
     },
 };
 
 export const DST_SERVERS = {
-    America: { uid_prefix: null, timezone: 'America/New_York' },
-    Europe: { uid_prefix: null, timezone: 'Europe/Berlin' },
-    Asia: { uid_prefix: null, utc_offset: 8 },
+    America: { uid_prefix: [], timezone: 'America/New_York' },
+    Europe: { uid_prefix: [], timezone: 'Europe/Berlin' },
+    Asia: { uid_prefix: [], utc_offset: 8 },
 };
 
 const SLOTS = ['previous', 'current', 'next', 'after'];

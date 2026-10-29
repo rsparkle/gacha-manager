@@ -1,7 +1,7 @@
 # GachaManager
 ![Latest release](https://img.shields.io/github/v/release/rsparkle/gacha-manager)
 
-A task manager built gacha players. Tracks dailies, resets and deadlines across games and accounts so you never miss out on any limited rewards, with a calendar of upcoming new characters, patches and livestreams.
+A task manager built for gacha players. Tracks dailies, resets and deadlines across games and accounts so you never miss out on any limited rewards, with a calendar of upcoming new characters, patches and livestreams.
 
 **Built with:** Electron + Vue 3 + Vite
 

@@ -162,7 +162,7 @@
     "v2.10_patchTrailer": "2026-09-19T04:00:00.000Z | trailer | IN 2.10 Trailer | title: IN 2.10 Trailer | confirmed | landscape | games/infinity_nikki_2.10.webp, games/infinity_nikki_default.webp",
     "v2.10_release": "2026-09-24T03:00:00.000Z | release | IN 2.10 Release | title: IN 2.10 | confirmed | landscape | games/infinity_nikki_2.10.webp, games/infinity_nikki_default.webp",
     "v2.10_secondPhase": "2026-10-12T03:00:00.000Z | phase | IN 2.10 Second Phase | title: IN 2.10 2nd Phase | confirmed | landscape | games/infinity_nikki_2.10.webp, games/infinity_nikki_default.webp",
-    "v2.11_patchTrailer": "2026-10-25T04:00:00.000Z | trailer | IN 2.11 Trailer | title: IN 2.11 Trailer | confirmed | landscape | games/infinity_nikki_2.11.webp, games/infinity_nikki_default.webp",
+    "v2.11_patchTrailer": "2026-10-25T04:00:00.000Z | trailer | IN 2.11 Trailer | title: IN 2.11 Trailer | confirmed | landscape | games/infinity_nikki_2.11.webp, games/infinity_nikki_2.10.webp, games/infinity_nikki_default.webp",
     "v2.11_release": "2026-10-30T03:00:00.000Z | release | IN 2.11 Release | title: IN 2.11 | confirmed | landscape | games/infinity_nikki_2.11.webp, games/infinity_nikki_default.webp",
     "v2.11_secondPhase": "2026-11-13T03:00:00.000Z | phase | IN 2.11 Second Phase | title: IN 2.11 2nd Phase | estimated | landscape | games/infinity_nikki_2.11.webp, games/infinity_nikki_default.webp",
     "v2.5_release": "2026-04-24T03:00:00.000Z | release | IN 2.5 Release | title: IN 2.5 | confirmed | landscape | games/infinity_nikki_2.5.webp, games/infinity_nikki_default.webp",

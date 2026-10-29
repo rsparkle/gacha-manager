@@ -1,5 +1,5 @@
 import { createResetProcessor } from './resetProcessor.js';
-import { CONFIG_URL, TASKS_URL, fetchJson } from './remote.js';
+import { CONFIG_URL, INDEPENDENT_EVENTS_URL, TASKS_URL, fetchJson } from './remote.js';
 
 export function validateGameData({ config, tasks }) {
     createResetProcessor(config, tasks);
@@ -13,9 +13,13 @@ export function createGameDataLoader({ readCache, writeCache, onUpdate, onReject
     let refreshing = null;
 
     async function fetchRemote() {
-        const [config, tasks] = await Promise.all([fetchJson(CONFIG_URL), fetchJson(TASKS_URL)]);
+        const [config, tasks, independentEvents] = await Promise.all([
+            fetchJson(CONFIG_URL),
+            fetchJson(TASKS_URL),
+            fetchJson(INDEPENDENT_EVENTS_URL).catch(() => current?.independentEvents ?? []),
+        ]);
 
-        return { config, tasks };
+        return { config, tasks, independentEvents };
     }
 
     async function cache(data) {

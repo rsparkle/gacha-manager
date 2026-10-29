@@ -32,11 +32,12 @@ const gameData = createGameDataLoader({
 
         if (!config || !tasks) throw new Error('No cached game data');
 
-        return { config, tasks };
+        return { config, tasks, independentEvents: readJson(KEYS.independentEvents) ?? [] };
     },
-    writeCache: ({ config, tasks }) => {
+    writeCache: ({ config, tasks, independentEvents }) => {
         writeJson(KEYS.gameConfig, config);
         writeJson(KEYS.gameTasks, tasks);
+        writeJson(KEYS.independentEvents, independentEvents ?? []);
     },
     onUpdate: (data) => {
         accounts.setGameData(data);

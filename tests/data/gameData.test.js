@@ -171,12 +171,12 @@ describe(`game data from ${source}`, () => {
                 }
 
                 if (game.has_uid_pattern) {
-                    const prefixes = servers.map(([, server]) => server.uid_prefix);
+                    const prefixes = servers.flatMap(([, server]) => server.uid_prefix);
                     const longest = Math.max(...game.uid_digits);
 
                     for (const prefix of prefixes) {
-                        expect(Number.isInteger(prefix) && prefix >= 0, `prefix ${prefix}`).toBe(true);
-                        expect(String(prefix).length, `prefix ${prefix}`).toBeLessThan(longest);
+                        expect(prefix, `prefix ${prefix}`).toMatch(/^\d+$/);
+                        expect(prefix.length, `prefix ${prefix}`).toBeLessThan(longest);
                     }
 
                     expect(new Set(prefixes).size).toBe(prefixes.length);

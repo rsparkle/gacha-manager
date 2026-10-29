@@ -132,19 +132,31 @@
     },
     "servers": {
       "America": {
-        "uid_prefix": 6,
+        "uid_prefix": [
+          "6",
+          "16"
+        ],
         "utc_offset": -5
       },
       "Europe": {
-        "uid_prefix": 7,
+        "uid_prefix": [
+          "7",
+          "17"
+        ],
         "utc_offset": 1
       },
       "Asia": {
-        "uid_prefix": 8,
+        "uid_prefix": [
+          "8",
+          "18"
+        ],
         "utc_offset": 8
       },
       "TW/HK/MO": {
-        "uid_prefix": 9,
+        "uid_prefix": [
+          "9",
+          "19"
+        ],
         "utc_offset": 8
       }
     }
@@ -264,8 +276,7 @@
     ],
     "has_uid_pattern": true,
     "uid_digits": [
-      9,
-      10
+      9
     ],
     "global_utc_offset": 8,
     "daily_reset": "04:00",
@@ -307,19 +318,27 @@
     },
     "servers": {
       "America": {
-        "uid_prefix": 6,
+        "uid_prefix": [
+          "6"
+        ],
         "utc_offset": -5
       },
       "Europe": {
-        "uid_prefix": 7,
+        "uid_prefix": [
+          "7"
+        ],
         "utc_offset": 1
       },
       "Asia": {
-        "uid_prefix": 8,
+        "uid_prefix": [
+          "8"
+        ],
         "utc_offset": 8
       },
       "TW/HK/MO": {
-        "uid_prefix": 9,
+        "uid_prefix": [
+          "9"
+        ],
         "utc_offset": 8
       }
     }
@@ -487,19 +506,27 @@
     },
     "servers": {
       "America": {
-        "uid_prefix": 10,
+        "uid_prefix": [
+          "10"
+        ],
         "utc_offset": -5
       },
       "Europe": {
-        "uid_prefix": 15,
+        "uid_prefix": [
+          "15"
+        ],
         "utc_offset": 1
       },
       "Asia": {
-        "uid_prefix": 13,
+        "uid_prefix": [
+          "13"
+        ],
         "utc_offset": 8
       },
       "TW/HK/MO": {
-        "uid_prefix": 17,
+        "uid_prefix": [
+          "17"
+        ],
         "utc_offset": 8
       }
     }
@@ -661,21 +688,21 @@
     },
     "servers": {
       "America": {
-        "uid_prefix": null,
+        "uid_prefix": [],
         "utc_offset": -4,
         "timezone": "America/New_York"
       },
       "Europe": {
-        "uid_prefix": null,
+        "uid_prefix": [],
         "utc_offset": 2,
         "timezone": "Europe/Berlin"
       },
       "Asia": {
-        "uid_prefix": null,
+        "uid_prefix": [],
         "utc_offset": 8
       },
       "SEA": {
-        "uid_prefix": null,
+        "uid_prefix": [],
         "utc_offset": 8
       }
     }
@@ -814,19 +841,27 @@
     "trailer_time": "12:00",
     "servers": {
       "America": {
-        "uid_prefix": 6,
+        "uid_prefix": [
+          "6"
+        ],
         "utc_offset": -7
       },
       "Europe": {
-        "uid_prefix": 2,
+        "uid_prefix": [
+          "2"
+        ],
         "utc_offset": 2
       },
       "Asia": {
-        "uid_prefix": 4,
+        "uid_prefix": [
+          "4"
+        ],
         "utc_offset": 8
       },
       "HK/TW/Macau": {
-        "uid_prefix": 8,
+        "uid_prefix": [
+          "8"
+        ],
         "utc_offset": 8
       }
     }

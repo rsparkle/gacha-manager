@@ -47,13 +47,13 @@
                     :key="game"
                     type="button"
                     class="game-badge"
-                    :style="{ '--gc': GAME_CONFIG[game]?.color }"
+                    :style="{ '--gc': gameColor(game) }"
                     :class="{ 'game-badge--disabled': !selectedGames.includes(game) }"
                     :aria-pressed="selectedGames.includes(game)"
                     @click="toggleSelectedGames(game)"
                 >
-                    <img :src="gameIcons[game]" :alt="game" class="game-badge-icon" />
-                    <span class="game-badge-name">{{ GAME_CONFIG[game]?.abbr ?? game }}</span>
+                    <img v-if="gameIcons[game]" :src="gameIcons[game]" :alt="game" class="game-badge-icon" />
+                    <span class="game-badge-name">{{ gameAbbr(game) }}</span>
                 </button>
             </div>
         </div>
@@ -164,7 +164,7 @@
                                 v-if="!hoveredEventHasImage"
                                 class="schedule-event-tooltip-game schedule-event-tooltip-game--inline"
                             >
-                                {{ GAME_CONFIG[hoveredEvent.game]?.abbr ?? hoveredEvent.game }}
+                                {{ hoveredEvent.source ?? gameAbbr(hoveredEvent.game) }}
                             </span>
                             <span class="schedule-event-tooltip-date">
                                 {{ formatEventDate(hoveredEvent) }}
@@ -205,7 +205,7 @@
 import '../styles/schedule.css';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import platform from '#platform';
-import { createScheduleProcessor } from '../lib/scheduleProcessor.js';
+import { OTHERS, OTHERS_COLOR, createScheduleProcessor } from '../lib/scheduleProcessor.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { slugify, formatCountdown, thumbnailPath } from '../../shared/format.js';
@@ -214,8 +214,11 @@ import { earliestPatchStart } from '../../shared/patches.js';
 import { themeAsset } from '../themes.js';
 
 const { settings, saveSettings } = useSettings();
-const { gameConfig, gamesWithAccounts } = useAccounts();
+const { gameConfig, independentEvents, gamesWithAccounts } = useAccounts();
 const GAME_CONFIG = computed(() => gameConfig.value ?? {});
+
+const gameColor = (game) => (game === OTHERS ? OTHERS_COLOR : GAME_CONFIG.value[game]?.color);
+const gameAbbr = (game) => (game === OTHERS ? OTHERS : (GAME_CONFIG.value[game]?.abbr ?? game));
 
 let computeScheduleData;
 let clockTimer;
@@ -223,10 +226,9 @@ let scheduleBuiltAt = 0;
 
 const SCHEDULE_REBUILD_MS = 60 * 60 * 1000;
 
-const today = new Date();
 const now = ref(new Date());
-const currentYear = ref(today.getFullYear());
-const currentMonth = ref(today.getMonth());
+const currentYear = ref(now.value.getFullYear());
+const currentMonth = ref(now.value.getMonth());
 
 const servers = SCHEDULE_SERVERS;
 const selectedServer = ref(settings.value?.server ?? 'America');
@@ -260,7 +262,7 @@ const gameList = computed(() => Object.keys(scheduleData.value));
 const minDate = computed(() => {
     const starts = Object.values(GAME_CONFIG.value).map(earliestPatchStart).filter(Boolean).sort();
 
-    if (!starts.length) return new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    if (!starts.length) return new Date(now.value.getFullYear(), now.value.getMonth() - 1, 1);
 
     const [year, month] = starts[0].split('-').map(Number);
 
@@ -269,9 +271,19 @@ const minDate = computed(() => {
 
 const canGoPrev = computed(() => new Date(currentYear.value, currentMonth.value, 1) > minDate.value);
 
-const maxDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+const maxDate = computed(() => new Date(now.value.getFullYear(), now.value.getMonth() + 2, 1));
 
-const canGoNext = computed(() => new Date(currentYear.value, currentMonth.value, 1) < maxDate);
+const canGoNext = computed(() => new Date(currentYear.value, currentMonth.value, 1) < maxDate.value);
+
+watch(
+    () => now.value.getFullYear() * 12 + now.value.getMonth(),
+    (month, previous) => {
+        if (currentYear.value * 12 + currentMonth.value !== previous) return;
+
+        currentYear.value = Math.floor(month / 12);
+        currentMonth.value = month % 12;
+    },
+);
 
 const hoveredEventHasImage = computed(() => {
     if (!hoveredEvent.value) return false;
@@ -291,7 +303,7 @@ const tooltipStyle = computed(() => ({
 }));
 
 const hoveredCountdown = computed(() => {
-    if (!hoveredEvent.value?.date) return null;
+    if (!hoveredEvent.value?.date || hoveredEvent.value.allDay) return null;
 
     const diff = hoveredEvent.value.date.getTime() - now.value.getTime();
 
@@ -313,7 +325,7 @@ const estimatedSticker = computed(() => themeAsset(settings.value.theme, 'estima
 const loadGameIcons = () =>
     Promise.all(
         gameList.value
-            .filter((game) => !gameIcons[game])
+            .filter((game) => game !== OTHERS && !gameIcons[game])
             .map(async (game) => {
                 try {
                     const url = await platform.images.getUrl(`games/${slugify(game)}_icon.webp`);
@@ -382,7 +394,8 @@ const toggleSelectedGames = (game) => {
     if (index > -1) selectedGames.value.splice(index, 1);
     else selectedGames.value.push(game);
 
-    settings.value.scheduleGames = [...selectedGames.value];
+    settings.value.scheduleGames = selectedGames.value.filter((name) => name !== OTHERS);
+    settings.value.scheduleOthers = selectedGames.value.includes(OTHERS);
     saveSettings(true);
 };
 
@@ -396,7 +409,7 @@ const eventsByDay = computed(() => {
     const map = {};
 
     for (const [game, events] of Object.entries(filteredScheduleData.value)) {
-        const color = GAME_CONFIG.value[game]?.color;
+        const color = gameColor(game);
 
         for (const eventData of Object.values(events)) {
             const key = eventData.date.toDateString();
@@ -462,11 +475,13 @@ const prevMonth = () => {
 };
 
 const formatEventTime = (event) =>
-    event.date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    });
+    event.allDay
+        ? 'All day'
+        : event.date.toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+          });
 
 const formatEventDate = (event) =>
     event.date.toLocaleDateString('en-US', {
@@ -530,11 +545,11 @@ const loadSchedule = () => {
 };
 
 watch(
-    gameConfig,
-    (config) => {
+    [gameConfig, independentEvents],
+    ([config, events]) => {
         if (!config) return;
 
-        ({ computeScheduleData } = createScheduleProcessor(config));
+        ({ computeScheduleData } = createScheduleProcessor(config, events));
         loadSchedule();
     },
     { immediate: true },
@@ -563,7 +578,10 @@ onMounted(() => {
 
     const saved = settings.value.scheduleGames;
 
-    selectedGames.value = Array.isArray(saved) ? [...saved] : [...gamesWithAccounts.value];
+    selectedGames.value = [
+        ...(Array.isArray(saved) ? saved : gamesWithAccounts.value),
+        ...(settings.value.scheduleOthers === false ? [] : [OTHERS]),
+    ];
 });
 
 onBeforeUnmount(() => {

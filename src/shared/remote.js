@@ -1,7 +1,8 @@
-import { ASSETS_BASE, GAME_CONFIG_PATH, GAME_TASKS_PATH, STATUS_PATH } from './gameData.js';
+import { ASSETS_BASE, GAME_CONFIG_PATH, GAME_TASKS_PATH, INDEPENDENT_EVENTS_PATH, STATUS_PATH } from './gameData.js';
 
 export const CONFIG_URL = `${ASSETS_BASE}/${GAME_CONFIG_PATH}`;
 export const TASKS_URL = `${ASSETS_BASE}/${GAME_TASKS_PATH}`;
+export const INDEPENDENT_EVENTS_URL = `${ASSETS_BASE}/${INDEPENDENT_EVENTS_PATH}`;
 export const STATUS_URL = `${ASSETS_BASE}/${STATUS_PATH}`;
 export const RELEASES_URL = 'https://github.com/rsparkle/gacha-manager/releases/latest';
 

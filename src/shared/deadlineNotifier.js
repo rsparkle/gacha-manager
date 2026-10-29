@@ -54,7 +54,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
                     const urgentAt = end - task.duration + (task.duration * (URGENT_PROGRESS + 1)) / 100;
 
                     if (!task.isCompleted && isUrgent(task)) {
-                        urgent.push({ key: `${group.name}:${account.id}:${task.id}:${end}`, game: group.name });
+                        urgent.push({ key: `${group.name}:${account.id}:${task.id}:${end}`, game: group.name, end });
                         nextWake = Math.min(nextWake, end);
                     } else {
                         nextWake = Math.min(nextWake, task.isCompleted ? end : urgentAt);
@@ -71,7 +71,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
         const fresh = urgent.filter((entry) => !notifiedKeys.has(entry.key));
         if (fresh.length > 0) {
             fresh.forEach((entry) => notifiedKeys.add(entry.key));
-            notify(describe(fresh));
+            notify({ ...describe(fresh), deadline: Math.min(...fresh.map((entry) => entry.end)) });
         }
 
         timeout = setTimeout(refresh, Math.min(Math.max(nextWake - nowMs, 0) + TIMER_BUFFER_MS, MAX_TIMEOUT_MS));

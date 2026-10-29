@@ -13,6 +13,7 @@ export const KEYS = {
     settings: `${PREFIX}settings`,
     gameConfig: `${PREFIX}game-config`,
     gameTasks: `${PREFIX}game-tasks`,
+    independentEvents: `${PREFIX}independent-events`,
 };
 
 export function read(key) {

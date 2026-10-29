@@ -9,4 +9,5 @@ export const DEFAULT_SETTINGS = {
     automaticUpdates: false,
     hardwareAcceleration: false,
     favoriteGame: null,
+    scheduleOthers: true,
 };

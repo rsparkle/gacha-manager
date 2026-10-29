@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createScheduleProcessor } from '../../src/renderer/lib/scheduleProcessor.js';
+import { OTHERS, createScheduleProcessor } from '../../src/renderer/lib/scheduleProcessor.js';
 import { makeGame, patch } from '../helpers/builders.js';
 
 const GAME = 'Test Game';
@@ -341,7 +341,7 @@ describe('patch trailers', () => {
             imgFiles: [img.game('1.1'), img.fallback],
             confirmed: true,
         });
-        expect(events['v1.2_patchTrailer'].date.toISOString()).toBe('2026-11-13T04:00:00.000Z');
+        expect(events['v1.2_patchTrailer'].imgFiles).toEqual([img.game('1.2'), img.game('1.1'), img.fallback]);
         expect(events['v1.2_patchTrailer'].label).toBe('TG 1.2 Trailer');
         expect(pick(events, '_livestream')).toEqual({});
     });
@@ -620,5 +620,55 @@ describe('several games', () => {
         createScheduleProcessor(config).computeScheduleData('Asia');
 
         expect(config).toEqual(copy);
+    });
+});
+
+describe('independent events', () => {
+    const others = (events) =>
+        createScheduleProcessor({ [GAME]: makeGame() }, events).computeScheduleData('Asia')[OTHERS];
+
+    it('go under Others as all-day events on their date', () => {
+        const events = others([
+            { game: 'Petit Planet', type: 'livestream', date: '2026-11-20' },
+            { game: 'Petit Planet', type: 'release', date: '2026-12-10' },
+        ]);
+
+        expect(events['petit_planet_livestream_2026-11-20']).toEqual({
+            date: new Date(2026, 10, 20),
+            allDay: true,
+            source: 'Petit Planet',
+            type: 'livestream',
+            portrait: false,
+            label: 'Petit Planet Livestream',
+            title: 'Petit Planet Livestream',
+            imgFiles: ['games/petit_planet_livestream.webp'],
+            confirmed: true,
+        });
+        expect(events['petit_planet_release_2026-12-10'].type).toBe('release');
+    });
+
+    it('a time is read as UTC+8', () => {
+        const events = others([{ game: 'Petit Planet', type: 'livestream', date: '2026-11-01', time: '19:00' }]);
+        const event = events['petit_planet_livestream_2026-11-01'];
+
+        expect(event.date.toISOString()).toBe('2026-11-01T11:00:00.000Z');
+        expect(event.allDay).toBe(false);
+    });
+
+    it('skip broken rows', () => {
+        const events = others([
+            { game: 'Petit Planet', type: 'trailer', date: '2026-11-20' },
+            { game: 'Petit Planet', type: 'release', date: '20-11-2026' },
+            { game: 'Petit Planet', type: 'release', date: '2026-11-20', time: '25:00' },
+            { type: 'release', date: '2026-11-20' },
+            null,
+        ]);
+
+        expect(events).toBeUndefined();
+    });
+
+    it('no Others without events', () => {
+        expect(createScheduleProcessor({ [GAME]: makeGame() }).computeScheduleData('Asia')).not.toHaveProperty(OTHERS);
+        expect(others(null)).toBeUndefined();
     });
 });

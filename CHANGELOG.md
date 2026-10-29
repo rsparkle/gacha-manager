@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.2] - 2026-10-29
+### Added
+- Schedule now shows events for games the app doesn't track yet, such as launch livestreams and release dates, under a new Others filter
+- Deadline notifications on desktop now have a snooze dropdown to be reminded again later
+- Turning on automatic dailies from Tasks now asks for confirmation and explains what game detection does
+### Changed
+- A UID whose server can't be detected is now saved anyway
+- Servers can now have more than one UID prefix, so Genshin's recent 10-digit UIDs pick the right server automatically
+- Patch trailers without their own art now use the current patch's art before falling back to the default image
+### Fixed
+- Unstarring the favorite game no longer switches Tasks to a different game
+- The schedule now follows the date while the app stays open
+
 ## [1.2.1] - 2026-10-29
 ### Added
 - The schedule now goes back through every stored patch, so past months show every single stored event
@@ -45,18 +58,18 @@
 - Drip marketing dates can now be anchored to the 2nd phase
 - Rumored characters (marked with `?`) get a landscape trailer with the patch wallpaper
 
-# [1.1.8] - 2026-10-21
+## [1.1.8] - 2026-10-21
 ### Added
 - Previous patch data is now stored instead of being immediately wiped
 - Finishing Setup now shows the loading animation instead of the screen appearing frozen
 
-# [1.1.7] - 2026-10-20
+## [1.1.7] - 2026-10-20
 ### Added
 - Nikki theme
 - Versions that are no longer supported now show a message asking to update, with a button to download the latest version
 - The Tasks and Setup screens now show a game's new version number and art as soon as its patch goes live, without waiting for the game data to be updated
 
-# [1.1.6] - 2026-10-20
+## [1.1.6] - 2026-10-20
 ### Added
 - The app now keeps a log file to help diagnose problems when reporting a bug
 ### Changed
@@ -65,13 +78,13 @@
 ### Fixed
 - Schedule images that failed to load, for example when starting offline, now load once the connection is back instead of staying blank until views are switched
 
-# [1.1.5] - 2026-10-20
+## [1.1.5] - 2026-10-20
 ### Fixed
 - Game data refreshes every 6 hours while the app is running again; since 1.1.4 it only refreshed at launch and when the PC woke from sleep
 ### Changed
 - Updated dependencies, including security fixes for the auto-updater
 
-# [1.1.4] - 2026-10-19
+## [1.1.4] - 2026-10-19
 ### Added
 - Lacrimosa theme
 - "Hardware Acceleration" setting for smoother animations at the cost of more memory; after changing it, the app offers to restart right away so it takes effect
@@ -87,7 +100,7 @@
 - A problem with one game's data could leave the whole schedule empty; now only that game's events are skipped
 - If saving settings failed, the Settings window closed and showed the changes as applied anyway; it now stays open so it can be tried again
 
-# [1.1.3] - 2026-10-18
+## [1.1.3] - 2026-10-18
 ### Added
 - Miyabi theme
 - "Background" button in the top bar that closes the window to save memory while the app keeps running
@@ -101,7 +114,7 @@
 - The app also checks for updates every 6 hours while it's open, not only at launch
 - Minimizing the window now works normally instead of sending the app to the tray
 
-# [1.1.2] - 2026-10-14
+## [1.1.2] - 2026-10-14
 ### Changed
 - Schedule events for the next patch now show that patch's art when it's available, falling back to the default art
 - Old cached images are now cleaned up in the background, which will make the app start faster
@@ -111,7 +124,7 @@
 - The "Game data update skipped" notification repeated every few hours while the online data stayed invalid; it now shows once per update
 - Deadline notification checks could run constantly in the background in rare cases
 
-# [1.1.1] - 2026-10-14
+## [1.1.1] - 2026-10-14
 ### Added
 - Furina theme
 - Themed loading sticker on the setup screen
@@ -134,7 +147,7 @@
 - Deadline notifications could fail with settings saved by older versions
 - Images still in use are no longer deleted by the cache cleanup
 
-# [1.1.0] - 2026-10-13
+## [1.1.0] - 2026-10-13
 ### Added
 - Calendar navigation now includes the previous month
 - Game event tasks are now supported

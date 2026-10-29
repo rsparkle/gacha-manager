@@ -54,12 +54,21 @@ const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
 
 const TASKS_CACHE = path.join(app.getPath('userData'), 'game-tasks.json');
 
+const INDEPENDENT_EVENTS_CACHE = path.join(app.getPath('userData'), 'independent-events.json');
+
 const ACCOUNTS_FILE = path.join(app.getPath('userData'), 'accounts.json');
 
 const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
 
 const CACHE_TOUCH_AFTER_MS = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000;
+const SNOOZE_OPTIONS = [
+    [15, '15 minutes'],
+    [30, '30 minutes'],
+    [60, '1 hour'],
+    [120, '2 hours'],
+    [240, '4 hours'],
+];
 
 let accounts = null;
 let notifier = null;
@@ -134,11 +143,20 @@ async function writeJson(file, data) {
 
 const gameData = createGameDataLoader({
     readCache: async () => {
-        const [config, tasks] = await Promise.all([readJson(CONFIG_CACHE), readJson(TASKS_CACHE)]);
+        const [config, tasks, independentEvents] = await Promise.all([
+            readJson(CONFIG_CACHE),
+            readJson(TASKS_CACHE),
+            readJson(INDEPENDENT_EVENTS_CACHE).catch(() => []),
+        ]);
 
-        return { config, tasks };
+        return { config, tasks, independentEvents };
     },
-    writeCache: ({ config, tasks }) => Promise.all([writeJson(CONFIG_CACHE, config), writeJson(TASKS_CACHE, tasks)]),
+    writeCache: ({ config, tasks, independentEvents }) =>
+        Promise.all([
+            writeJson(CONFIG_CACHE, config),
+            writeJson(TASKS_CACHE, tasks),
+            writeJson(INDEPENDENT_EVENTS_CACHE, independentEvents ?? []),
+        ]),
     onUpdate: (data) => {
         accounts.setGameData(data);
         sendToWindow('game-data-updated');
@@ -320,7 +338,7 @@ async function getImageUrl(filename) {
         if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
             const now = new Date();
 
-            fs.utimes(localPath, now, now).catch(() => { });
+            fs.utimes(localPath, now, now).catch(() => {});
         }
     } catch {
         if (!pendingDownloads.has(filename)) {
@@ -507,8 +525,37 @@ function setupAutoUpdates() {
     setInterval(checkForUpdates, UPDATE_CHECK_MS);
 }
 
-function showDeadlineNotification({ title, body }) {
-    deadlineNotification = new Notification({ title, body });
+const escapeXml = (text) =>
+    text.replace(
+        /[<>&'"]/g,
+        (char) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[char],
+    );
+
+function deadlineToastXml({ title, body, deadline }) {
+    const minutesLeft = (deadline - Date.now()) / 60_000;
+    const options = SNOOZE_OPTIONS.filter(([minutes]) => minutes < minutesLeft);
+
+    const actions = options.length
+        ? `<actions>
+            <input id="snoozeTime" type="selection" title="Remind me in" defaultInput="${options.at(-1)[0] >= 60 ? 60 : options.at(-1)[0]}">
+                ${options.map(([minutes, label]) => `<selection id="${minutes}" content="${label}"/>`).join('')}
+            </input>
+            <action activationType="system" arguments="snooze" hint-inputId="snoozeTime" content=""/>
+            <action activationType="system" arguments="dismiss" content=""/>
+        </actions>`
+        : '';
+
+    return `<toast launch="open">
+        <visual><binding template="ToastGeneric">
+            <text>${escapeXml(title)}</text>
+            <text>${escapeXml(body)}</text>
+        </binding></visual>
+        ${actions}
+    </toast>`;
+}
+
+function showDeadlineNotification(payload) {
+    deadlineNotification = new Notification({ toastXml: deadlineToastXml(payload) });
     deadlineNotification.on('click', showWindow);
     deadlineNotification.show();
 }

@@ -1,10 +1,11 @@
 import { ref, computed } from 'vue';
 import platform from '#platform';
-import { createResetProcessor } from '../../shared/resetProcessor';
+import { createResetProcessor } from '../../shared/resetProcessor.js';
 import { useSettings } from './useSettings.js';
 import { getLiveVersion } from '../../shared/liveVersion.js';
 
 const gameConfig = ref(null);
+const independentEvents = ref([]);
 const accountsPerGame = ref([]);
 let processor = null;
 
@@ -17,9 +18,10 @@ const gamesWithoutAccounts = computed(() =>
 );
 
 async function loadGameData() {
-    const { config, tasks } = await platform.gameData.load();
+    const { config, tasks, independentEvents: events } = await platform.gameData.load();
 
     processor = createResetProcessor(config, tasks);
+    independentEvents.value = events ?? [];
     gameConfig.value = config;
 }
 
@@ -98,6 +100,7 @@ async function importAccounts() {
 export function useAccounts() {
     return {
         gameConfig,
+        independentEvents,
         accountsPerGame,
         gamesWithAccounts,
         gamesWithoutAccounts,
