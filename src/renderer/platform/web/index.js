@@ -67,7 +67,7 @@ async function start() {
 
     const notifier = createDeadlineNotifier({
         computeGroups: (now) => accounts.computeGroups(now),
-        enabledAccountIds: (gameName) => accounts.getAccountIds('windowsNotifications', gameName),
+        enabledAccountIds: (key, gameName) => accounts.getAccountIds(key, gameName),
         notify: showNotification,
     });
 

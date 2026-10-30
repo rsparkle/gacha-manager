@@ -31,23 +31,23 @@ describe('settings store', () => {
         const store = createSettingsStore();
 
         store.set('theme', 'nikki');
-        store.set({ server: 'Europe', windowsNotifications: { Test: ['acc-1'] } });
+        store.set({ server: 'Europe', deadlineNotifications: { Test: ['acc-1'] } });
 
         expect(store.get('theme')).toBe('nikki');
         expect(readJson(KEYS.settings)).toEqual({
             theme: 'nikki',
             server: 'Europe',
-            windowsNotifications: { Test: ['acc-1'] },
+            deadlineNotifications: { Test: ['acc-1'] },
         });
     });
 
     it('store is a copy', () => {
         const store = createSettingsStore();
-        store.set({ windowsNotifications: { Test: [] } });
+        store.set({ deadlineNotifications: { Test: [] } });
 
-        store.store.windowsNotifications.Test.push('x');
+        store.store.deadlineNotifications.Test.push('x');
 
-        expect(store.get('windowsNotifications')).toEqual({ Test: [] });
+        expect(store.get('deadlineNotifications')).toEqual({ Test: [] });
     });
 
     it('reload picks up another tab', () => {
@@ -57,6 +57,29 @@ describe('settings store', () => {
         store.reload();
 
         expect(store.get('theme')).toBe('furina');
+    });
+
+    it('migrates the old notifications key and saves it', () => {
+        localStorage.setItem(
+            KEYS.settings,
+            JSON.stringify({ theme: 'nikki', windowsNotifications: { Test: ['acc-1'] } }),
+        );
+
+        const store = createSettingsStore();
+
+        expect(store.store).toEqual({ theme: 'nikki', deadlineNotifications: { Test: ['acc-1'] } });
+        expect(readJson(KEYS.settings)).toEqual({ theme: 'nikki', deadlineNotifications: { Test: ['acc-1'] } });
+    });
+
+    it('does not rewrite settings that need no migration', () => {
+        const text = JSON.stringify({ theme: 'nikki' });
+        localStorage.setItem(KEYS.settings, text);
+        const setItem = vi.spyOn(localStorage, 'setItem');
+
+        createSettingsStore();
+
+        expect(setItem).not.toHaveBeenCalled();
+        expect(localStorage.getItem(KEYS.settings)).toBe(text);
     });
 
     it.each([['{ broken'], ['[]'], ['"text"']])('ignores bad saved settings %s', (text) => {

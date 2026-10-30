@@ -3,7 +3,8 @@ export const DEFAULT_SETTINGS = {
     server: null,
     scheduleGames: null,
     monthlySubCheck: 'calendar',
-    windowsNotifications: {},
+    deadlineNotifications: {},
+    monthlySubNotifications: {},
     automaticDailies: {},
     checkGachaProcesses: false,
     automaticUpdates: false,
@@ -11,3 +12,10 @@ export const DEFAULT_SETTINGS = {
     favoriteGame: null,
     scheduleOthers: true,
 };
+
+export function migrateSettings(stored) {
+    if (!stored || !('windowsNotifications' in stored)) return stored;
+
+    const { windowsNotifications, ...rest } = stored;
+    return { deadlineNotifications: windowsNotifications, ...rest };
+}

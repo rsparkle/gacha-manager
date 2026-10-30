@@ -583,6 +583,26 @@
     letter-spacing: 0.02em;
 }
 
+.schedule-event-tooltip--pinned {
+    pointer-events: auto;
+}
+
+.schedule-event-tooltip-title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.schedule-event-tooltip-title-row .schedule-event-tooltip-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.schedule-event-tooltip-flag {
+    flex-shrink: 0;
+    margin: -4px -6px -4px 0;
+}
+
 .event-tooltip-enter-active,
 .event-tooltip-leave-active {
     transition: opacity 0.12s ease;

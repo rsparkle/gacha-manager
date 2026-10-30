@@ -5,6 +5,9 @@ export const TASKS_URL = `${ASSETS_BASE}/${GAME_TASKS_PATH}`;
 export const INDEPENDENT_EVENTS_URL = `${ASSETS_BASE}/${INDEPENDENT_EVENTS_PATH}`;
 export const STATUS_URL = `${ASSETS_BASE}/${STATUS_PATH}`;
 export const RELEASES_URL = 'https://github.com/rsparkle/gacha-manager/releases/latest';
+export const REPORT_URL =
+    'https://script.google.com/macros/s/AKfycbwFgg5dGC6O2RB6Zef9LRSdF-IKkTPYTzPi2h9gTG3SXIq1X2u7GFV18qQayMv9nGEf/exec';
+export const REPORT_ORIGINS = ['https://script.google.com', 'https://script.googleusercontent.com'];
 
 export const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
 export const NETWORK_RETRY_MS = 60 * 1000;

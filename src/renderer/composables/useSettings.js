@@ -8,16 +8,6 @@ const { createNotification } = useNotification();
 const settings = ref({});
 const showSettings = ref(false);
 
-function normalizeArrayMap(map) {
-    if (!map || typeof map !== 'object') return {};
-    return Object.fromEntries(
-        Object.entries(map).map(([gameId, value]) => [
-            gameId,
-            Array.isArray(value) ? value : Object.values(value ?? {}),
-        ]),
-    );
-}
-
 async function loadSettings() {
     let stored = {};
 
@@ -29,8 +19,9 @@ async function loadSettings() {
 
     const loaded = { ...DEFAULT_SETTINGS, ...stored };
 
-    loaded.automaticDailies = normalizeArrayMap(loaded.automaticDailies);
-    loaded.windowsNotifications = normalizeArrayMap(loaded.windowsNotifications);
+    loaded.automaticDailies ??= {};
+    loaded.deadlineNotifications ??= {};
+    loaded.monthlySubNotifications ??= {};
 
     settings.value = loaded;
 }

@@ -3,7 +3,9 @@ import appIcon from '../../../assets/icon.png';
 const supported = () => typeof Notification !== 'undefined';
 
 function hasEnabledAccounts(settings) {
-    return Object.values(settings.windowsNotifications ?? {}).some((ids) => Object.values(ids ?? {}).length > 0);
+    return ['deadlineNotifications', 'monthlySubNotifications'].some((key) =>
+        Object.values(settings[key] ?? {}).some((ids) => Object.values(ids ?? {}).length > 0),
+    );
 }
 
 export async function ensurePermission(settings) {

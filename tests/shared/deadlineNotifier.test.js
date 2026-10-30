@@ -14,13 +14,16 @@ function account(overrides = {}) {
     return { id: 'acc-1', uid: '', server: 'Asia', label: '', tasks: {}, ...overrides };
 }
 
-function start({ accounts, enabled = ['acc-1'] }) {
-    const store = createStore({ windowsNotifications: { [GAME]: enabled } });
+function start({ accounts, enabled = ['acc-1'], subs = [] }) {
+    const store = createStore({
+        deadlineNotifications: { [GAME]: enabled },
+        monthlySubNotifications: { [GAME]: subs },
+    });
     const service = createAccountService({ storage: createMemoryStorage({ [GAME]: accounts }), settings: store });
     const notify = vi.fn();
     const notifier = createDeadlineNotifier({
         computeGroups: (now) => service.computeGroups(now),
-        enabledAccountIds: (gameName) => service.getAccountIds('windowsNotifications', gameName),
+        enabledAccountIds: (key, gameName) => service.getAccountIds(key, gameName),
         notify,
     });
 
@@ -109,5 +112,82 @@ describe('deadline notifications', () => {
 
         expect(() => notifier.refresh()).not.toThrow();
         expect(error).toHaveBeenCalledWith('Notification scheduling failed:', expect.any(Error));
+    });
+});
+
+describe('monthly sub notifications', () => {
+    const quiet = new Date('2026-10-20T12:00:00Z');
+
+    it('notifies once when a sub is running out', () => {
+        vi.setSystemTime(quiet);
+        const { notifier, notify } = start({
+            accounts: [account({ monthlySubRemaining: 3 }), account({ id: 'acc-2', monthlySubRemaining: 2 })],
+            enabled: [],
+            subs: ['acc-1', 'acc-2'],
+        });
+
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith({
+            title: 'A monthly subscription is running out!',
+            body: `Monthly subscription running out in ${GAME}`,
+            deadline: Infinity,
+        });
+
+        notifier.refresh();
+
+        expect(notify).toHaveBeenCalledTimes(1);
+    });
+
+    it('joins urgent tasks and subs into one notification', () => {
+        vi.setSystemTime(new Date('2026-10-25T19:00:00Z'));
+        const { notify } = start({ accounts: [account({ monthlySubRemaining: 3 })], subs: ['acc-1'] });
+
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify).toHaveBeenCalledWith({
+            title: 'Tasks and subscriptions need your attention!',
+            body: `There are 2 tasks approaching their deadlines in ${GAME}\nMonthly subscription running out in ${GAME}`,
+            deadline: new Date('2026-10-25T20:00:00Z').getTime(),
+        });
+    });
+
+    it('notifies again each time the count drops', () => {
+        vi.setSystemTime(quiet);
+        const { service, notify } = start({
+            accounts: [account({ monthlySubRemaining: 3 })],
+            enabled: [],
+            subs: ['acc-1'],
+        });
+
+        service.updateAccount(GAME, 'acc-1', { monthlySubRemaining: 2 });
+
+        expect(notify).toHaveBeenCalledTimes(2);
+    });
+
+    it('notifies again after a renewal runs out', () => {
+        vi.setSystemTime(quiet);
+        const { service, notify } = start({
+            accounts: [account({ monthlySubRemaining: 3 })],
+            enabled: [],
+            subs: ['acc-1'],
+        });
+
+        service.updateAccount(GAME, 'acc-1', { monthlySubRemaining: 30 });
+        service.updateAccount(GAME, 'acc-1', { monthlySubRemaining: 3 });
+
+        expect(notify).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([[5], [0], [undefined]])('skips a sub with %s days left', (monthlySubRemaining) => {
+        vi.setSystemTime(quiet);
+        const { notify } = start({ accounts: [account({ monthlySubRemaining })], enabled: [], subs: ['acc-1'] });
+
+        expect(notify).not.toHaveBeenCalled();
+    });
+
+    it('sub notifications off', () => {
+        vi.setSystemTime(quiet);
+        const { notify } = start({ accounts: [account({ monthlySubRemaining: 3 })], enabled: ['acc-1'] });
+
+        expect(notify).not.toHaveBeenCalled();
     });
 });

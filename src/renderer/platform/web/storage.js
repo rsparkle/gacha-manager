@@ -5,6 +5,7 @@ import {
     parseAccounts,
     serializeAccounts,
 } from '../../../shared/accounts/accountsFile.js';
+import { migrateSettings } from '../../../shared/settings.js';
 
 const PREFIX = 'gacha-manager:';
 
@@ -53,8 +54,12 @@ export function createSettingsStore() {
     function reload() {
         try {
             const stored = readJson(KEYS.settings);
+            const valid = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+            const migrated = migrateSettings(valid);
 
-            data = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+            if (migrated !== valid) writeJson(KEYS.settings, migrated);
+
+            data = migrated;
         } catch {
             data = {};
         }

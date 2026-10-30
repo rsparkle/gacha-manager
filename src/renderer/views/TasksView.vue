@@ -18,6 +18,10 @@
                 </div>
             </div>
 
+            <div class="recent-codes-wrapper">
+                <button class="add-game" @click="showRecentCodes = true">Recent Codes</button>
+            </div>
+
             <div v-if="missingGames.length > 0" class="add-game-wrapper">
                 <Transition name="popover">
                     <div v-if="showGamePicker" class="game-picker">
@@ -129,12 +133,17 @@
                                 v-if="selectedGame.maintenance"
                                 class="maintenance-warning"
                                 :class="
-                                    maintenanceOngoing ? 'maintenance-warning--ongoing' : 'maintenance-warning--upcoming'
+                                    maintenanceOngoing
+                                        ? 'maintenance-warning--ongoing'
+                                        : 'maintenance-warning--upcoming'
                                 "
                             >
                                 <span class="maintenance-dot" />
                                 {{ maintenanceLabel }}
                             </div>
+                            <button class="btn-edit" title="Report a problem with a task" @click="reportTask">
+                                Report
+                            </button>
                             <button v-if="!editingUid" class="btn-edit" @click="startUidEdit">Edit UID</button>
                             <button v-else class="btn-edit" @mousedown.prevent="cancelUidEdit" @click="cancelUidEdit">
                                 Cancel
@@ -142,37 +151,21 @@
                             <button class="btn-delete" @click="deleteAccount">Delete Account</button>
                             <button
                                 class="btn-icon"
-                                :class="{ active: notificationsEnabled }"
-                                :title="notificationsEnabled ? 'Notifications on' : 'Notifications off'"
+                                :class="{ active: deadlineNotificationsEnabled }"
+                                :title="
+                                    deadlineNotificationsEnabled
+                                        ? 'Deadline notifications on'
+                                        : 'Deadline notifications off'
+                                "
                                 @click="
                                     toggleAndSaveSetting(
-                                        settings.windowsNotifications,
+                                        settings.deadlineNotifications,
                                         selectedGame.name,
                                         selectedAccount.id,
                                     )
                                 "
                             >
-                                <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                                    <line
-                                        v-if="!notificationsEnabled"
-                                        x1="2"
-                                        y1="2"
-                                        x2="22"
-                                        y2="22"
-                                        stroke="currentColor"
-                                    />
-                                </svg>
+                                <BellIcon :off="!deadlineNotificationsEnabled" />
                             </button>
                             <button
                                 v-if="desktop"
@@ -192,14 +185,7 @@
                                     stroke-linejoin="round"
                                 >
                                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                    <line
-                                        v-if="!automationEnabled"
-                                        x1="2"
-                                        y1="2"
-                                        x2="22"
-                                        y2="22"
-                                        stroke="currentColor"
-                                    />
+                                    <line v-if="!automationEnabled" x1="2" y1="2" x2="22" y2="22" />
                                 </svg>
                             </button>
                         </div>
@@ -236,32 +222,62 @@
                         <div class="account-tab-add" @click="insertAccount">+</div>
                     </div>
 
-                    <div class="monthly-sub" @click="startMonthlySubEdit">
-                        <template v-if="!editingMonthlySub">
-                            {{ currentGameConfig?.monthlySub ?? 'Monthly Sub' }}:
-                            <span
-                                :class="{ 'monthly-sub-urgent': Number(selectedAccount?.monthlySubRemaining ?? 0) < 5 }"
-                            >
-                                {{ selectedAccount?.monthlySubRemaining ?? 0 }}
-                            </span>
-                        </template>
+                    <div class="monthly-sub">
+                        <div @click="startMonthlySubEdit">
+                            <template v-if="!editingMonthlySub">
+                                {{ currentGameConfig?.monthlySub ?? 'Monthly Sub' }}:
+                                <span
+                                    :class="{
+                                        'monthly-sub-urgent': isMonthlySubUrgent(
+                                            Number(selectedAccount?.monthlySubRemaining),
+                                        ),
+                                    }"
+                                >
+                                    {{ selectedAccount?.monthlySubRemaining ?? 0 }}
+                                </span>
+                            </template>
 
-                        <input
-                            v-else
-                            ref="monthlySubInput"
-                            v-model="monthlySubValue"
-                            type="number"
-                            min="0"
-                            step="1"
-                            @click.stop
-                            @keydown.enter.prevent="$event.target.blur()"
-                            @keydown.esc.prevent="cancelMonthlySubEdit"
-                            @blur="saveMonthlySub"
-                        />
+                            <input
+                                v-else
+                                ref="monthlySubInput"
+                                v-model="monthlySubValue"
+                                type="number"
+                                min="0"
+                                step="1"
+                                @click.stop
+                                @keydown.enter.prevent="$event.target.blur()"
+                                @keydown.esc.prevent="cancelMonthlySubEdit"
+                                @blur="saveMonthlySub"
+                            />
+                        </div>
+                        <div>
+                            <button
+                                class="btn-icon"
+                                :class="{ active: monthlySubNotificationsEnabled }"
+                                :title="
+                                    monthlySubNotificationsEnabled
+                                        ? 'Monthly sub notifications on'
+                                        : 'Monthly sub notifications off'
+                                "
+                                @click="
+                                    toggleAndSaveSetting(
+                                        settings.monthlySubNotifications,
+                                        selectedGame.name,
+                                        selectedAccount.id,
+                                    )
+                                "
+                            >
+                                <BellIcon :off="!monthlySubNotificationsEnabled" />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="tasks-area" :class="{ 'tasks-area--maintenance': selectedGame.maintenance }" :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }">
+                <div
+                    class="tasks-area"
+                    :class="{ 'tasks-area--maintenance': selectedGame.maintenance }"
+                    :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }"
+                >
                     <img
                         :key="selectedGame.name"
                         :src="gameImages[selectedGame.name]"
@@ -309,6 +325,8 @@
             </div>
         </div>
     </div>
+
+    <RecentCodesModal :open="showRecentCodes" :game="selectedGame?.name" @close="showRecentCodes = false" />
 </template>
 
 <script setup>
@@ -319,9 +337,12 @@ import { useNotification } from '../composables/useNotification.js';
 import { useConfirm } from '../composables/useConfirm.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
-import { taskProgress, isUrgent } from '../../shared/tasks.js';
+import { taskProgress, isUrgent, isMonthlySubUrgent } from '../../shared/tasks.js';
 import { slugify, formatCountdown } from '../../shared/format.js';
 import { themeAsset } from '../themes.js';
+import BellIcon from '../components/BellIcon.vue';
+import RecentCodesModal from '../components/RecentCodesModal.vue';
+import { useReport } from '../composables/useReport.js';
 
 const { settings, saveSettings, toggleSetting } = useSettings();
 const { confirm } = useConfirm();
@@ -334,6 +355,7 @@ const {
     deleteAccount: removeAccount,
     setTaskCompleted,
 } = useAccounts();
+const { openReport } = useReport();
 
 const desktop = platform.desktop;
 
@@ -342,6 +364,7 @@ const defaultServer = (gameName) => Object.keys(gameConfig.value?.[gameName]?.se
 const gameImages = ref({});
 const sidebarIcons = ref({});
 const showGamePicker = ref(false);
+const showRecentCodes = ref(false);
 const selectedGameName = ref(null);
 const selectedAccountId = ref(null);
 const failedImages = ref(new Set());
@@ -386,8 +409,15 @@ const selectedAccount = computed(
 
 const missingGames = computed(() => accountsPerGame.value.filter((g) => g.accounts.length === 0));
 
-const notificationsEnabled = computed(
-    () => settings.value.windowsNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false,
+const deadlineNotificationsEnabled = computed(
+    () =>
+        settings.value.deadlineNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ?? false,
+);
+
+const monthlySubNotificationsEnabled = computed(
+    () =>
+        settings.value.monthlySubNotifications?.[selectedGame.value?.name]?.includes(selectedAccount.value?.id) ??
+        false,
 );
 
 const automationEnabled = computed(
@@ -716,6 +746,16 @@ const handleImageError = (game) => {
 };
 
 const loadedImageVersions = {};
+
+const reportTask = () =>
+    openReport({
+        game: selectedGame.value.name,
+        topic: 'tasks',
+        server: selectedAccount.value.server,
+        targets: Object.entries(selectedAccount.value.tasks).flatMap(([group, tasks]) =>
+            tasks.map((task) => ({ id: String(task.id), label: task.label, group })),
+        ),
+    });
 
 watch(
     () => trackedGames.value.map((game) => `${game.name}:${game.game_version}`).join('|'),

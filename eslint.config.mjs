@@ -15,7 +15,7 @@ export default [
     },
     {
         files: ['src/renderer/**/*.{js,vue}', 'src/shared/**/*.js'],
-        languageOptions: { globals: { ...globals.browser } },
+        languageOptions: { globals: { ...globals.browser, __APP_VERSION__: 'readonly' } },
     },
     {
         files: ['forge.config.js'],

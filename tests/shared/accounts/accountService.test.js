@@ -151,7 +151,8 @@ describe('managing accounts', () => {
     it('delete removes per-account settings', () => {
         const store = createStore({
             automaticDailies: { [GAME]: ['acc-1', 'acc-2'] },
-            windowsNotifications: { [GAME]: ['acc-1'], [OTHER]: ['acc-9'] },
+            deadlineNotifications: { [GAME]: ['acc-1'], [OTHER]: ['acc-9'] },
+            monthlySubNotifications: { [GAME]: ['acc-1', 'acc-2'] },
         });
         const { service, storage } = load({ accounts: { [GAME]: [account(), account({ id: 'acc-2' })] }, store });
 
@@ -159,7 +160,8 @@ describe('managing accounts', () => {
 
         expect(storage.saved[GAME].map((a) => a.id)).toEqual(['acc-2']);
         expect(store.data.automaticDailies).toEqual({ [GAME]: ['acc-2'] });
-        expect(store.data.windowsNotifications).toEqual({ [GAME]: [], [OTHER]: ['acc-9'] });
+        expect(store.data.deadlineNotifications).toEqual({ [GAME]: [], [OTHER]: ['acc-9'] });
+        expect(store.data.monthlySubNotifications).toEqual({ [GAME]: ['acc-2'] });
     });
 });
 
@@ -350,7 +352,8 @@ describe('backup', () => {
     it('import replaces accounts and drops settings for missing ones', () => {
         const store = createStore({
             automaticDailies: { [GAME]: ['acc-1', 'acc-2'] },
-            windowsNotifications: { [OTHER]: ['acc-9'] },
+            deadlineNotifications: { [OTHER]: ['acc-9'] },
+            monthlySubNotifications: { [GAME]: ['acc-1'] },
         });
         const { service, storage } = load({ accounts: { [GAME]: [account(), account({ id: 'acc-2' })] }, store });
 
@@ -358,7 +361,8 @@ describe('backup', () => {
 
         expect(storage.saved).toEqual({ [GAME]: [account({ id: 'acc-2', label: 'Imported' })] });
         expect(store.data.automaticDailies).toEqual({ [GAME]: ['acc-2'] });
-        expect(store.data.windowsNotifications).toEqual({ [OTHER]: [] });
+        expect(store.data.deadlineNotifications).toEqual({ [OTHER]: [] });
+        expect(store.data.monthlySubNotifications).toEqual({ [GAME]: [] });
     });
 
     it.each([

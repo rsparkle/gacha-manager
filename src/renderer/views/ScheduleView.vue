@@ -117,10 +117,11 @@
                                             :style="{ '--gc': event.color }"
                                             :class="{ estimated: !event.confirmed }"
                                             :aria-label="`${event.label}, ${formatEventTime(event)}`"
-                                            @mouseenter="showEventTooltip(event, $event)"
-                                            @mouseleave="hideEventTooltip"
-                                            @focus="showEventTooltip(event, $event)"
-                                            @blur="hideEventTooltip"
+                                            @mouseenter="previewEvent(event, $event)"
+                                            @mouseleave="unpreviewEvent"
+                                            @focus="previewEvent(event, $event)"
+                                            @blur="unpreviewEvent"
+                                            @click="togglePinnedEvent(event, $event)"
                                         >
                                             <span class="event-dot" />
                                             <span class="event-short-label">{{ event.title }}</span>
@@ -146,6 +147,7 @@
                     :class="{
                         'schedule-event-tooltip--portrait': hoveredEventIsPortrait,
                         'schedule-event-tooltip--landscape': !hoveredEventIsPortrait,
+                        'schedule-event-tooltip--pinned': pinned,
                     }"
                     :style="tooltipStyle"
                     role="tooltip"
@@ -171,8 +173,16 @@
                             </span>
                         </div>
 
-                        <div class="schedule-event-tooltip-title">
-                            {{ hoveredEvent.label }}
+                        <div class="schedule-event-tooltip-title-row">
+                            <div class="schedule-event-tooltip-title">
+                                {{ hoveredEvent.label }}
+                            </div>
+                            <ReportFlag
+                                v-if="pinned && hoveredEvent.key"
+                                class="schedule-event-tooltip-flag"
+                                :context="reportContext"
+                                @click="hideEventTooltip"
+                            />
                         </div>
 
                         <div class="schedule-event-tooltip-meta">
@@ -212,6 +222,7 @@ import { slugify, formatCountdown, thumbnailPath } from '../../shared/format.js'
 import { SCHEDULE_SERVERS } from '../../shared/gameData.js';
 import { earliestPatchStart } from '../../shared/patches.js';
 import { themeAsset } from '../themes.js';
+import ReportFlag from '../components/ReportFlag.vue';
 
 const { settings, saveSettings } = useSettings();
 const { gameConfig, independentEvents, gamesWithAccounts } = useAccounts();
@@ -239,6 +250,7 @@ const gameIcons = reactive({});
 const imageUrls = reactive({});
 
 const hoveredEvent = ref(null);
+const pinned = ref(false);
 const tooltipPosition = ref({ left: 0, top: 0, placement: 'above' });
 
 const monthNames = [
@@ -411,9 +423,9 @@ const eventsByDay = computed(() => {
     for (const [game, events] of Object.entries(filteredScheduleData.value)) {
         const color = gameColor(game);
 
-        for (const eventData of Object.values(events)) {
+        for (const [eventKey, eventData] of Object.entries(events)) {
             const key = eventData.date.toDateString();
-            (map[key] ??= []).push({ ...eventData, game, color });
+            (map[key] ??= []).push({ ...eventData, key: eventKey, game, color });
         }
     }
 
@@ -526,7 +538,47 @@ const showEventTooltip = (event, domEvent) => {
 
 const hideEventTooltip = () => {
     hoveredEvent.value = null;
+    pinned.value = false;
 };
+
+const previewEvent = (event, domEvent) => {
+    if (!pinned.value) showEventTooltip(event, domEvent);
+};
+
+const unpreviewEvent = () => {
+    if (!pinned.value) hideEventTooltip();
+};
+
+const isSameEvent = (a, b) => a?.game === b?.game && a?.key === b?.key;
+
+const togglePinnedEvent = (event, domEvent) => {
+    if (pinned.value && isSameEvent(hoveredEvent.value, event)) {
+        hideEventTooltip();
+        return;
+    }
+
+    showEventTooltip(event, domEvent);
+    pinned.value = true;
+};
+
+const onPinnedPointerDown = (domEvent) => {
+    if (!pinned.value) return;
+    if (domEvent.target.closest?.('.schedule-event-tooltip, .event')) return;
+
+    hideEventTooltip();
+};
+
+const onPinnedKeydown = (domEvent) => {
+    if (pinned.value && domEvent.key === 'Escape') hideEventTooltip();
+};
+
+const reportContext = computed(() => ({
+    game: hoveredEvent.value?.game,
+    topic: 'schedule',
+    targetId: hoveredEvent.value?.key,
+    targetLabel: hoveredEvent.value?.label,
+    server: selectedServer.value,
+}));
 
 const loadSchedule = () => {
     if (!computeScheduleData) return;
@@ -564,6 +616,9 @@ watch(selectedServer, (server) => {
 });
 
 onMounted(() => {
+    document.addEventListener('pointerdown', onPinnedPointerDown);
+    document.addEventListener('keydown', onPinnedKeydown);
+
     clockTimer = window.setInterval(() => {
         now.value = new Date();
 
@@ -585,6 +640,8 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', onPinnedPointerDown);
+    document.removeEventListener('keydown', onPinnedKeydown);
     if (clockTimer) window.clearInterval(clockTimer);
 });
 </script>

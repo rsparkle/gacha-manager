@@ -3,6 +3,7 @@
         <NotificationCenter />
         <AppSettings />
         <ConfirmDialogue />
+        <ReportDialog />
         <UpdatePill v-if="desktop" />
         <div v-if="desktop" class="title-bar">
             <img :src="appIcon" alt="" class="title-bar-icon" />
@@ -104,6 +105,7 @@ import ScheduleView from './views/ScheduleView.vue';
 import AppFooter from './components/AppFooter.vue';
 import NotificationCenter from './components/NotificationCenter.vue';
 import ConfirmDialogue from './components/ConfirmDialogue.vue';
+import ReportDialog from './components/ReportDialog.vue';
 import AppSettings from './components/AppSettings.vue';
 import { useNotification } from './composables/useNotification.js';
 import { useSettings } from './composables/useSettings.js';

@@ -17,7 +17,7 @@ import {
     patchSecondPhaseDate,
     patchStartDate,
     validatePatches,
-    maintenanceMinutes
+    maintenanceMinutes,
 } from './patches.js';
 
 const LITERAL_TIME = /^(\d{1,2}:\d{2})@(server|global)$/;
@@ -444,7 +444,8 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
             const timeLeft = zonedInstant(date, minutes.start, zone) - now;
             const duration = (minutes.open - minutes.start) * MINUTE;
 
-            if (timeLeft <= 0 && timeLeft > -duration) return { type: 'maintenance_ongoing', time: timeLeft + duration };
+            if (timeLeft <= 0 && timeLeft > -duration)
+                return { type: 'maintenance_ongoing', time: timeLeft + duration };
             if (timeLeft > 0 && timeLeft <= DAY) return { type: 'maintenance_upcoming', time: timeLeft };
         }
 
@@ -457,7 +458,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
                 computeSingleAccountResetData(account, gameGroup.name, now);
             });
 
-            gameGroup.maintenance = getIncomingMaintenanceTime(gameGroup, now)
+            gameGroup.maintenance = getIncomingMaintenanceTime(gameGroup, now);
         });
 
         return gameGroups;

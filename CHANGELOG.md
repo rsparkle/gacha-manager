@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.4] - 2026-10-30
+### Added
+- Monthly Sub notifications
+- Redemption codes panel listing active codes, with buttons to copy each code or redeem it on the website
+- Report a problem with a code, task or schedule event: use the flag on codes and pinned events, or the Report button in Tasks. Clicking an event in the schedule now pins its details
+### Changed
+- Settings now has separate Tasks and Monthly Sub toggles for each account. Existing notification choices carry over to the Tasks toggle
+- Account settings are now also shown in the web version, with automatic dailies marked as Windows-only
+
 ## [1.2.3] - 2026-10-29
 ### Added
 - Added a Launch at Startup setting

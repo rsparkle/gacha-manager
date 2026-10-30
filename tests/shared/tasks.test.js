@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { URGENT_PROGRESS, isUrgent, taskProgress } from '../../src/shared/tasks.js';
+import {
+    MONTHLY_SUB_URGENT_DAYS,
+    URGENT_PROGRESS,
+    isMonthlySubUrgent,
+    isUrgent,
+    taskProgress,
+} from '../../src/shared/tasks.js';
 
 const DAY = 86_400_000;
 
@@ -30,5 +36,17 @@ describe('isUrgent', () => {
 
     it('open-ended never urgent', () => {
         expect(isUrgent({ duration: null, nextReset: null })).toBe(false);
+    });
+});
+
+describe('isMonthlySubUrgent', () => {
+    it(`is urgent below ${MONTHLY_SUB_URGENT_DAYS} days`, () => {
+        expect(isMonthlySubUrgent(MONTHLY_SUB_URGENT_DAYS)).toBe(false);
+        expect(isMonthlySubUrgent(MONTHLY_SUB_URGENT_DAYS - 1)).toBe(true);
+        expect(isMonthlySubUrgent(1)).toBe(true);
+    });
+
+    it.each([[0], [null], [undefined]])('%s is never urgent', (remaining) => {
+        expect(isMonthlySubUrgent(remaining)).toBe(false);
     });
 });

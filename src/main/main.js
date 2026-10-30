@@ -16,7 +16,7 @@ import { createAccountService } from '../shared/accounts/accountService.js';
 import { backupFileName } from '../shared/accounts/accountsFile.js';
 import { createDeadlineNotifier } from '../shared/deadlineNotifier.js';
 import { createGameDataLoader } from '../shared/gameDataLoader.js';
-import { DEFAULT_SETTINGS } from '../shared/settings.js';
+import { DEFAULT_SETTINGS, migrateSettings } from '../shared/settings.js';
 import {
     GAME_DATA_REFRESH_MS,
     MISSING_ASSET_RETRY_MS,
@@ -72,6 +72,9 @@ const SNOOZE_OPTIONS = [
 
 const STARTUP_ARG = '--startup';
 const LAUNCHED_AT_STARTUP = process.argv.includes(STARTUP_ARG);
+
+const migratedSettings = migrateSettings(store.store);
+if (migratedSettings !== store.store) store.store = migratedSettings;
 
 let accounts = null;
 let notifier = null;
@@ -565,7 +568,10 @@ function deadlineToastXml({ title, body, deadline }) {
     return `<toast launch="open">
         <visual><binding template="ToastGeneric">
             <text>${escapeXml(title)}</text>
-            <text>${escapeXml(body)}</text>
+            ${body
+                .split('\n')
+                .map((line) => `<text>${escapeXml(line)}</text>`)
+                .join('')}
         </binding></visual>
         ${actions}
     </toast>`;
@@ -790,7 +796,7 @@ async function startApp() {
 
     notifier = createDeadlineNotifier({
         computeGroups: (now) => accounts.computeGroups(now),
-        enabledAccountIds: (gameName) => accounts.getAccountIds('windowsNotifications', gameName),
+        enabledAccountIds: (key, gameName) => accounts.getAccountIds(key, gameName),
         notify: showDeadlineNotification,
     });
 

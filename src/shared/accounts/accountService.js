@@ -4,7 +4,7 @@ import { parseAccounts, serializeAccounts } from './accountsFile.js';
 import { getLiveVersion } from '../liveVersion.js';
 
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
-const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'windowsNotifications'];
+const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'deadlineNotifications', 'monthlySubNotifications'];
 const DAY_MS = 86_400_000;
 
 export function createAccountService({ storage, settings }) {

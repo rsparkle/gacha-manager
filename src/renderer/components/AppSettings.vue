@@ -117,7 +117,7 @@
                     <div v-if="desktop" class="settings-section settings-section--plain">
                         <div class="settings-row">
                             <div class="settings-row-label">
-                                <span class="settings-row-title">Automation</span>
+                                <span class="settings-row-title">Auto-complete dailies</span>
                                 <small>Look for active game processes to automatically check daily tasks</small>
                             </div>
                             <label class="toggle">
@@ -163,7 +163,7 @@
                         </div>
                     </div>
 
-                    <div v-if="desktop" class="settings-section">
+                    <div class="settings-section">
                         <p class="settings-section-title">Account settings</p>
                         <p class="settings-section-desc">Configure automatic dailies and notifications per account</p>
                         <div class="game-groups">
@@ -177,12 +177,18 @@
                                         <span class="account-chip-server">{{ account.server }}</span>
                                         <div class="chip-toggles">
                                             <button
-                                                v-if="draft.checkGachaProcesses"
+                                                v-if="!desktop || draft.checkGachaProcesses"
                                                 type="button"
                                                 class="text-toggle"
                                                 :class="{
                                                     active: draft.automaticDailies[game.name]?.includes(account.id),
                                                 }"
+                                                :title="
+                                                    desktop
+                                                        ? 'Mark dailies done when the game is detected running'
+                                                        : 'Only supported in the Windows app'
+                                                "
+                                                :disabled="!desktop"
                                                 @click="toggleSetting(draft.automaticDailies, game.name, account.id)"
                                             >
                                                 Auto
@@ -191,13 +197,31 @@
                                                 type="button"
                                                 class="text-toggle"
                                                 :class="{
-                                                    active: draft.windowsNotifications[game.name]?.includes(account.id),
+                                                    active: draft.deadlineNotifications[game.name]?.includes(
+                                                        account.id,
+                                                    ),
                                                 }"
+                                                title="Notify when tasks are near their deadline"
                                                 @click="
-                                                    toggleSetting(draft.windowsNotifications, game.name, account.id)
+                                                    toggleSetting(draft.deadlineNotifications, game.name, account.id)
                                                 "
                                             >
-                                                Notify
+                                                Tasks
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="text-toggle"
+                                                :class="{
+                                                    active: draft.monthlySubNotifications[game.name]?.includes(
+                                                        account.id,
+                                                    ),
+                                                }"
+                                                title="Notify when the monthly sub is about to run out"
+                                                @click="
+                                                    toggleSetting(draft.monthlySubNotifications, game.name, account.id)
+                                                "
+                                            >
+                                                Monthly Sub
                                             </button>
                                         </div>
                                     </div>
@@ -548,13 +572,18 @@ const importBackup = async () => {
         border-color 0.15s;
 }
 
-.text-toggle:hover {
+.text-toggle:not(:disabled):hover {
     color: var(--text);
 }
 
 .text-toggle.active {
     color: var(--accent);
     border-bottom-color: var(--accent);
+}
+
+.text-toggle:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 
 .settings-footer {
