@@ -115,7 +115,7 @@ export default {
     },
 
     accounts: {
-        getGrouped: withAccounts((service) => service.getGroupedAccounts()),
+        getGroups: withAccounts((service) => service.computeGroups()),
         insert: withAccounts((service, gameList) => service.insertAccounts(gameList)),
         update: withAccounts((service, gameName, id, changes) => service.updateAccount(gameName, id, changes)),
         remove: withAccounts((service, gameName, id) => service.deleteAccount(gameName, id)),
@@ -123,6 +123,11 @@ export default {
             service.setTaskCompleted(gameName, taskId, accountId, completed),
         ),
         syncCalendarMonthlySubs: withAccounts((service) => service.syncCalendarMonthlySubs()),
+        createCustomGame: withAccounts((service) => service.createCustomGame()),
+        renameCustomGame: withAccounts((service, gameKey, name) => service.renameCustomGame(gameKey, name)),
+        deleteCustomGame: withAccounts((service, gameKey) => service.deleteCustomGame(gameKey)),
+        addCustomTask: withAccounts((service, gameKey, task) => service.addCustomTask(gameKey, task)),
+        deleteCustomTask: withAccounts((service, gameKey, taskId) => service.deleteCustomTask(gameKey, taskId)),
         exportToFile: async () => {
             downloadTextFile(backupFileName(), (await ready()).exportAccounts());
 

@@ -25,6 +25,23 @@ function account(overrides = {}) {
     return { id: 'acc-1', uid: '', server: 'Asia', label: '', tasks: {}, ...overrides };
 }
 
+const EMPTY_CUSTOM = { games: {}, tasks: {} };
+const CUSTOM = {
+    games: { 'custom:game-1': { name: 'My Game', color: '#7aa2f7' } },
+    tasks: {
+        'custom:game-1': [
+            {
+                id: 'custom:task-1',
+                label: 'Login event',
+                category: 'Events',
+                createdAt: '2026-10-25T12:00:00.000Z',
+                endsAt: '2026-10-30T12:00:00.000Z',
+            },
+        ],
+    },
+};
+const EMPTY_FILE = { version: 2, accounts: {}, custom: EMPTY_CUSTOM };
+
 beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gacha-manager-test-'));
     state.dialogChoice = 1;
@@ -36,21 +53,36 @@ afterEach(() => {
 
 describe('loading accounts.json', () => {
     it('first launch', () => {
-        expect(storage().load()).toEqual({});
-        expect(readAccountsFile()).toEqual({ version: 1, accounts: {} });
+        expect(storage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual(EMPTY_FILE);
     });
 
     it('migrates old file with backup', () => {
         const legacy = { Test: [account()] };
         writeAccountsFile(legacy);
 
-        expect(storage().load()).toEqual(legacy);
-        expect(readAccountsFile()).toEqual({ version: 1, accounts: legacy });
+        expect(storage().load()).toEqual({ accounts: legacy, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual({ version: 2, accounts: legacy, custom: EMPTY_CUSTOM });
         expect(JSON.parse(fs.readFileSync(path.join(dir, 'accounts.v0-backup.json'), 'utf-8'))).toEqual(legacy);
     });
 
+    it('upgrading from v1 keeps every account', () => {
+        const v1 = { version: 1, accounts: { Test: [account(), account({ id: 'acc-2', label: 'Alt' })] } };
+        writeAccountsFile(v1);
+
+        expect(storage().load()).toEqual({ accounts: v1.accounts, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual({ version: 2, accounts: v1.accounts, custom: EMPTY_CUSTOM });
+        expect(JSON.parse(fs.readFileSync(path.join(dir, 'accounts.v1-backup.json'), 'utf-8'))).toEqual(v1);
+    });
+
+    it('loads custom games and tasks', () => {
+        writeAccountsFile({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
+
+        expect(storage().load()).toEqual({ accounts: { Test: [account()] }, custom: CUSTOM });
+    });
+
     it('no backup when current', () => {
-        writeAccountsFile({ version: 1, accounts: { Test: [account()] } });
+        writeAccountsFile({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
 
         storage().load();
 
@@ -61,8 +93,8 @@ describe('loading accounts.json', () => {
         state.dialogChoice = 0;
         writeAccountsFile('{ not json');
 
-        expect(storage().load()).toEqual({});
-        expect(readAccountsFile()).toEqual({ version: 1, accounts: {} });
+        expect(storage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual(EMPTY_FILE);
 
         const backup = fs.readdirSync(dir).find((name) => name.startsWith('accounts.corrupt-'));
 
@@ -82,7 +114,7 @@ describe('loading accounts.json', () => {
         state.dialogChoice = 0;
 
         expect(() => storage().load()).toThrow(
-            expect.objectContaining({ name: 'NewerAccountsVersionError', userDeclined: true }),
+            expect.objectContaining({ name: 'NewerUserDataVersionError', userDeclined: true }),
         );
         expect(shell.openExternal).toHaveBeenCalledWith('https://github.com/rsparkle/gacha-manager/releases/latest');
         expect(readAccountsFile()).toEqual(newer);
@@ -91,9 +123,9 @@ describe('loading accounts.json', () => {
 
 describe('saving accounts.json', () => {
     it('writes the versioned file without leftovers', () => {
-        storage().save({ Test: [account()] });
+        storage().save({ accounts: { Test: [account()] }, custom: CUSTOM });
 
-        expect(readAccountsFile()).toEqual({ version: 1, accounts: { Test: [account()] } });
+        expect(readAccountsFile()).toEqual({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
         expect(fs.readdirSync(dir)).toEqual(['accounts.json']);
     });
 });

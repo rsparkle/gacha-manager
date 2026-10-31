@@ -168,16 +168,18 @@
                         <p class="settings-section-desc">Configure automatic dailies and notifications per account</p>
                         <div class="game-groups">
                             <div v-for="game in accountsPerGame" :key="game.name" class="game-group">
-                                <p class="game-group-title">{{ game.name }}</p>
+                                <p class="game-group-title">{{ game.displayName ?? game.name }}</p>
                                 <div class="account-grid">
                                     <div v-for="account in game.accounts" :key="account.id" class="account-chip-row">
                                         <span class="account-chip-label">{{
                                             account.label || account.uid || 'New Account'
                                         }}</span>
-                                        <span class="account-chip-server">{{ account.server }}</span>
+                                        <span v-if="account.server" class="account-chip-server">{{
+                                            account.server
+                                        }}</span>
                                         <div class="chip-toggles">
                                             <button
-                                                v-if="!desktop || draft.checkGachaProcesses"
+                                                v-if="!game.custom && (!desktop || draft.checkGachaProcesses)"
                                                 type="button"
                                                 class="text-toggle"
                                                 :class="{
@@ -209,6 +211,7 @@
                                                 Tasks
                                             </button>
                                             <button
+                                                v-if="!game.custom"
                                                 type="button"
                                                 class="text-toggle"
                                                 :class="{
@@ -549,7 +552,7 @@ const importBackup = async () => {
 .account-chip-server {
     font-size: 11px;
     color: var(--muted);
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-mono), monospace;
 }
 
 .chip-toggles {

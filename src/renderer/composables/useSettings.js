@@ -57,6 +57,7 @@ export function useSettings() {
         const idx = map[gameId].indexOf(accountId);
         if (idx === -1) map[gameId].push(accountId);
         else map[gameId].splice(idx, 1);
+        if (map[gameId].length === 0) delete map[gameId];
     }
 
     return { settings, showSettings, saveSettings, loadSettings, toggleSetting };

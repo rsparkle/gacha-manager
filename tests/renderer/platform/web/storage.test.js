@@ -14,6 +14,9 @@ function account(overrides = {}) {
     return { id: 'acc-1', uid: '', server: 'Asia', label: '', tasks: {}, ...overrides };
 }
 
+const EMPTY_CUSTOM = { games: {}, tasks: {} };
+const CUSTOM = { games: { 'custom:game-1': { name: 'My Game', color: '#7aa2f7' } }, tasks: {} };
+
 beforeEach(() => {
     localStorage = createLocalStorage();
     vi.stubGlobal('localStorage', localStorage);
@@ -91,31 +94,47 @@ describe('settings store', () => {
 
 describe('accounts storage', () => {
     it('empty when nothing saved', () => {
-        expect(createAccountsStorage().load()).toEqual({});
+        expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
         expect(localStorage.items.size).toBe(0);
     });
 
     it('saves the versioned file', () => {
-        createAccountsStorage().save({ Test: [account()] });
+        createAccountsStorage().save({ accounts: { Test: [account()] }, custom: CUSTOM });
 
-        expect(readJson(KEYS.accounts)).toEqual({ version: 1, accounts: { Test: [account()] } });
+        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
+    });
+
+    it('loads custom games', () => {
+        localStorage.setItem(KEYS.accounts, JSON.stringify({ version: 2, accounts: {}, custom: CUSTOM }));
+
+        expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: CUSTOM });
     });
 
     it('migrates old data with backup', () => {
         const legacy = JSON.stringify({ Test: [account()] });
         localStorage.setItem(KEYS.accounts, legacy);
 
-        expect(createAccountsStorage().load()).toEqual({ Test: [account()] });
-        expect(readJson(KEYS.accounts)).toEqual({ version: 1, accounts: { Test: [account()] } });
+        expect(createAccountsStorage().load()).toEqual({ accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
         expect(localStorage.getItem(`${KEYS.accounts}.v0-backup`)).toBe(legacy);
+    });
+
+    it('upgrading from v1 keeps every account', () => {
+        const v1 = JSON.stringify({ version: 1, accounts: { Test: [account()] } });
+        localStorage.setItem(KEYS.accounts, v1);
+
+        createAccountsStorage().load();
+
+        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
+        expect(localStorage.getItem(`${KEYS.accounts}.v1-backup`)).toBe(v1);
     });
 
     it('corrupted data: backup and start fresh', () => {
         vi.spyOn(console, 'error').mockImplementation(() => {});
         localStorage.setItem(KEYS.accounts, '{ not json');
 
-        expect(createAccountsStorage().load()).toEqual({});
-        expect(readJson(KEYS.accounts)).toEqual({ version: 1, accounts: {} });
+        expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: {}, custom: EMPTY_CUSTOM });
 
         const backup = [...localStorage.items.keys()].find((key) => key.startsWith(`${KEYS.accounts}.corrupt-`));
 
@@ -127,7 +146,7 @@ describe('accounts storage', () => {
         localStorage.setItem(KEYS.accounts, newer);
 
         expect(() => createAccountsStorage().load()).toThrow(
-            expect.objectContaining({ name: 'NewerAccountsVersionError' }),
+            expect.objectContaining({ name: 'NewerUserDataVersionError' }),
         );
         expect(localStorage.getItem(KEYS.accounts)).toBe(newer);
     });

@@ -3,13 +3,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-    ACCOUNTS_VERSION,
-    AccountsMigrationError,
-    NewerAccountsVersionError,
+    USER_DATA_VERSION,
+    UserDataMigrationError,
+    NewerUserDataVersionError,
     backupFileName,
-    migrateAccountsFile,
-    parseAccounts,
-    serializeAccounts,
+    emptyUserData,
+    migrateUserData,
+    parseUserData,
+    serializeUserData,
 } from '../../../src/shared/accounts/accountsFile.js';
 
 const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../fixtures/accounts');
@@ -40,7 +41,25 @@ function expectCurrentShape(accounts) {
     }
 }
 
-const versions = Array.from({ length: ACCOUNTS_VERSION + 1 }, (_, version) => version);
+const EMPTY_CUSTOM = { games: {}, tasks: {} };
+const GAME_KEY = 'custom:game-1';
+
+function customTask(overrides = {}) {
+    return {
+        id: 'custom:task-1',
+        label: 'Login event',
+        category: 'Events',
+        createdAt: '2026-10-25T12:00:00.000Z',
+        endsAt: '2026-10-30T12:00:00.000Z',
+        ...overrides,
+    };
+}
+
+function withCustom(custom) {
+    return { version: USER_DATA_VERSION, accounts: {}, custom };
+}
+
+const versions = Array.from({ length: USER_DATA_VERSION + 1 }, (_, version) => version);
 
 describe('accounts.json versions', () => {
     it.each(versions)('example file for v%i', (version) => {
@@ -51,18 +70,30 @@ describe('accounts.json versions', () => {
     });
 
     it.each(versions)('migrates v%i', (version) => {
-        const { accounts, fromVersion } = migrateAccountsFile(fixture(version));
+        const { accounts, custom, fromVersion } = migrateUserData(fixture(version));
 
         expect(fromVersion).toBe(version);
         expectCurrentShape(accounts);
+        expect(custom).toEqual({ games: expect.any(Object), tasks: expect.any(Object) });
+    });
+
+    it.each(versions.filter((version) => version < 2))('v%i gets empty custom data', (version) => {
+        expect(migrateUserData(fixture(version)).custom).toEqual(EMPTY_CUSTOM);
+    });
+
+    it('v2 keeps custom games and tasks', () => {
+        const { custom } = migrateUserData(fixture(2));
+
+        expect(Object.keys(custom.games)).toEqual(['custom:5d3e9b70-1c2a-4f8e-9b6d-2a7c4e1f0b93']);
+        expect(custom.tasks['Genshin Impact']).toHaveLength(1);
     });
 
     it.each(versions.slice(0, -1))('migration from v%i exists', (version) => {
-        expect(() => migrateAccountsFile({ version, accounts: {} })).not.toThrow();
+        expect(() => migrateUserData({ version, accounts: {} })).not.toThrow();
     });
 
     it('keeps every account', () => {
-        const migrated = versions.map((version) => migrateAccountsFile(fixture(version)).accounts);
+        const migrated = versions.map((version) => migrateUserData(fixture(version)).accounts);
 
         for (const accounts of migrated) {
             expect(Object.keys(accounts)).toEqual(Object.keys(migrated.at(-1)));
@@ -82,30 +113,38 @@ describe('accounts.json versions', () => {
         const data = fixture(0);
         const copy = structuredClone(data);
 
-        migrateAccountsFile(data);
+        migrateUserData(data);
 
         expect(data).toEqual(copy);
     });
 });
 
-describe('migrateAccountsFile', () => {
+describe('migrateUserData', () => {
     it('no version means v0', () => {
-        expect(migrateAccountsFile({ 'Genshin Impact': [] })).toEqual({
+        expect(migrateUserData({ 'Genshin Impact': [] })).toEqual({
             accounts: { 'Genshin Impact': [] },
+            custom: EMPTY_CUSTOM,
             fromVersion: 0,
         });
     });
 
     it('reads the current envelope as is', () => {
-        expect(migrateAccountsFile({ version: ACCOUNTS_VERSION, accounts: {} })).toEqual({
+        const custom = { games: { [GAME_KEY]: { name: 'My Game', color: '#7aa2f7' } }, tasks: {} };
+
+        expect(migrateUserData(withCustom(custom))).toEqual({
             accounts: {},
-            fromVersion: ACCOUNTS_VERSION,
+            custom,
+            fromVersion: USER_DATA_VERSION,
         });
     });
 
+    it('ignores custom data in files older than v2', () => {
+        expect(migrateUserData({ version: 1, accounts: {}, custom: 'junk' }).custom).toEqual(EMPTY_CUSTOM);
+    });
+
     it('newer version throws', () => {
-        expect(() => migrateAccountsFile({ version: ACCOUNTS_VERSION + 1, accounts: {} })).toThrow(
-            NewerAccountsVersionError,
+        expect(() => migrateUserData({ version: USER_DATA_VERSION + 1, accounts: {} })).toThrow(
+            NewerUserDataVersionError,
         );
     });
 
@@ -116,53 +155,103 @@ describe('migrateAccountsFile', () => {
         ['a negative version', { version: -1, accounts: {} }],
         ['a fractional version', { version: 1.5, accounts: {} }],
         ['a text version', { version: '1', accounts: {} }],
-        ['accounts as an array', { version: ACCOUNTS_VERSION, accounts: [] }],
-        ['missing accounts', { version: ACCOUNTS_VERSION }],
-        ['a game that is not a list', { version: ACCOUNTS_VERSION, accounts: { 'Genshin Impact': {} } }],
+        ['accounts as an array', { version: USER_DATA_VERSION, accounts: [] }],
+        ['missing accounts', { version: USER_DATA_VERSION }],
+        ['a game that is not a list', { version: USER_DATA_VERSION, accounts: { 'Genshin Impact': {} } }],
         ['a legacy game that is not a list', { 'Genshin Impact': 'oops' }],
-        ['an account that is not an object', { version: ACCOUNTS_VERSION, accounts: { 'Genshin Impact': ['acc'] } }],
+        ['an account that is not an object', { version: USER_DATA_VERSION, accounts: { 'Genshin Impact': ['acc'] } }],
         [
             'an account without an id',
-            { version: ACCOUNTS_VERSION, accounts: { 'Genshin Impact': [{ server: 'Asia' }] } },
+            { version: USER_DATA_VERSION, accounts: { 'Genshin Impact': [{ server: 'Asia' }] } },
         ],
         ['an account with an empty id', { 'Genshin Impact': [{ id: '', server: 'Asia' }] }],
         ['an account without a server', { 'Genshin Impact': [{ id: 'acc-1' }] }],
         ['tasks that are not an object', { 'Genshin Impact': [{ id: 'acc-1', server: 'Asia', tasks: [] }] }],
+        ['v2 without custom data', { version: 2, accounts: {} }],
+        ['custom data that is not an object', withCustom([])],
+        ['custom games that are not an object', withCustom({ games: [], tasks: {} })],
+        [
+            'a custom game with a plain key',
+            withCustom({ games: { Mine: { name: 'Mine', color: '#7aa2f7' } }, tasks: {} }),
+        ],
+        ['a custom game without a name', withCustom({ games: { [GAME_KEY]: { color: '#7aa2f7' } }, tasks: {} })],
+        [
+            'a custom game with a bad color',
+            withCustom({ games: { [GAME_KEY]: { name: 'X', color: 'blue' } }, tasks: {} }),
+        ],
+        ['custom tasks that are not a list', withCustom({ games: {}, tasks: { Test: customTask() } })],
+        [
+            'a custom task without a custom id',
+            withCustom({ games: {}, tasks: { Test: [customTask({ id: 'daily' })] } }),
+        ],
+        ['a custom task without a label', withCustom({ games: {}, tasks: { Test: [customTask({ label: ' ' })] } })],
+        ['a custom task with a bad end', withCustom({ games: {}, tasks: { Test: [customTask({ endsAt: 'soon' })] } })],
+        [
+            'a custom task that ends before it starts',
+            withCustom({ games: {}, tasks: { Test: [customTask({ endsAt: '2026-10-20T12:00:00.000Z' })] } }),
+        ],
+        ['duplicate custom task ids', withCustom({ games: {}, tasks: { Test: [customTask(), customTask()] } })],
     ])('rejects %s as corrupt', (_, data) => {
         let error;
 
         try {
-            migrateAccountsFile(data);
+            migrateUserData(data);
         } catch (err) {
             error = err;
         }
 
         expect(error).toBeInstanceOf(Error);
-        expect(error).not.toBeInstanceOf(NewerAccountsVersionError);
-        expect(error).not.toBeInstanceOf(AccountsMigrationError);
+        expect(error).not.toBeInstanceOf(NewerUserDataVersionError);
+        expect(error).not.toBeInstanceOf(UserDataMigrationError);
     });
 });
 
-describe('serializeAccounts', () => {
+describe('serializeUserData', () => {
     it('round-trips', () => {
-        const accounts = migrateAccountsFile(fixture(ACCOUNTS_VERSION)).accounts;
-        const text = serializeAccounts(accounts);
+        const { accounts, custom } = migrateUserData(fixture(USER_DATA_VERSION));
+        const text = serializeUserData({ accounts, custom });
 
-        expect(JSON.parse(text)).toEqual({ version: ACCOUNTS_VERSION, accounts });
-        expect(migrateAccountsFile(JSON.parse(text))).toEqual({ accounts, fromVersion: ACCOUNTS_VERSION });
+        expect(JSON.parse(text)).toEqual({ version: USER_DATA_VERSION, accounts, custom });
+        expect(migrateUserData(JSON.parse(text))).toEqual({ accounts, custom, fromVersion: USER_DATA_VERSION });
+    });
+
+    it('writes a migrated file without the version it came from', () => {
+        const migrated = migrateUserData(fixture(0));
+
+        expect(JSON.parse(serializeUserData(migrated))).toEqual({
+            version: USER_DATA_VERSION,
+            accounts: migrated.accounts,
+            custom: EMPTY_CUSTOM,
+        });
     });
 });
 
-describe('parseAccounts', () => {
+describe('emptyUserData', () => {
+    it('is valid and fresh every time', () => {
+        const first = emptyUserData();
+
+        first.custom.games.x = {};
+
+        expect(emptyUserData()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(migrateUserData(JSON.parse(serializeUserData(emptyUserData())))).toEqual({
+            accounts: {},
+            custom: EMPTY_CUSTOM,
+            fromVersion: USER_DATA_VERSION,
+        });
+    });
+});
+
+describe('parseUserData', () => {
     it('parses and migrates text', () => {
-        expect(parseAccounts(JSON.stringify({ 'Genshin Impact': [] }))).toEqual({
+        expect(parseUserData(JSON.stringify({ 'Genshin Impact': [] }))).toEqual({
             accounts: { 'Genshin Impact': [] },
+            custom: EMPTY_CUSTOM,
             fromVersion: 0,
         });
     });
 
     it('throws a SyntaxError for broken text', () => {
-        expect(() => parseAccounts('{ not json')).toThrow(SyntaxError);
+        expect(() => parseUserData('{ not json')).toThrow(SyntaxError);
     });
 });
 

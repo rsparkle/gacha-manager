@@ -10,13 +10,15 @@ export function createStore(initial = {}) {
     };
 }
 
-export function createMemoryStorage(accounts = {}) {
+export function createMemoryStorage(accounts = {}, custom = { games: {}, tasks: {} }) {
     const storage = {
         saved: structuredClone(accounts),
+        savedCustom: structuredClone(custom),
         saves: 0,
-        load: () => structuredClone(storage.saved),
+        load: () => ({ accounts: structuredClone(storage.saved), custom: structuredClone(storage.savedCustom) }),
         save: (next) => {
-            storage.saved = structuredClone(next);
+            storage.saved = structuredClone(next.accounts);
+            storage.savedCustom = structuredClone(next.custom);
             storage.saves++;
         },
     };

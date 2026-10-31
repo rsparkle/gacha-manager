@@ -89,7 +89,7 @@
         <SetupView v-else-if="currentView === 'setup'" @done="onSetupDone" />
         <TasksView v-else-if="currentView === 'tasks'" />
         <ScheduleView v-else-if="currentView === 'schedule'" />
-        <AppFooter />
+        <AppFooter v-if="currentView !== 'tasks'" />
     </div>
 </template>
 

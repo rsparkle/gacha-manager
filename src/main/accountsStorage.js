@@ -1,11 +1,12 @@
 import fs from 'node:fs';
 import { dialog, shell } from 'electron';
 import {
-    ACCOUNTS_VERSION,
-    AccountsMigrationError,
-    NewerAccountsVersionError,
-    parseAccounts,
-    serializeAccounts,
+    USER_DATA_VERSION,
+    UserDataMigrationError,
+    NewerUserDataVersionError,
+    emptyUserData,
+    parseUserData,
+    serializeUserData,
 } from '../shared/accounts/accountsFile.js';
 import { RELEASES_URL } from '../shared/remote.js';
 
@@ -49,9 +50,9 @@ function recoverCorruptAccounts(filePath, err) {
     }
 
     fs.copyFileSync(filePath, backupPath(filePath, `corrupt-${Date.now()}`));
-    writeFileAtomic(filePath, serializeAccounts({}));
+    writeFileAtomic(filePath, serializeUserData(emptyUserData()));
 
-    return {};
+    return emptyUserData();
 }
 
 function askToUpdate(err) {
@@ -73,32 +74,32 @@ function askToUpdate(err) {
 
 function loadAccounts(filePath) {
     if (!fs.existsSync(filePath)) {
-        writeFileAtomic(filePath, serializeAccounts({}));
-        return {};
+        writeFileAtomic(filePath, serializeUserData(emptyUserData()));
+        return emptyUserData();
     }
 
     let result;
 
     try {
-        result = parseAccounts(fs.readFileSync(filePath, 'utf-8'));
+        result = parseUserData(fs.readFileSync(filePath, 'utf-8'));
     } catch (err) {
-        if (err instanceof NewerAccountsVersionError) return askToUpdate(err);
-        if (err instanceof AccountsMigrationError) throw err;
+        if (err instanceof NewerUserDataVersionError) return askToUpdate(err);
+        if (err instanceof UserDataMigrationError) throw err;
 
         return recoverCorruptAccounts(filePath, err);
     }
 
-    if (result.fromVersion !== ACCOUNTS_VERSION) {
+    if (result.fromVersion !== USER_DATA_VERSION) {
         fs.copyFileSync(filePath, backupPath(filePath, `v${result.fromVersion}-backup`));
-        writeFileAtomic(filePath, serializeAccounts(result.accounts));
+        writeFileAtomic(filePath, serializeUserData(result));
     }
 
-    return result.accounts;
+    return { accounts: result.accounts, custom: result.custom };
 }
 
 export function createAccountsFileStorage(filePath) {
     return {
         load: () => loadAccounts(filePath),
-        save: (accounts) => writeFileAtomic(filePath, serializeAccounts(accounts)),
+        save: (data) => writeFileAtomic(filePath, serializeUserData(data)),
     };
 }

@@ -45,7 +45,7 @@ export function rendererConfig({ platform, imageSources = [], connectSources = [
         },
         server: {
             fs: {
-                allow: [path.join(projectRoot, 'src')],
+                allow: [path.join(projectRoot, 'src'), path.join(projectRoot, 'node_modules')],
             },
         },
     };

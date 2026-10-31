@@ -25,3 +25,16 @@ export function formatCountdown(ms) {
 
     return `${minutes}m`;
 }
+
+export function customGameAbbr(name) {
+    const words = String(name ?? '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (words.length === 0) return '?';
+
+    const abbr = words.length > 1 ? words.map((word) => word[0]).join('') : words[0].slice(0, 2);
+
+    return abbr.slice(0, 3).toUpperCase();
+}

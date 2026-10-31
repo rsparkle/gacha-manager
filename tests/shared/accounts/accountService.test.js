@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccountService } from '../../../src/shared/accounts/accountService.js';
-import { serializeAccounts } from '../../../src/shared/accounts/accountsFile.js';
+import { serializeUserData } from '../../../src/shared/accounts/accountsFile.js';
 import { createMemoryStorage, createStore } from '../../helpers/stores.js';
 import { makeConfig, makeTask, makeTasks } from '../../helpers/builders.js';
 
@@ -16,8 +16,10 @@ const tasks = makeTasks({
     [OTHER]: [makeTask('other-daily', { kind: 'daily' })],
 });
 
-function load({ accounts = {}, store = createStore() } = {}) {
-    const storage = createMemoryStorage(accounts);
+const EMPTY_CUSTOM = { games: {}, tasks: {} };
+
+function load({ accounts = {}, custom = EMPTY_CUSTOM, store = createStore() } = {}) {
+    const storage = createMemoryStorage(accounts, custom);
     const service = createAccountService({ storage, settings: store });
 
     service.setGameData({ config, tasks });
@@ -104,7 +106,7 @@ describe('managing accounts', () => {
     it('update only editable fields', () => {
         const { service, storage } = load({ accounts: { [GAME]: [account()] } });
 
-        const updated = service.updateAccount(GAME, 'acc-1', {
+        service.updateAccount(GAME, 'acc-1', {
             uid: 812345678,
             label: 'Alt',
             server: 'Europe',
@@ -112,7 +114,6 @@ describe('managing accounts', () => {
             tasks: { daily: 'x' },
         });
 
-        expect(updated).toMatchObject({ id: 'acc-1', uid: '812345678', label: 'Alt', server: 'Europe' });
         expect(storage.saved[GAME][0]).toEqual({ ...account(), uid: '812345678', label: 'Alt', server: 'Europe' });
     });
 
@@ -160,7 +161,7 @@ describe('managing accounts', () => {
 
         expect(storage.saved[GAME].map((a) => a.id)).toEqual(['acc-2']);
         expect(store.data.automaticDailies).toEqual({ [GAME]: ['acc-2'] });
-        expect(store.data.deadlineNotifications).toEqual({ [GAME]: [], [OTHER]: ['acc-9'] });
+        expect(store.data.deadlineNotifications).toEqual({ [OTHER]: ['acc-9'] });
         expect(store.data.monthlySubNotifications).toEqual({ [GAME]: ['acc-2'] });
     });
 });
@@ -173,7 +174,7 @@ describe('tasks', () => {
             accounts: { [GAME]: [account({ tasks: { daily: '2026-10-25T10:00:00.000Z' } })] },
         });
 
-        const groups = service.getGroupedAccounts();
+        const groups = service.computeGroups();
 
         expect(groups.map((group) => [group.name, group.game_version, group.accounts.length])).toEqual([
             [GAME, '1.1', 1],
@@ -190,9 +191,12 @@ describe('tasks', () => {
     it('complete and uncomplete', () => {
         const { service, storage } = load({ accounts });
 
-        const completed = service.setTaskCompleted(GAME, 'daily', 'acc-1', true);
+        expect(service.setTaskCompleted(GAME, 'daily', 'acc-1', true)).toBeUndefined();
 
-        expect(completed.tasks.Daily[0].last_completed).toBe('2026-10-25T12:00:00.000Z');
+        expect(service.computeGroups()[0].accounts[0].tasks.Daily[0]).toMatchObject({
+            last_completed: '2026-10-25T12:00:00.000Z',
+            isCompleted: true,
+        });
         expect(storage.saved[GAME][0].tasks).toEqual({ daily: '2026-10-25T12:00:00.000Z' });
 
         service.setTaskCompleted(GAME, 'daily', 'acc-1', false);
@@ -346,7 +350,9 @@ describe('backup', () => {
     it('export is the versioned file', () => {
         const { service } = load({ accounts: { [GAME]: [account()] } });
 
-        expect(service.exportAccounts()).toBe(serializeAccounts({ [GAME]: [account()] }));
+        expect(service.exportAccounts()).toBe(
+            serializeUserData({ accounts: { [GAME]: [account()] }, custom: EMPTY_CUSTOM }),
+        );
     });
 
     it('import replaces accounts and drops settings for missing ones', () => {
@@ -361,8 +367,8 @@ describe('backup', () => {
 
         expect(storage.saved).toEqual({ [GAME]: [account({ id: 'acc-2', label: 'Imported' })] });
         expect(store.data.automaticDailies).toEqual({ [GAME]: ['acc-2'] });
-        expect(store.data.deadlineNotifications).toEqual({ [OTHER]: [] });
-        expect(store.data.monthlySubNotifications).toEqual({ [GAME]: [] });
+        expect(store.data.deadlineNotifications).toEqual({});
+        expect(store.data.monthlySubNotifications).toEqual({});
     });
 
     it.each([
@@ -394,5 +400,297 @@ describe('change events', () => {
         service.saveSettings({ theme: '' });
 
         expect(listener).toHaveBeenCalledTimes(3);
+    });
+});
+
+describe('custom games', () => {
+    const groupFor = (service, key) => service.computeGroups().find((group) => group.name === key);
+
+    it('create picks a free name and color and adds one account', () => {
+        const { service, storage } = load();
+
+        const first = service.createCustomGame();
+        const second = service.createCustomGame();
+
+        expect(first.key).toMatch(/^custom:/);
+        expect(first.game).toEqual({ name: 'My Game', color: '#7aa2f7' });
+        expect(second.game).toEqual({ name: 'My Game 2', color: '#9ece6a' });
+        expect(first.account).toMatchObject({ uid: '', server: '', label: '', tasks: {} });
+        expect(storage.saved[first.key]).toEqual([first.account]);
+        expect(storage.savedCustom.games).toEqual({ [first.key]: first.game, [second.key]: second.game });
+    });
+
+    it('reuses the color of a deleted game', () => {
+        const { service } = load();
+
+        const first = service.createCustomGame();
+        service.createCustomGame();
+        service.deleteCustomGame(first.key);
+
+        expect(service.createCustomGame().game.color).toBe('#7aa2f7');
+    });
+
+    it('groups come after the remote games with display info', () => {
+        const { service } = load();
+        const { key, account: created } = service.createCustomGame();
+
+        const groups = service.computeGroups();
+
+        expect(groups.map((group) => group.name)).toEqual([GAME, OTHER, key]);
+        expect(groups[2]).toEqual({
+            name: key,
+            displayName: 'My Game',
+            color: '#7aa2f7',
+            custom: true,
+            game_version: null,
+            maintenance: null,
+            accounts: [{ ...created, tasks: {} }],
+        });
+        expect(groups[0].displayName).toBeUndefined();
+    });
+
+    it('rename trims and checks every game name', () => {
+        const { service, storage } = load();
+        const { key } = service.createCustomGame();
+        const other = service.createCustomGame();
+
+        service.renameCustomGame(key, '  Arknights  ');
+
+        expect(storage.savedCustom.games[key].name).toBe('Arknights');
+        expect(() => service.renameCustomGame(key, ' ')).toThrow("The name can't be empty");
+        expect(() => service.renameCustomGame(key, 'x'.repeat(41))).toThrow('up to 40 characters');
+        expect(() => service.renameCustomGame(key, 'test')).toThrow("There's already a game called test");
+        expect(() => service.renameCustomGame(other.key, 'ARKNIGHTS')).toThrow('already a game called ARKNIGHTS');
+        expect(() => service.renameCustomGame('custom:nope', 'X')).toThrow('Unknown game: custom:nope');
+        expect(() => service.renameCustomGame(GAME, 'X')).toThrow(`Unknown game: ${GAME}`);
+    });
+
+    it('rename to the same name saves nothing', () => {
+        const { service, storage } = load();
+        const { key } = service.createCustomGame();
+        const saves = storage.saves;
+
+        service.renameCustomGame(key, 'My Game');
+
+        expect(storage.saves).toBe(saves);
+    });
+
+    it('delete removes accounts, tasks, settings and the favorite', () => {
+        const store = createStore();
+        const { service, storage } = load({ store });
+        const { key, account: created } = service.createCustomGame();
+        service.addCustomTask(key, { label: 'Event', category: 'Events', minutes: 60 });
+        store.set({ deadlineNotifications: { [key]: [created.id], [GAME]: ['acc-9'] }, favoriteGame: key });
+
+        service.deleteCustomGame(key);
+
+        expect(storage.saved).toEqual({});
+        expect(storage.savedCustom).toEqual(EMPTY_CUSTOM);
+        expect(store.data.deadlineNotifications).toEqual({ [GAME]: ['acc-9'] });
+        expect(store.data.favoriteGame).toBeNull();
+        expect(groupFor(service, key)).toBeUndefined();
+    });
+
+    it('delete keeps a remote favorite', () => {
+        const store = createStore({ favoriteGame: GAME });
+        const { service } = load({ store });
+        const { key } = service.createCustomGame();
+
+        service.deleteCustomGame(key);
+
+        expect(store.data.favoriteGame).toBe(GAME);
+    });
+
+    it('accounts have no server', () => {
+        const { service, storage } = load();
+        const { key } = service.createCustomGame();
+
+        const [added] = service.insertAccounts([{ name: key, server: '' }]);
+        service.updateAccount(key, added.id, { uid: '123', label: 'Alt' });
+
+        expect(storage.saved[key][1]).toMatchObject({ uid: '123', label: 'Alt', server: '' });
+        expect(() => service.insertAccounts([{ name: key, server: 'Asia' }])).toThrow('Unknown server: Asia');
+        expect(() => service.updateAccount(key, added.id, { server: 'Asia' })).toThrow('Unknown server: Asia');
+        expect(() => service.insertAccounts([{ name: 'custom:nope', server: '' }])).toThrow(
+            'Unknown game: custom:nope',
+        );
+    });
+
+    it('calendar monthly sub skips custom games', () => {
+        const warn = vi.spyOn(console, 'warn');
+        const { service } = load();
+        const { key, account: created } = service.createCustomGame();
+        service.updateAccount(key, created.id, { monthlySubRemaining: 10 });
+        vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+
+        expect(service.syncCalendarMonthlySubs()).toBe(false);
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('reload picks up custom data changed elsewhere', () => {
+        const { service, storage } = load();
+
+        storage.savedCustom = { games: { 'custom:x': { name: 'X', color: '#7aa2f7' } }, tasks: {} };
+        service.reload();
+
+        expect(service.getCustomData()).toEqual(storage.savedCustom);
+    });
+});
+
+describe('custom tasks', () => {
+    const tasksOf = (service, gameName) =>
+        service.computeGroups().find((group) => group.name === gameName).accounts[0].tasks;
+
+    it('add to a remote game shows up for every account', () => {
+        const { service, storage } = load({ accounts: { [GAME]: [account(), account({ id: 'acc-2' })] } });
+
+        const task = service.addCustomTask(GAME, { label: ' Login event ', category: 'Daily', minutes: 90 });
+
+        expect(task).toEqual({
+            id: expect.stringMatching(/^custom:/),
+            label: 'Login event',
+            category: 'Daily',
+            createdAt: '2026-10-25T12:00:00.000Z',
+            endsAt: '2026-10-25T13:30:00.000Z',
+        });
+        expect(storage.savedCustom.tasks[GAME]).toEqual([task]);
+
+        const groups = service.computeGroups();
+        const daily = groups[0].accounts[1].tasks.Daily;
+
+        expect(daily.map((entry) => entry.id)).toEqual(['daily', task.id]);
+        expect(daily[1]).toMatchObject({
+            label: 'Login event',
+            custom: true,
+            ended: false,
+            isCompleted: false,
+            isDisabled: false,
+            duration: 90 * 60_000,
+            nextReset: 90 * 60_000,
+        });
+    });
+
+    it('new categories get their own group', () => {
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+
+        service.addCustomTask(GAME, { label: 'Web event', category: 'Web', minutes: 60 });
+
+        expect(Object.keys(tasksOf(service, GAME))).toEqual(['Daily', 'Weekly', 'Event', 'Web']);
+    });
+
+    it('custom tasks never reach the reset processor', () => {
+        const error = vi.spyOn(console, 'error');
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Event', minutes: 60 });
+
+        service.setTaskCompleted(GAME, task.id, 'acc-1', true);
+        service.computeGroups();
+
+        expect(error).not.toHaveBeenCalled();
+        expect(tasksOf(service, GAME).Event.map((entry) => entry.isDisabled)).toEqual([true, false]);
+    });
+
+    it.each([
+        [{ label: ' ', category: 'Events', minutes: 60 }, 'Give the task a name'],
+        [{ label: 'x'.repeat(61), category: 'Events', minutes: 60 }, 'up to 60 characters'],
+        [{ label: 'Event', category: '', minutes: 60 }, 'Pick a category'],
+        [{ label: 'Event', category: 'x'.repeat(31), minutes: 60 }, 'up to 30 characters'],
+        [{ label: 'Event', category: 'Events', minutes: 0 }, 'at least 1 minute'],
+        [{ label: 'Event', category: 'Events', minutes: 1.5 }, 'at least 1 minute'],
+        [{ label: 'Event', category: 'Events', minutes: 'soon' }, 'at least 1 minute'],
+        [{ label: 'Event', category: 'Events', minutes: 367 * 24 * 60 }, 'at most 366 days'],
+    ])('rejects %j without saving', (input, message) => {
+        const { service, storage } = load();
+
+        expect(() => service.addCustomTask(GAME, input)).toThrow(message);
+        expect(storage.saves).toBe(0);
+    });
+
+    it('rejects unknown games', () => {
+        const { service } = load();
+
+        expect(() => service.addCustomTask('Nope', { label: 'x', category: 'y', minutes: 5 })).toThrow(
+            'Unknown game: Nope',
+        );
+    });
+
+    it('works on custom games', () => {
+        const { service } = load();
+        const { key } = service.createCustomGame();
+
+        service.addCustomTask(key, { label: 'Annihilation', category: 'Weekly', minutes: 7 * 24 * 60 });
+
+        expect(tasksOf(service, key).Weekly[0]).toMatchObject({ label: 'Annihilation', nextReset: 7 * 86_400_000 });
+    });
+
+    it('complete and uncomplete', () => {
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60 });
+
+        service.setTaskCompleted(GAME, task.id, 'acc-1', true);
+
+        expect(storage.saved[GAME][0].tasks).toEqual({ [task.id]: '2026-10-25T12:00:00.000Z' });
+        expect(tasksOf(service, GAME).Events[0].isCompleted).toBe(true);
+
+        service.setTaskCompleted(GAME, task.id, 'acc-1', false);
+
+        expect(storage.saved[GAME][0].tasks).toEqual({});
+        expect(() => service.setTaskCompleted(GAME, 'custom:nope', 'acc-1', true)).toThrow('Unknown task: custom:nope');
+    });
+
+    it('ended tasks are disabled unless they were completed', () => {
+        const { service } = load({ accounts: { [GAME]: [account(), account({ id: 'acc-2' })] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60 });
+        service.setTaskCompleted(GAME, task.id, 'acc-2', true);
+
+        vi.setSystemTime(new Date('2026-10-25T13:00:00Z'));
+
+        const [open, done] = service.computeGroups()[0].accounts.map((entry) => entry.tasks.Events[0]);
+
+        expect(open).toMatchObject({ ended: true, isDisabled: true, isCompleted: false, nextReset: 0, duration: 0 });
+        expect(done).toMatchObject({ ended: true, isDisabled: false, isCompleted: true, nextReset: 0, duration: 0 });
+        expect(() => service.setTaskCompleted(GAME, task.id, 'acc-1', true)).toThrow('This task has already ended');
+    });
+
+    it('delete removes the task and its completions', () => {
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+        const kept = service.addCustomTask(GAME, { label: 'Kept', category: 'Events', minutes: 60 });
+        const removed = service.addCustomTask(GAME, { label: 'Removed', category: 'Events', minutes: 60 });
+        service.setTaskCompleted(GAME, removed.id, 'acc-1', true);
+        service.setTaskCompleted(GAME, 'daily', 'acc-1', true);
+
+        service.deleteCustomTask(GAME, removed.id);
+
+        expect(storage.savedCustom.tasks[GAME]).toEqual([kept]);
+        expect(storage.saved[GAME][0].tasks).toEqual({ daily: '2026-10-25T12:00:00.000Z' });
+
+        service.deleteCustomTask(GAME, kept.id);
+
+        expect(storage.savedCustom.tasks).toEqual({});
+        expect(() => service.deleteCustomTask(GAME, kept.id)).toThrow(`Unknown task: ${kept.id}`);
+    });
+});
+
+describe('backup with custom data', () => {
+    it('export and import keep custom games and tasks', () => {
+        const { service } = load();
+        const { key } = service.createCustomGame();
+        service.addCustomTask(key, { label: 'Event', category: 'Events', minutes: 60 });
+        const exported = service.exportAccounts();
+
+        const other = load().service;
+        other.importAccounts(exported);
+
+        expect(other.getAccounts()).toEqual(service.getAccounts());
+        expect(other.getCustomData()).toEqual(service.getCustomData());
+    });
+
+    it('import clears a favorite custom game that no longer exists', () => {
+        const store = createStore({ favoriteGame: 'custom:gone' });
+        const { service } = load({ store });
+
+        service.importAccounts(JSON.stringify({ version: 1, accounts: {} }));
+
+        expect(store.data.favoriteGame).toBeNull();
     });
 });

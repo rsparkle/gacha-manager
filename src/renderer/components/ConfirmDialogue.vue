@@ -64,7 +64,7 @@ const { confirmState } = useConfirm();
     border-radius: 8px;
     font-size: 11px;
     font-weight: 600;
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-mono), monospace;
     cursor: pointer;
     transition: all 0.15s;
 }

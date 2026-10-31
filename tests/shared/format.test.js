@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatCountdown, slugify, thumbnailPath } from '../../src/shared/format.js';
+import { customGameAbbr, formatCountdown, slugify, thumbnailPath } from '../../src/shared/format.js';
 
 describe('slugify', () => {
     it.each([
@@ -66,5 +66,20 @@ describe('formatCountdown', () => {
         [41 * DAY + 23 * HOUR, '41d 23h'],
     ])('%i ms -> %s', (ms, text) => {
         expect(formatCountdown(ms)).toBe(text);
+    });
+});
+
+describe('customGameAbbr', () => {
+    it.each([
+        ['My Game', 'MG'],
+        ['My Game 2', 'MG2'],
+        ['Arknights', 'AR'],
+        ['  blue   archive  ', 'BA'],
+        ['Honkai Impact 3rd Part 2', 'HI3'],
+        ['X', 'X'],
+        ['', '?'],
+        [null, '?'],
+    ])('%j -> %s', (name, expected) => {
+        expect(customGameAbbr(name)).toBe(expected);
     });
 });

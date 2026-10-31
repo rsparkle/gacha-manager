@@ -1,14 +1,33 @@
 import { createResetProcessor } from '../resetProcessor.js';
 import { DEFAULT_SETTINGS } from '../settings.js';
-import { parseAccounts, serializeAccounts } from './accountsFile.js';
+import { parseUserData, serializeUserData } from './accountsFile.js';
+import {
+    CUSTOM_GAME_NAME_MAX,
+    CUSTOM_TASK_CATEGORY_MAX,
+    CUSTOM_TASK_LABEL_MAX,
+    CUSTOM_TASK_MAX_MINUTES,
+    computeCustomTask,
+    createCustomId,
+    customTaskEnd,
+    isCustomKey,
+    nextCustomGameColor,
+    nextCustomGameName,
+} from './customData.js';
 import { getLiveVersion } from '../liveVersion.js';
 
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
 const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'deadlineNotifications', 'monthlySubNotifications'];
 const DAY_MS = 86_400_000;
 
+function withoutKey(object, key) {
+    const next = { ...object };
+    delete next[key];
+
+    return next;
+}
+
 export function createAccountService({ storage, settings }) {
-    let accounts = storage.load();
+    let { accounts, custom } = storage.load();
     let gameTasks = null;
     let gameConfig = null;
     let processor = null;
@@ -33,14 +52,15 @@ export function createAccountService({ storage, settings }) {
     }
 
     function reload() {
-        accounts = storage.load();
+        ({ accounts, custom } = storage.load());
 
         emitChange();
     }
 
-    function save(nextAccounts) {
-        storage.save(nextAccounts);
+    function save(nextAccounts, nextCustom = custom) {
+        storage.save({ accounts: nextAccounts, custom: nextCustom });
         accounts = nextAccounts;
+        custom = nextCustom;
 
         emitChange();
     }
@@ -57,6 +77,31 @@ export function createAccountService({ storage, settings }) {
         return structuredClone(accounts);
     }
 
+    function getCustomData() {
+        return structuredClone(custom);
+    }
+
+    function hasGame(gameKey) {
+        return Object.hasOwn(gameConfig ?? {}, gameKey) || Object.hasOwn(custom.games, gameKey);
+    }
+
+    function findCustomGame(gameKey) {
+        if (!isCustomKey(gameKey) || !Object.hasOwn(custom.games, gameKey)) {
+            throw new Error(`Unknown game: ${gameKey}`);
+        }
+
+        return custom.games[gameKey];
+    }
+
+    function gameNames({ except } = {}) {
+        return [
+            ...Object.keys(gameConfig ?? {}),
+            ...Object.entries(custom.games)
+                .filter(([key]) => key !== except)
+                .map(([, game]) => game.name),
+        ];
+    }
+
     function findAccount(gameName, accountId) {
         const account = accounts[gameName]?.find((account) => account.id === accountId);
 
@@ -68,7 +113,7 @@ export function createAccountService({ storage, settings }) {
     }
 
     function getTasksForUI(gameName, account) {
-        return gameTasks[gameName].tasks.reduce((groupedTasks, task) => {
+        return (gameTasks?.[gameName]?.tasks ?? []).reduce((groupedTasks, task) => {
             const formattedTask = {
                 ...task,
                 last_completed: account.tasks?.[task.id] ?? null,
@@ -95,8 +140,40 @@ export function createAccountService({ storage, settings }) {
         }));
     }
 
+    function addCustomTasks(gameKey, uiAccount, now) {
+        const completions = accounts[gameKey]?.find((account) => account.id === uiAccount.id)?.tasks ?? {};
+
+        for (const task of custom.tasks[gameKey] ?? []) {
+            (uiAccount.tasks[task.category] ??= []).push(computeCustomTask(task, completions[task.id], now));
+        }
+
+        return uiAccount;
+    }
+
+    function computeCustomGameGroups(now) {
+        return Object.entries(custom.games).map(([gameKey, game]) => ({
+            name: gameKey,
+            displayName: game.name,
+            color: game.color,
+            custom: true,
+            game_version: null,
+            maintenance: null,
+            accounts: (accounts[gameKey] ?? []).map((account) =>
+                addCustomTasks(gameKey, { ...structuredClone(account), tasks: {} }, now),
+            ),
+        }));
+    }
+
     function computeGroups(now = new Date()) {
-        return processor ? processor.computeTaskResetData(getGroupedAccounts(), now) : [];
+        if (!processor) return [];
+
+        const groups = processor.computeTaskResetData(getGroupedAccounts(), now);
+
+        for (const group of groups) {
+            for (const account of group.accounts) addCustomTasks(group.name, account, now);
+        }
+
+        return [...groups, ...computeCustomGameGroups(now)];
     }
 
     function insertAccounts(gameList) {
@@ -105,11 +182,15 @@ export function createAccountService({ storage, settings }) {
         }
 
         for (const game of gameList) {
-            if (!Object.hasOwn(gameConfig, game?.name)) {
+            if (!hasGame(game?.name)) {
                 throw new Error(`Unknown game: ${game?.name}`);
             }
 
-            if (!Object.hasOwn(gameConfig[game.name].servers, game.server)) {
+            const serverValid = isCustomKey(game.name)
+                ? game.server === ''
+                : Object.hasOwn(gameConfig[game.name].servers, game.server);
+
+            if (!serverValid) {
                 throw new Error(`Unknown server: ${game.server}`);
             }
         }
@@ -158,7 +239,11 @@ export function createAccountService({ storage, settings }) {
             }
         }
 
-        if (sanitized.server !== undefined && !Object.hasOwn(gameConfig[gameName]?.servers ?? {}, sanitized.server)) {
+        const serverValid = isCustomKey(gameName)
+            ? sanitized.server === ''
+            : Object.hasOwn(gameConfig?.[gameName]?.servers ?? {}, sanitized.server);
+
+        if (sanitized.server !== undefined && !serverValid) {
             throw new Error(`Unknown server: ${sanitized.server}`);
         }
 
@@ -179,8 +264,6 @@ export function createAccountService({ storage, settings }) {
                 account.id === accountId ? { ...account, ...sanitized, id: account.id } : account,
             ),
         });
-
-        return toUIAccount(gameName, findAccount(gameName, accountId));
     }
 
     function removeAccountSettings(keep) {
@@ -193,8 +276,8 @@ export function createAccountService({ storage, settings }) {
                 const ids = getAccountIds(key, gameName);
                 const kept = ids.filter((id) => keep(gameName, id));
 
-                next[gameName] = kept;
-                changed ||= kept.length !== ids.length;
+                if (kept.length > 0) next[gameName] = kept;
+                changed ||= kept.length !== ids.length || kept.length === 0;
             }
 
             if (changed) settings.set(key, next);
@@ -216,8 +299,42 @@ export function createAccountService({ storage, settings }) {
         removeAccountSettings((game, id) => game !== gameName || id !== accountId);
     }
 
+    function saveTaskCompletion(gameName, accountId, nextAccount) {
+        save({
+            ...accounts,
+            [gameName]: accounts[gameName].map((stored) => (stored.id === accountId ? nextAccount : stored)),
+        });
+    }
+
+    function setCustomTaskCompleted(gameName, taskId, account, completed) {
+        const task = custom.tasks[gameName]?.find((candidate) => candidate.id === taskId);
+
+        if (!task) {
+            throw new Error(`Unknown task: ${taskId}`);
+        }
+
+        const now = new Date();
+        const current = computeCustomTask(task, account.tasks?.[taskId], now);
+
+        if (current.isCompleted === Boolean(completed)) return;
+
+        if (completed && current.ended) {
+            throw new Error('This task has already ended');
+        }
+
+        const tasks = completed ? { ...account.tasks, [taskId]: now.toISOString() } : withoutKey(account.tasks, taskId);
+
+        saveTaskCompletion(gameName, account.id, { ...account, tasks });
+    }
+
     function setTaskCompleted(gameName, taskId, accountId, completed) {
         const account = findAccount(gameName, accountId);
+
+        if (isCustomKey(taskId)) {
+            setCustomTaskCompleted(gameName, taskId, account, completed);
+            return;
+        }
+
         const definition = gameTasks[gameName]?.tasks.find((task) => task.id === taskId);
 
         if (!definition) {
@@ -235,9 +352,7 @@ export function createAccountService({ storage, settings }) {
             throw new Error('This task is not active right now');
         }
 
-        if (current.isCompleted === Boolean(completed)) {
-            return toUIAccount(gameName, account);
-        }
+        if (current.isCompleted === Boolean(completed)) return;
 
         const tasks = { ...account.tasks };
         const nextAccount = { ...account, tasks };
@@ -262,12 +377,7 @@ export function createAccountService({ storage, settings }) {
             delete tasks[taskId];
         }
 
-        save({
-            ...accounts,
-            [gameName]: accounts[gameName].map((stored) => (stored.id === accountId ? nextAccount : stored)),
-        });
-
-        return toUIAccount(gameName, nextAccount);
+        saveTaskCompletion(gameName, accountId, nextAccount);
     }
 
     function syncCalendarMonthlySubs() {
@@ -278,6 +388,8 @@ export function createAccountService({ storage, settings }) {
         let changed = false;
 
         for (const [gameName, gameAccounts] of Object.entries(nextAccounts)) {
+            if (isCustomKey(gameName)) continue;
+
             for (const account of gameAccounts) {
                 if (account.monthlySubRemaining == null) continue;
 
@@ -368,15 +480,131 @@ export function createAccountService({ storage, settings }) {
         return changed;
     }
 
+    function clearMissingFavorite() {
+        const favorite = settings.get('favoriteGame', null);
+
+        if (isCustomKey(favorite) && !Object.hasOwn(custom.games, favorite)) {
+            settings.set('favoriteGame', null);
+        }
+    }
+
+    function createCustomGame() {
+        const key = createCustomId();
+        const game = {
+            name: nextCustomGameName(gameNames()),
+            color: nextCustomGameColor(Object.values(custom.games).map((existing) => existing.color)),
+        };
+        const account = { id: crypto.randomUUID(), uid: '', server: '', label: '', tasks: {} };
+
+        save({ ...accounts, [key]: [account] }, { ...custom, games: { ...custom.games, [key]: game } });
+
+        return { key, game, account };
+    }
+
+    function renameCustomGame(gameKey, name) {
+        const game = findCustomGame(gameKey);
+        const trimmed = String(name ?? '').trim();
+
+        if (!trimmed) {
+            throw new Error("The name can't be empty");
+        }
+
+        if (trimmed.length > CUSTOM_GAME_NAME_MAX) {
+            throw new Error(`The name can be up to ${CUSTOM_GAME_NAME_MAX} characters`);
+        }
+
+        if (gameNames({ except: gameKey }).some((taken) => taken.toLowerCase() === trimmed.toLowerCase())) {
+            throw new Error(`There's already a game called ${trimmed}`);
+        }
+
+        if (trimmed === game.name) return;
+
+        save(accounts, { ...custom, games: { ...custom.games, [gameKey]: { ...game, name: trimmed } } });
+    }
+
+    function deleteCustomGame(gameKey) {
+        findCustomGame(gameKey);
+
+        save(withoutKey(accounts, gameKey), {
+            games: withoutKey(custom.games, gameKey),
+            tasks: withoutKey(custom.tasks, gameKey),
+        });
+
+        removeAccountSettings((gameName) => gameName !== gameKey);
+        clearMissingFavorite();
+    }
+
+    function addCustomTask(gameKey, { label, category, minutes } = {}) {
+        if (!hasGame(gameKey)) {
+            throw new Error(`Unknown game: ${gameKey}`);
+        }
+
+        const task = {
+            id: createCustomId(),
+            label: String(label ?? '').trim(),
+            category: String(category ?? '').trim(),
+        };
+        const duration = Number(minutes);
+
+        if (!task.label) throw new Error('Give the task a name');
+        if (task.label.length > CUSTOM_TASK_LABEL_MAX) {
+            throw new Error(`The task name can be up to ${CUSTOM_TASK_LABEL_MAX} characters`);
+        }
+
+        if (!task.category) throw new Error('Pick a category for the task');
+        if (task.category.length > CUSTOM_TASK_CATEGORY_MAX) {
+            throw new Error(`The category can be up to ${CUSTOM_TASK_CATEGORY_MAX} characters`);
+        }
+
+        if (!Number.isInteger(duration) || duration < 1) throw new Error('Set a deadline of at least 1 minute');
+        if (duration > CUSTOM_TASK_MAX_MINUTES) throw new Error('The deadline can be at most 366 days away');
+
+        const now = new Date();
+        task.createdAt = now.toISOString();
+        task.endsAt = customTaskEnd(duration, now).toISOString();
+
+        save(accounts, {
+            ...custom,
+            tasks: { ...custom.tasks, [gameKey]: [...(custom.tasks[gameKey] ?? []), task] },
+        });
+
+        return task;
+    }
+
+    function deleteCustomTask(gameKey, taskId) {
+        const customTasks = custom.tasks[gameKey] ?? [];
+
+        if (!customTasks.some((task) => task.id === taskId)) {
+            throw new Error(`Unknown task: ${taskId}`);
+        }
+
+        const remaining = customTasks.filter((task) => task.id !== taskId);
+        const nextAccounts = accounts[gameKey]
+            ? {
+                  ...accounts,
+                  [gameKey]: accounts[gameKey].map((account) =>
+                      Object.hasOwn(account.tasks ?? {}, taskId)
+                          ? { ...account, tasks: withoutKey(account.tasks, taskId) }
+                          : account,
+                  ),
+              }
+            : accounts;
+
+        save(nextAccounts, {
+            ...custom,
+            tasks: remaining.length > 0 ? { ...custom.tasks, [gameKey]: remaining } : withoutKey(custom.tasks, gameKey),
+        });
+    }
+
     function exportAccounts() {
-        return serializeAccounts(accounts);
+        return serializeUserData({ accounts, custom });
     }
 
     function importAccounts(text) {
         let imported;
 
         try {
-            ({ accounts: imported } = parseAccounts(text));
+            imported = parseUserData(text);
         } catch (err) {
             throw new Error(
                 err instanceof SyntaxError ? 'This file is not a Gacha Manager accounts backup' : err.message,
@@ -384,8 +612,11 @@ export function createAccountService({ storage, settings }) {
             );
         }
 
-        save(imported);
-        removeAccountSettings((gameName, id) => imported[gameName]?.some((account) => account.id === id) ?? false);
+        save(imported.accounts, imported.custom);
+        removeAccountSettings(
+            (gameName, id) => imported.accounts[gameName]?.some((account) => account.id === id) ?? false,
+        );
+        clearMissingFavorite();
     }
 
     return {
@@ -394,12 +625,17 @@ export function createAccountService({ storage, settings }) {
         reload,
         getAccountIds,
         getAccounts,
-        getGroupedAccounts,
+        getCustomData,
         computeGroups,
         insertAccounts,
         updateAccount,
         deleteAccount,
         setTaskCompleted,
+        createCustomGame,
+        renameCustomGame,
+        deleteCustomGame,
+        addCustomTask,
+        deleteCustomTask,
         syncCalendarMonthlySubs,
         saveSettings,
         completeAutomaticDailies,

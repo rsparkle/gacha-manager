@@ -26,6 +26,7 @@ export default defineConfig(({ mode }) => ({
                 'src/renderer/lib/**',
                 'src/renderer/platform/web/storage.js',
                 'src/renderer/platform/web/images.js',
+                'src/renderer/composables/useReport.js',
             ],
         },
     },

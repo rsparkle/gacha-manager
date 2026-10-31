@@ -117,10 +117,10 @@
                                             :style="{ '--gc': event.color }"
                                             :class="{ estimated: !event.confirmed }"
                                             :aria-label="`${event.label}, ${formatEventTime(event)}`"
-                                            @mouseenter="previewEvent(event, $event)"
-                                            @mouseleave="unpreviewEvent"
-                                            @focus="previewEvent(event, $event)"
-                                            @blur="unpreviewEvent"
+                                            @mouseenter="onEventEnter(event, $event)"
+                                            @mouseleave="onEventLeave"
+                                            @focus="onEventEnter(event, $event)"
+                                            @blur="onEventLeave"
                                             @click="togglePinnedEvent(event, $event)"
                                         >
                                             <span class="event-dot" />
@@ -142,20 +142,20 @@
         <Teleport to="body">
             <Transition name="event-tooltip">
                 <div
-                    v-if="hoveredEvent"
+                    v-if="activeEvent"
                     class="schedule-event-tooltip"
                     :class="{
-                        'schedule-event-tooltip--portrait': hoveredEventIsPortrait,
-                        'schedule-event-tooltip--landscape': !hoveredEventIsPortrait,
+                        'schedule-event-tooltip--portrait': activeEventIsPortrait,
+                        'schedule-event-tooltip--landscape': !activeEventIsPortrait,
                         'schedule-event-tooltip--pinned': pinned,
                     }"
                     :style="tooltipStyle"
                     role="tooltip"
                 >
                     <div
-                        v-if="hoveredEventHasImage"
+                        v-if="activeEventHasImage"
                         class="schedule-event-tooltip-hero"
-                        :style="{ backgroundImage: getBackgroundImageWithFallbacks(hoveredEvent) }"
+                        :style="{ backgroundImage: getBackgroundImageWithFallbacks(activeEvent) }"
                     >
                         <div class="schedule-event-tooltip-hero-shade" />
                     </div>
@@ -163,22 +163,22 @@
                     <div class="schedule-event-tooltip-body">
                         <div class="schedule-event-tooltip-topline">
                             <span
-                                v-if="!hoveredEventHasImage"
+                                v-if="!activeEventHasImage"
                                 class="schedule-event-tooltip-game schedule-event-tooltip-game--inline"
                             >
-                                {{ hoveredEvent.source ?? gameAbbr(hoveredEvent.game) }}
+                                {{ activeEvent.source ?? gameAbbr(activeEvent.game) }}
                             </span>
                             <span class="schedule-event-tooltip-date">
-                                {{ formatEventDate(hoveredEvent) }}
+                                {{ formatEventDate(activeEvent) }}
                             </span>
                         </div>
 
                         <div class="schedule-event-tooltip-title-row">
                             <div class="schedule-event-tooltip-title">
-                                {{ hoveredEvent.label }}
+                                {{ activeEvent.label }}
                             </div>
                             <ReportFlag
-                                v-if="pinned && hoveredEvent.key"
+                                v-if="pinned && activeEvent.key"
                                 class="schedule-event-tooltip-flag"
                                 :context="reportContext"
                                 @click="hideEventTooltip"
@@ -187,21 +187,21 @@
 
                         <div class="schedule-event-tooltip-meta">
                             <div class="schedule-event-tooltip-time">
-                                {{ formatEventTime(hoveredEvent) }}
+                                {{ formatEventTime(activeEvent) }}
                             </div>
 
-                            <div v-if="!hoveredEvent.confirmed" class="schedule-event-tooltip-estimated">
+                            <div v-if="!activeEvent.confirmed" class="schedule-event-tooltip-estimated">
                                 <img v-if="estimatedSticker" :src="estimatedSticker" class="estimated-sticker" alt="" />
                                 <span class="estimated-label">Estimated</span>
                             </div>
                         </div>
 
-                        <div v-if="hoveredCountdown" class="schedule-event-tooltip-countdown">
+                        <div v-if="activeCountdown" class="schedule-event-tooltip-countdown">
                             <span class="schedule-event-tooltip-countdown-label">
-                                {{ hoveredCountdown.prefix }}
+                                {{ activeCountdown.prefix }}
                             </span>
                             <span class="schedule-event-tooltip-countdown-value">
-                                {{ hoveredCountdown.value }}
+                                {{ activeCountdown.value }}
                             </span>
                         </div>
                     </div>
@@ -249,7 +249,7 @@ const selectedGames = ref([]);
 const gameIcons = reactive({});
 const imageUrls = reactive({});
 
-const hoveredEvent = ref(null);
+const activeEvent = ref(null);
 const pinned = ref(false);
 const tooltipPosition = ref({ left: 0, top: 0, placement: 'above' });
 
@@ -297,27 +297,27 @@ watch(
     },
 );
 
-const hoveredEventHasImage = computed(() => {
-    if (!hoveredEvent.value) return false;
-    return Boolean(hoveredEvent.value.imgFiles?.length);
+const activeEventHasImage = computed(() => {
+    if (!activeEvent.value) return false;
+    return Boolean(activeEvent.value.imgFiles?.length);
 });
 
 const isPortraitTooltip = (event) => Boolean(event?.portrait);
 
-const hoveredEventIsPortrait = computed(() => isPortraitTooltip(hoveredEvent.value));
+const activeEventIsPortrait = computed(() => isPortraitTooltip(activeEvent.value));
 
 const tooltipStyle = computed(() => ({
-    '--gc': hoveredEvent.value?.color ?? 'var(--accent)',
+    '--gc': activeEvent.value?.color ?? 'var(--accent)',
     left: `${tooltipPosition.value.left}px`,
     top: `${tooltipPosition.value.top}px`,
     transform:
         tooltipPosition.value.placement === 'above' ? 'translate(-50%, calc(-100% - 10px))' : 'translate(-50%, 10px)',
 }));
 
-const hoveredCountdown = computed(() => {
-    if (!hoveredEvent.value?.date || hoveredEvent.value.allDay) return null;
+const activeCountdown = computed(() => {
+    if (!activeEvent.value?.date || activeEvent.value.allDay) return null;
 
-    const diff = hoveredEvent.value.date.getTime() - now.value.getTime();
+    const diff = activeEvent.value.date.getTime() - now.value.getTime();
 
     if (diff > 0) {
         return {
@@ -533,26 +533,26 @@ const showEventTooltip = (event, domEvent) => {
         placement: placeAbove ? 'above' : 'below',
     };
 
-    hoveredEvent.value = event;
+    activeEvent.value = event;
 };
 
 const hideEventTooltip = () => {
-    hoveredEvent.value = null;
+    activeEvent.value = null;
     pinned.value = false;
 };
 
-const previewEvent = (event, domEvent) => {
+const onEventEnter = (event, domEvent) => {
     if (!pinned.value) showEventTooltip(event, domEvent);
 };
 
-const unpreviewEvent = () => {
+const onEventLeave = () => {
     if (!pinned.value) hideEventTooltip();
 };
 
 const isSameEvent = (a, b) => a?.game === b?.game && a?.key === b?.key;
 
 const togglePinnedEvent = (event, domEvent) => {
-    if (pinned.value && isSameEvent(hoveredEvent.value, event)) {
+    if (pinned.value && isSameEvent(activeEvent.value, event)) {
         hideEventTooltip();
         return;
     }
@@ -573,10 +573,10 @@ const onPinnedKeydown = (domEvent) => {
 };
 
 const reportContext = computed(() => ({
-    game: hoveredEvent.value?.game,
+    game: activeEvent.value?.game,
     topic: 'schedule',
-    targetId: hoveredEvent.value?.key,
-    targetLabel: hoveredEvent.value?.label,
+    targetId: activeEvent.value?.key,
+    targetLabel: activeEvent.value?.label,
     server: selectedServer.value,
 }));
 
@@ -622,7 +622,7 @@ onMounted(() => {
     clockTimer = window.setInterval(() => {
         now.value = new Date();
 
-        if (!hoveredEvent.value && Date.now() - scheduleBuiltAt >= SCHEDULE_REBUILD_MS) {
+        if (!activeEvent.value && Date.now() - scheduleBuiltAt >= SCHEDULE_REBUILD_MS) {
             loadSchedule();
             return;
         }

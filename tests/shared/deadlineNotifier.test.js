@@ -191,3 +191,53 @@ describe('monthly sub notifications', () => {
         expect(notify).not.toHaveBeenCalled();
     });
 });
+
+describe('custom games and tasks', () => {
+    function startCustom() {
+        vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
+        const store = createStore();
+        const service = createAccountService({ storage: createMemoryStorage(), settings: store });
+        const notify = vi.fn();
+        const notifier = createDeadlineNotifier({
+            computeGroups: (now) => service.computeGroups(now),
+            enabledAccountIds: (key, gameName) => service.getAccountIds(key, gameName),
+            notify,
+        });
+
+        service.onChange(notifier.refresh);
+        service.setGameData({ config, tasks });
+
+        const { key, account: created } = service.createCustomGame();
+        store.set('deadlineNotifications', { [key]: [created.id] });
+
+        return { service, notifier, notify, key, accountId: created.id };
+    }
+
+    it('uses the custom game name when a custom task gets urgent', async () => {
+        const { service, notify, key } = startCustom();
+
+        service.addCustomTask(key, { label: 'Event', category: 'Events', minutes: 100 });
+
+        expect(notify).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(85 * 60 * 1000);
+
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify.mock.calls[0][0].body).toBe('There is 1 task approaching its deadline in My Game');
+    });
+
+    it('ended tasks do not keep the timer busy', async () => {
+        const { service, notifier, key, accountId } = startCustom();
+        const task = service.addCustomTask(key, { label: 'Event', category: 'Events', minutes: 10 });
+        service.setTaskCompleted(key, task.id, accountId, true);
+        const computeGroups = vi.spyOn(service, 'computeGroups');
+
+        await vi.advanceTimersByTimeAsync(20 * 60 * 1000);
+        notifier.refresh();
+        const calls = computeGroups.mock.calls.length;
+
+        await vi.advanceTimersByTimeAsync(60 * 1000);
+
+        expect(computeGroups.mock.calls.length).toBe(calls);
+    });
+});

@@ -711,7 +711,7 @@ handle('getImageUrl', getImageUrl);
 
 handle('clearImageCache', () => deleteCacheFiles(0));
 
-handle('getGroupedAccounts', () => accounts.getGroupedAccounts());
+handle('getAccountGroups', () => accounts.computeGroups());
 
 handle('insertAccounts', (gameList) => accounts.insertAccounts(gameList));
 
@@ -724,6 +724,16 @@ handle('setTaskCompleted', ({ gameName, taskId, accountId, completed }) =>
 );
 
 handle('syncCalendarMonthlySubs', () => accounts.syncCalendarMonthlySubs());
+
+handle('createCustomGame', () => accounts.createCustomGame());
+
+handle('renameCustomGame', ({ gameKey, name }) => accounts.renameCustomGame(gameKey, name));
+
+handle('deleteCustomGame', (gameKey) => accounts.deleteCustomGame(gameKey));
+
+handle('addCustomTask', ({ gameKey, task }) => accounts.addCustomTask(gameKey, task));
+
+handle('deleteCustomTask', ({ gameKey, taskId }) => accounts.deleteCustomTask(gameKey, taskId));
 
 handle('exportAccounts', exportAccountsToFile);
 

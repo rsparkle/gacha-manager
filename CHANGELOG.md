@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.5] - 2026-10-31
+### Added
+- Custom games: add your own game from "+ Add Game" and track it like any other, with accounts, UIDs and labels. Click its name to rename it
+- Custom tasks: add your own tasks to any game, including the built-in ones, with a name, a category and a deadline in days, hours and minutes. Hover a custom task to delete it
+- Custom tasks count down, can be marked done and trigger deadline notifications like the built-in ones. Once their deadline passes they show as Ended
+### Changed
+- Editing a UID, account name or monthly sub now works the same everywhere
+- Switching games or accounts now starts at the top of the task list
+- Account backups now include custom games and tasks.
+- Switched app font to Nunito
+### Fixed
+- Long task lists no longer show two scrollbars. The footer now sits at the end of the task list
+- Pressing Tab while renaming an account now moves on to the next account
+
 ## [1.2.4] - 2026-10-30
 ### Added
 - Monthly Sub notifications

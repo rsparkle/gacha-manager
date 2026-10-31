@@ -1,15 +1,18 @@
-export const ACCOUNTS_VERSION = 1;
+import { emptyCustomData, isValidCustomData } from './customData.js';
 
-export class AccountsMigrationError extends Error {
-    name = 'AccountsMigrationError';
+export const USER_DATA_VERSION = 2;
+
+export class UserDataMigrationError extends Error {
+    name = 'UserDataMigrationError';
 }
 
 const MIGRATIONS = {
-    0: (accounts) => accounts,
+    0: (state) => state,
+    1: (state) => ({ ...state, custom: emptyCustomData() }),
 };
 
-export class NewerAccountsVersionError extends Error {
-    name = 'NewerAccountsVersionError';
+export class NewerUserDataVersionError extends Error {
+    name = 'NewerUserDataVersionError';
 }
 
 function isPlainObject(value) {
@@ -39,9 +42,9 @@ function readEnvelope(data) {
         throw new Error('Invalid accounts.json version');
     }
 
-    if (data.version > ACCOUNTS_VERSION) {
-        throw new NewerAccountsVersionError(
-            `accounts.json is version ${data.version}, but this app supports up to version ${ACCOUNTS_VERSION}`,
+    if (data.version > USER_DATA_VERSION) {
+        throw new NewerUserDataVersionError(
+            `accounts.json is version ${data.version}, but this app supports up to version ${USER_DATA_VERSION}`,
         );
     }
 
@@ -49,24 +52,32 @@ function readEnvelope(data) {
         throw new Error('Invalid accounts.json structure');
     }
 
-    return { version: data.version, accounts: data.accounts };
+    return {
+        version: data.version,
+        accounts: data.accounts,
+        ...(data.version >= 2 && { custom: data.custom }),
+    };
 }
 
-export function migrateAccountsFile(data) {
-    let { version, accounts } = readEnvelope(data);
+export function emptyUserData() {
+    return { accounts: {}, custom: emptyCustomData() };
+}
+
+export function migrateUserData(data) {
+    let { version, ...state } = readEnvelope(data);
     const fromVersion = version;
 
-    while (version < ACCOUNTS_VERSION) {
+    while (version < USER_DATA_VERSION) {
         const migrate = MIGRATIONS[version];
 
         if (!migrate) {
-            throw new AccountsMigrationError(`No migration from accounts version ${version}`);
+            throw new UserDataMigrationError(`No migration from accounts version ${version}`);
         }
 
         try {
-            accounts = migrate(structuredClone(accounts));
+            state = migrate(structuredClone(state));
         } catch (err) {
-            throw new AccountsMigrationError(`Migration from accounts version ${version} failed: ${err.message}`, {
+            throw new UserDataMigrationError(`Migration from accounts version ${version} failed: ${err.message}`, {
                 cause: err,
             });
         }
@@ -74,23 +85,27 @@ export function migrateAccountsFile(data) {
         version++;
     }
 
-    for (const [gameName, gameAccounts] of Object.entries(accounts)) {
+    for (const [gameName, gameAccounts] of Object.entries(state.accounts)) {
         if (!Array.isArray(gameAccounts) || !gameAccounts.every(isValidAccount)) {
             throw new Error(`Invalid accounts for ${gameName}`);
         }
     }
 
-    return { accounts, fromVersion };
+    if (!isValidCustomData(state.custom)) {
+        throw new Error('Invalid custom games or tasks');
+    }
+
+    return { accounts: state.accounts, custom: state.custom, fromVersion };
 }
 
 export function backupFileName(date = new Date()) {
     return `gacha-manager-accounts-${date.toISOString().slice(0, 10)}.json`;
 }
 
-export function parseAccounts(text) {
-    return migrateAccountsFile(JSON.parse(text));
+export function parseUserData(text) {
+    return migrateUserData(JSON.parse(text));
 }
 
-export function serializeAccounts(accounts) {
-    return JSON.stringify({ version: ACCOUNTS_VERSION, accounts }, null, 2);
+export function serializeUserData({ accounts, custom }) {
+    return JSON.stringify({ version: USER_DATA_VERSION, accounts, custom }, null, 2);
 }

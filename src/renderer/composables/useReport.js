@@ -7,6 +7,19 @@ export const REPORT_FIELDS = {
     schedule: ['name', 'date'],
 };
 
+export const NOT_LISTED_TARGET = 'not-listed';
+export const OTHER_FIELDS = ['missing', 'other'];
+
+export function reportFields(topic, targetId) {
+    return targetId === NOT_LISTED_TARGET ? OTHER_FIELDS : (REPORT_FIELDS[topic] ?? []);
+}
+
+export function canSendReport({ targetId, field, comment = '' }) {
+    if (!targetId || !field) return false;
+
+    return targetId !== NOT_LISTED_TARGET || comment.trim() !== '';
+}
+
 const APP_VERSION = typeof __APP_VERSION__ === 'undefined' ? 'dev' : __APP_VERSION__;
 const COOLDOWN_MS = 20_000;
 const TIMEOUT_MS = 15_000;
@@ -46,7 +59,7 @@ export function useReport() {
         reportState.value = null;
     };
 
-    const isReported = (context) => reported.has(reportKey(context));
+    const isReported = (context) => context.targetId !== NOT_LISTED_TARGET && reported.has(reportKey(context));
 
     const sendReport = async (report) => {
         if (Date.now() - lastSentAt < COOLDOWN_MS) return { ok: false, error: 'cooldown' };
@@ -55,7 +68,7 @@ export function useReport() {
         const result = await postReport({ ...report, appVersion: APP_VERSION });
 
         if (result.ok) {
-            reported.add(reportKey(report));
+            if (report.targetId !== NOT_LISTED_TARGET) reported.add(reportKey(report));
         } else {
             lastSentAt = 0;
         }

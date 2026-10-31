@@ -59,6 +59,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
         let nextWake = Infinity;
 
         for (const group of groups) {
+            const gameName = group.displayName ?? group.name;
             const taskIds = enabledAccountIds('deadlineNotifications', group.name);
             const subIds = enabledAccountIds('monthlySubNotifications', group.name);
 
@@ -67,7 +68,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
                     urgent.push({
                         key: `sub:${group.name}:${account.id}:${account.monthlySubRemaining}`,
                         kind: 'sub',
-                        game: group.name,
+                        game: gameName,
                         end: Infinity,
                     });
                 }
@@ -84,7 +85,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
                         urgent.push({
                             key: `task:${group.name}:${account.id}:${task.id}:${end}`,
                             kind: 'task',
-                            game: group.name,
+                            game: gameName,
                             end,
                         });
                         nextWake = Math.min(nextWake, end);

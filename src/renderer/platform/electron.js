@@ -23,13 +23,18 @@ export default {
     },
 
     accounts: {
-        getGrouped: () => call('getGroupedAccounts'),
+        getGroups: () => call('getAccountGroups'),
         insert: (gameList) => call('insertAccounts', gameList),
         update: (gameName, id, changes) => call('updateAccount', { gameName, id, changes }),
         remove: (gameName, id) => call('deleteAccount', { gameName, id }),
         setTaskCompleted: (gameName, accountId, taskId, completed) =>
             call('setTaskCompleted', { gameName, accountId, taskId, completed }),
         syncCalendarMonthlySubs: () => call('syncCalendarMonthlySubs'),
+        createCustomGame: () => call('createCustomGame'),
+        renameCustomGame: (gameKey, name) => call('renameCustomGame', { gameKey, name }),
+        deleteCustomGame: (gameKey) => call('deleteCustomGame', gameKey),
+        addCustomTask: (gameKey, task) => call('addCustomTask', { gameKey, task }),
+        deleteCustomTask: (gameKey, taskId) => call('deleteCustomTask', { gameKey, taskId }),
         exportToFile: () => call('exportAccounts'),
         importFromFile: () => call('importAccounts'),
         onExternalChange: (callback) => api.onDailiesCompleted(() => callback('dailiesCompleted')),

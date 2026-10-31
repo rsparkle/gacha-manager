@@ -1,9 +1,10 @@
 import {
-    ACCOUNTS_VERSION,
-    AccountsMigrationError,
-    NewerAccountsVersionError,
-    parseAccounts,
-    serializeAccounts,
+    USER_DATA_VERSION,
+    UserDataMigrationError,
+    NewerUserDataVersionError,
+    emptyUserData,
+    parseUserData,
+    serializeUserData,
 } from '../../../shared/accounts/accountsFile.js';
 import { migrateSettings } from '../../../shared/settings.js';
 
@@ -90,32 +91,32 @@ export function createAccountsStorage() {
         load() {
             const text = read(KEYS.accounts);
 
-            if (text === null) return {};
+            if (text === null) return emptyUserData();
 
             let result;
 
             try {
-                result = parseAccounts(text);
+                result = parseUserData(text);
             } catch (err) {
-                if (err instanceof NewerAccountsVersionError || err instanceof AccountsMigrationError) throw err;
+                if (err instanceof NewerUserDataVersionError || err instanceof UserDataMigrationError) throw err;
 
                 console.error('Saved accounts could not be read, starting fresh:', err);
                 write(`${KEYS.accounts}.corrupt-${Date.now()}`, text);
-                write(KEYS.accounts, serializeAccounts({}));
+                write(KEYS.accounts, serializeUserData(emptyUserData()));
 
-                return {};
+                return emptyUserData();
             }
 
-            if (result.fromVersion !== ACCOUNTS_VERSION) {
+            if (result.fromVersion !== USER_DATA_VERSION) {
                 write(`${KEYS.accounts}.v${result.fromVersion}-backup`, text);
-                write(KEYS.accounts, serializeAccounts(result.accounts));
+                write(KEYS.accounts, serializeUserData(result));
             }
 
-            return result.accounts;
+            return { accounts: result.accounts, custom: result.custom };
         },
 
-        save(accounts) {
-            write(KEYS.accounts, serializeAccounts(accounts));
+        save(data) {
+            write(KEYS.accounts, serializeUserData(data));
         },
     };
 }

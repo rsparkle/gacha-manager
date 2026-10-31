@@ -1,88 +1,89 @@
 import { ref, computed } from 'vue';
 import platform from '#platform';
-import { createResetProcessor } from '../../shared/resetProcessor.js';
 import { useSettings } from './useSettings.js';
-import { getLiveVersion } from '../../shared/liveVersion.js';
 
 const gameConfig = ref(null);
 const independentEvents = ref([]);
 const accountsPerGame = ref([]);
-let processor = null;
 
 const gamesWithAccounts = computed(() =>
     accountsPerGame.value.filter((game) => game.accounts.length > 0).map((game) => game.name),
 );
 
 const gamesWithoutAccounts = computed(() =>
-    accountsPerGame.value.filter((game) => game.accounts.length === 0).map((game) => game.name),
+    accountsPerGame.value.filter((game) => !game.custom && game.accounts.length === 0).map((game) => game.name),
 );
 
 async function loadGameData() {
-    const { config, tasks, independentEvents: events } = await platform.gameData.load();
+    const { config, independentEvents: events } = await platform.gameData.load();
 
-    processor = createResetProcessor(config, tasks);
     independentEvents.value = events ?? [];
     gameConfig.value = config;
 }
 
-function applyLiveVersions(groups) {
-    for (const group of groups) {
-        const config = gameConfig.value?.[group.name];
-
-        if (config) group.game_version = getLiveVersion(config);
-    }
-
-    return groups;
-}
-
 async function loadAccounts() {
-    accountsPerGame.value = applyLiveVersions(processor.computeTaskResetData(await platform.accounts.getGrouped()));
-}
-
-function recompute() {
-    accountsPerGame.value = applyLiveVersions(processor.computeTaskResetData(accountsPerGame.value));
-}
-
-function replaceAccount(gameName, account) {
-    const game = accountsPerGame.value.find((game) => game.name === gameName);
-    const index = game?.accounts.findIndex((stored) => stored.id === account.id) ?? -1;
-
-    if (index === -1) return;
-
-    game.accounts[index] = processor.computeSingleAccountResetData(account, gameName);
+    accountsPerGame.value = await platform.accounts.getGroups();
 }
 
 async function reloadAccountsAndSettings() {
     await Promise.all([loadAccounts(), useSettings().loadSettings()]);
 }
 
-async function syncMonthlySubs() {
-    if (await platform.accounts.syncCalendarMonthlySubs()) {
-        await loadAccounts();
-    } else {
-        recompute();
-    }
-}
-
-async function insertAccounts(gameList) {
-    const created = await platform.accounts.insert(gameList);
+async function changeAccounts(action) {
+    const result = await action();
 
     await loadAccounts();
 
-    return created;
+    return result;
 }
 
-async function updateAccount(gameName, id, changes) {
-    replaceAccount(gameName, await platform.accounts.update(gameName, id, changes));
-}
+async function changeAccountsAndSettings(action) {
+    const result = await action();
 
-async function deleteAccount(gameName, id) {
-    await platform.accounts.remove(gameName, id);
     await reloadAccountsAndSettings();
+
+    return result;
 }
 
-async function setTaskCompleted(gameName, accountId, taskId, completed) {
-    replaceAccount(gameName, await platform.accounts.setTaskCompleted(gameName, accountId, taskId, completed));
+async function syncMonthlySubs() {
+    await platform.accounts.syncCalendarMonthlySubs();
+    await loadAccounts();
+}
+
+function insertAccounts(gameList) {
+    return changeAccounts(() => platform.accounts.insert(gameList));
+}
+
+function updateAccount(gameName, id, changes) {
+    return changeAccounts(() => platform.accounts.update(gameName, id, changes));
+}
+
+function deleteAccount(gameName, id) {
+    return changeAccountsAndSettings(() => platform.accounts.remove(gameName, id));
+}
+
+function setTaskCompleted(gameName, accountId, taskId, completed) {
+    return changeAccounts(() => platform.accounts.setTaskCompleted(gameName, accountId, taskId, completed));
+}
+
+function createCustomGame() {
+    return changeAccounts(() => platform.accounts.createCustomGame());
+}
+
+function renameCustomGame(gameKey, name) {
+    return changeAccounts(() => platform.accounts.renameCustomGame(gameKey, name));
+}
+
+function deleteCustomGame(gameKey) {
+    return changeAccountsAndSettings(() => platform.accounts.deleteCustomGame(gameKey));
+}
+
+function addCustomTask(gameKey, task) {
+    return changeAccounts(() => platform.accounts.addCustomTask(gameKey, task));
+}
+
+function deleteCustomTask(gameKey, taskId) {
+    return changeAccounts(() => platform.accounts.deleteCustomTask(gameKey, taskId));
 }
 
 function exportAccounts() {
@@ -107,12 +108,16 @@ export function useAccounts() {
         loadGameData,
         loadAccounts,
         reloadAccountsAndSettings,
-        recompute,
         syncMonthlySubs,
         insertAccounts,
         updateAccount,
         deleteAccount,
         setTaskCompleted,
+        createCustomGame,
+        renameCustomGame,
+        deleteCustomGame,
+        addCustomTask,
+        deleteCustomTask,
         exportAccounts,
         importAccounts,
     };

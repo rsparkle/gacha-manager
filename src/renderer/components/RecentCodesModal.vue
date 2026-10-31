@@ -300,7 +300,7 @@ const copyCode = async (code) => {
     width: 26px;
     height: 26px;
     color: var(--muted2);
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 10px;
     font-weight: 700;
 }
@@ -348,7 +348,7 @@ const copyCode = async (code) => {
     min-width: 0;
     overflow: hidden;
     color: var(--text);
-    font-family: 'Space Mono', monospace;
+    font-family: var(--font-mono), monospace;
     font-size: 13px;
     letter-spacing: 0.04em;
     text-overflow: ellipsis;

@@ -11,18 +11,22 @@
                     @click="selectGame(gameGroup)"
                 >
                     <div class="game-name-row">
-                        <img class="game-item-icon" :src="sidebarIcons[gameGroup.name]" :alt="gameGroup.name" />
-                        <p class="game-name">{{ gameGroup.name }}</p>
+                        <span
+                            v-if="gameGroup.custom"
+                            class="game-item-icon game-item-abbr"
+                            :style="{ '--game-color': gameGroup.color }"
+                            aria-hidden="true"
+                        >
+                            {{ customGameAbbr(gameGroup.displayName) }}
+                        </span>
+                        <img v-else class="game-item-icon" :src="sidebarIcons[gameGroup.name]" :alt="gameGroup.name" />
+                        <p class="game-name">{{ gameLabel(gameGroup) }}</p>
                     </div>
                     <span v-if="hasUrgentTasks(gameGroup.name)" class="urgent-orb" />
                 </div>
             </div>
 
-            <div class="recent-codes-wrapper">
-                <button class="add-game" @click="showRecentCodes = true">Recent Codes</button>
-            </div>
-
-            <div v-if="missingGames.length > 0" class="add-game-wrapper">
+            <div class="add-game-wrapper">
                 <Transition name="popover">
                     <div v-if="showGamePicker" class="game-picker">
                         <div
@@ -31,11 +35,18 @@
                             class="game-picker-item"
                             @click="addGame(game)"
                         >
-                            {{ game.name }}
+                            {{ gameLabel(game) }}
+                        </div>
+                        <div class="game-picker-item game-picker-item--custom" @click="addCustomGame">
+                            + Custom game
                         </div>
                     </div>
                 </Transition>
                 <button class="add-game" @click="showGamePicker = !showGamePicker">+ Add Game</button>
+            </div>
+
+            <div class="recent-codes-wrapper">
+                <button class="add-game" @click="showRecentCodes = true">Recent Codes</button>
             </div>
         </div>
 
@@ -66,12 +77,29 @@
                                 />
                             </svg>
                         </button>
-                        <p class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
+                        <template v-if="isCustomGame">
+                            <input
+                                v-if="gameNameEdit.editing"
+                                :ref="(el) => (gameNameEdit.input = el)"
+                                v-model="gameNameEdit.value"
+                                class="hero-title hero-title-input"
+                                type="text"
+                                :maxlength="CUSTOM_GAME_NAME_MAX"
+                                aria-label="Game name"
+                                @keydown.enter.prevent="gameNameEdit.commit()"
+                                @keydown.esc.prevent="gameNameEdit.cancel()"
+                                @blur="gameNameEdit.finish()"
+                            />
+                            <p v-else class="hero-title hero-title--editable" title="Rename" @click="startGameNameEdit">
+                                {{ selectedGame.displayName }}
+                            </p>
+                        </template>
+                        <p v-else class="hero-title">{{ selectedGame.name }} {{ selectedGame.game_version }}</p>
                     </div>
 
                     <div class="hero-bottom">
                         <div class="hero-account-info">
-                            <div ref="serverAnchor" class="server-wrapper">
+                            <div v-if="!isCustomGame" ref="serverAnchor" class="server-wrapper">
                                 <span class="account-server server-clickable" @click="editingServer = !editingServer">
                                     {{ selectedAccount?.server }}
                                     <svg
@@ -101,21 +129,21 @@
                                     </div>
                                 </Transition>
                             </div>
-                            <span v-if="!editingUid" class="account-uid" @click="startUidEdit">{{
+                            <span v-if="!uidEdit.editing" class="account-uid" @click="startUidEdit">{{
                                 selectedAccount?.uid || 0
                             }}</span>
                             <input
                                 v-else
-                                ref="uidInput"
-                                v-model="editUidValue"
+                                :ref="(el) => (uidEdit.input = el)"
+                                v-model="uidEdit.value"
                                 class="account-uid account-uid-input"
                                 type="text"
                                 :maxlength="uidMaxLength"
                                 inputmode="numeric"
-                                @keyup.enter="commitUidEdit(selectedAccount.id)"
-                                @blur="commitAndCancelUidEdit(selectedAccount.id)"
-                                @keyup.escape="cancelUidEdit"
-                                @input="editUidValue = editUidValue.replace(/\D/g, '')"
+                                @keydown.enter.prevent="uidEdit.commit()"
+                                @keydown.esc.prevent="uidEdit.cancel()"
+                                @blur="uidEdit.finish()"
+                                @input="uidEdit.value = uidEdit.value.replace(/\D/g, '')"
                             />
                         </div>
                         <div class="hero-progress">
@@ -141,14 +169,38 @@
                                 <span class="maintenance-dot" />
                                 {{ maintenanceLabel }}
                             </div>
-                            <button class="btn-edit" title="Report a problem with a task" @click="reportTask">
+                            <button
+                                v-if="!isCustomGame"
+                                class="btn-edit"
+                                title="Report a problem with a task"
+                                @click="reportTask"
+                            >
                                 Report
                             </button>
-                            <button v-if="!editingUid" class="btn-edit" @click="startUidEdit">Edit UID</button>
-                            <button v-else class="btn-edit" @mousedown.prevent="cancelUidEdit" @click="cancelUidEdit">
+                            <button
+                                v-if="taskCategories.length > 0"
+                                class="btn-edit"
+                                @click="showCustomTaskDialog = true"
+                            >
+                                Add Task
+                            </button>
+                            <button v-if="!uidEdit.editing" class="btn-edit" @click="startUidEdit">Edit UID</button>
+                            <button
+                                v-else
+                                class="btn-edit"
+                                @mousedown.prevent="uidEdit.cancel()"
+                                @click="uidEdit.cancel()"
+                            >
                                 Cancel
                             </button>
-                            <button class="btn-delete" @click="deleteAccount">Delete Account</button>
+                            <button
+                                v-if="!isCustomGame || selectedGame.accounts.length > 1"
+                                class="btn-delete"
+                                @click="deleteAccount"
+                            >
+                                Delete Account
+                            </button>
+                            <button v-if="isCustomGame" class="btn-delete" @click="deleteGame">Delete Game</button>
                             <button
                                 class="btn-icon"
                                 :class="{ active: deadlineNotificationsEnabled }"
@@ -168,7 +220,7 @@
                                 <BellIcon :off="!deadlineNotificationsEnabled" />
                             </button>
                             <button
-                                v-if="desktop"
+                                v-if="desktop && !isCustomGame"
                                 class="btn-icon"
                                 :class="{ active: automationEnabled }"
                                 :title="automationEnabled ? 'Automatic dailies on' : 'Automatic dailies off'"
@@ -201,30 +253,30 @@
                             :class="{ active: selectedAccount?.id === account.id }"
                             @click="selectedAccountId = account.id"
                         >
-                            <span v-if="editingLabelId !== account.id" @click.stop="startLabelEdit(account)">
+                            <span v-if="!labelEdit.isEditing(account.id)" @click.stop="startLabelEdit(account)">
                                 {{ account.label || account.uid || 'New Account' }}
                             </span>
 
                             <input
                                 v-else
-                                ref="labelInput"
-                                v-model="editLabelValue"
+                                :ref="(el) => (labelEdit.input = el)"
+                                v-model="labelEdit.value"
                                 class="account-label-input"
                                 type="text"
-                                :style="{ width: Math.max(editLabelValue?.length ?? 0, 4) * 7 + 'px' }"
-                                @keyup.enter="commitLabelEdit"
-                                @keyup.escape="cancelLabelEdit"
+                                :style="{ width: Math.max(labelEdit.value.length, 4) * 7 + 'px' }"
+                                @keydown.enter.prevent="labelEdit.commit()"
+                                @keydown.esc.prevent="labelEdit.cancel()"
                                 @keydown.tab.prevent="commitAndMoveToNext(account)"
-                                @blur="commitLabelEdit"
+                                @blur="labelEdit.finish()"
                             />
                         </div>
 
                         <div class="account-tab-add" @click="insertAccount">+</div>
                     </div>
 
-                    <div class="monthly-sub">
+                    <div v-if="!isCustomGame" class="monthly-sub">
                         <div @click="startMonthlySubEdit">
-                            <template v-if="!editingMonthlySub">
+                            <template v-if="!monthlySubEdit.editing">
                                 {{ currentGameConfig?.monthlySub ?? 'Monthly Sub' }}:
                                 <span
                                     :class="{
@@ -239,15 +291,15 @@
 
                             <input
                                 v-else
-                                ref="monthlySubInput"
-                                v-model="monthlySubValue"
+                                :ref="(el) => (monthlySubEdit.input = el)"
+                                v-model="monthlySubEdit.value"
                                 type="number"
                                 min="0"
                                 step="1"
                                 @click.stop
-                                @keydown.enter.prevent="$event.target.blur()"
-                                @keydown.esc.prevent="cancelMonthlySubEdit"
-                                @blur="saveMonthlySub"
+                                @keydown.enter.prevent="monthlySubEdit.commit()"
+                                @keydown.esc.prevent="monthlySubEdit.cancel()"
+                                @blur="monthlySubEdit.finish()"
                             />
                         </div>
                         <div>
@@ -274,59 +326,102 @@
                 </div>
 
                 <div
-                    class="tasks-area"
-                    :class="{ 'tasks-area--maintenance': selectedGame.maintenance }"
+                    ref="tasksScroll"
+                    class="tasks-scroll"
                     :style="{ backgroundImage: getGameImageBackgroundUrl(selectedGame) }"
                 >
-                    <img
-                        :key="selectedGame.name"
-                        :src="gameImages[selectedGame.name]"
-                        style="display: none"
-                        @error="handleImageError(selectedGame)"
-                    />
-                    <div v-for="(tasks, taskType) in selectedAccount.tasks" :key="taskType" class="task-card">
-                        <div class="task-card-header">
-                            <p class="task-card-title">{{ taskType }}</p>
-                        </div>
-                        <div class="task-list">
-                            <div
-                                v-for="task in tasks"
-                                :key="task.id"
-                                class="task"
-                                :class="{ done: task.isCompleted, disabled: task.isDisabled }"
-                                @click="toggleTask(task)"
-                            >
-                                <div class="task-check">
-                                    <span v-if="task.isCompleted">✓</span>
-                                    <span v-if="task.isDisabled">✗</span>
-                                </div>
-                                <p class="task-name">{{ task.label }}</p>
-                                <div v-if="!task.isDisabled" class="task-completion">
-                                    <span
-                                        class="task-countdown"
-                                        :class="{ urgent: !task.isCompleted && isUrgent(task) }"
-                                    >
-                                        {{
-                                            task.isCompleted
-                                                ? 'Done'
-                                                : task.nextReset === null
-                                                  ? 'Ongoing'
-                                                  : formatCountdown(task.nextReset)
-                                        }}
-                                    </span>
-                                    <div v-if="!task.isCompleted && task.nextReset !== null" class="task-countdown-bar">
-                                        <div class="task-progress" :style="{ width: taskProgress(task) + '%' }"></div>
+                    <div class="tasks-area" :class="{ 'tasks-area--maintenance': selectedGame.maintenance }">
+                        <img
+                            v-if="!isCustomGame"
+                            :key="selectedGame.name"
+                            :src="gameImages[selectedGame.name]"
+                            style="display: none"
+                            @error="handleImageError(selectedGame)"
+                        />
+                        <div v-for="(tasks, taskType) in selectedAccount.tasks" :key="taskType" class="task-card">
+                            <div class="task-card-header">
+                                <p class="task-card-title">{{ taskType }}</p>
+                            </div>
+                            <div class="task-list">
+                                <div
+                                    v-for="task in tasks"
+                                    :key="task.id"
+                                    class="task"
+                                    :class="{
+                                        done: task.isCompleted,
+                                        disabled: task.isDisabled && !task.ended,
+                                        ended: task.ended && !task.isCompleted,
+                                        custom: task.custom,
+                                    }"
+                                    @click="toggleTask(task)"
+                                >
+                                    <div class="task-check">
+                                        <span v-if="task.isCompleted">✓</span>
+                                        <span v-if="task.isDisabled">✗</span>
                                     </div>
+                                    <p class="task-name">{{ task.label }}</p>
+                                    <div v-if="!task.isDisabled" class="task-completion">
+                                        <span
+                                            class="task-countdown"
+                                            :class="{ urgent: !task.isCompleted && isUrgent(task) }"
+                                        >
+                                            {{
+                                                task.isCompleted
+                                                    ? 'Done'
+                                                    : task.nextReset === null
+                                                      ? 'Ongoing'
+                                                      : formatCountdown(task.nextReset)
+                                            }}
+                                        </span>
+                                        <div
+                                            v-if="!task.isCompleted && task.nextReset !== null"
+                                            class="task-countdown-bar"
+                                        >
+                                            <div
+                                                class="task-progress"
+                                                :style="{ width: taskProgress(task) + '%' }"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                    <div v-else-if="task.ended" class="task-completion">
+                                        <span class="task-countdown">Ended</span>
+                                    </div>
+                                    <button
+                                        v-if="task.custom"
+                                        type="button"
+                                        class="task-delete"
+                                        title="Delete task"
+                                        aria-label="Delete task"
+                                        @click.stop="removeCustomTask(task)"
+                                    >
+                                        ×
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                        <button
+                            v-if="taskCategories.length === 0"
+                            type="button"
+                            class="task-card task-card-add"
+                            @click="showCustomTaskDialog = true"
+                        >
+                            + Add task
+                        </button>
                     </div>
+                    <AppFooter />
                 </div>
             </div>
         </div>
     </div>
 
     <RecentCodesModal :open="showRecentCodes" :game="selectedGame?.name" @close="showRecentCodes = false" />
+    <CustomTaskDialog
+        :open="showCustomTaskDialog"
+        :game-key="selectedGame?.name ?? null"
+        :game-name="selectedGame ? gameLabel(selectedGame) : ''"
+        :categories="taskCategories"
+        @close="showCustomTaskDialog = false"
+    />
 </template>
 
 <script setup>
@@ -338,11 +433,15 @@ import { useConfirm } from '../composables/useConfirm.js';
 import { useSettings } from '../composables/useSettings.js';
 import { useAccounts } from '../composables/useAccounts.js';
 import { taskProgress, isUrgent, isMonthlySubUrgent } from '../../shared/tasks.js';
-import { slugify, formatCountdown } from '../../shared/format.js';
+import { slugify, formatCountdown, customGameAbbr } from '../../shared/format.js';
+import { CUSTOM_GAME_NAME_MAX } from '../../shared/accounts/customData.js';
 import { themeAsset } from '../themes.js';
 import BellIcon from '../components/BellIcon.vue';
 import RecentCodesModal from '../components/RecentCodesModal.vue';
-import { useReport } from '../composables/useReport.js';
+import CustomTaskDialog from '../components/CustomTaskDialog.vue';
+import { NOT_LISTED_TARGET, useReport } from '../composables/useReport.js';
+import { useInlineEdit } from '../composables/useInlineEdit.js';
+import AppFooter from '../components/AppFooter.vue';
 
 const { settings, saveSettings, toggleSetting } = useSettings();
 const { confirm } = useConfirm();
@@ -354,6 +453,10 @@ const {
     updateAccount,
     deleteAccount: removeAccount,
     setTaskCompleted,
+    createCustomGame,
+    renameCustomGame,
+    deleteCustomGame,
+    deleteCustomTask,
 } = useAccounts();
 const { openReport } = useReport();
 
@@ -365,24 +468,106 @@ const gameImages = ref({});
 const sidebarIcons = ref({});
 const showGamePicker = ref(false);
 const showRecentCodes = ref(false);
+const showCustomTaskDialog = ref(false);
 const selectedGameName = ref(null);
 const selectedAccountId = ref(null);
 const failedImages = ref(new Set());
 
-const editUidValue = ref('');
-const editingUid = ref(false);
-const uidInput = ref(null);
-
-const editLabelValue = ref('');
-const editingLabelId = ref(null);
-const labelInput = ref(null);
-
 const editingServer = ref(false);
 const serverAnchor = ref(null);
 
-const editingMonthlySub = ref(false);
-const monthlySubValue = ref('');
-const monthlySubInput = ref(null);
+const tasksScroll = ref(null);
+
+const CUSTOM_UID_MAX = 20;
+
+const gameLabel = (game) => game.displayName ?? game.name;
+
+const findAccount = (accountId) => selectedGame.value?.accounts.find((account) => account.id === accountId);
+
+const detectServer = (uid) => {
+    const { has_uid_pattern: hasUidPattern, servers } = currentGameConfig.value;
+
+    if (!hasUidPattern) return selectedAccount.value.server;
+
+    return Object.entries(servers)
+        .flatMap(([name, server]) => (server.uid_prefix ?? []).map((prefix) => [name, prefix]))
+        .filter(([, prefix]) => uid.startsWith(prefix))
+        .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
+};
+
+const saveUid = async (uid, accountId) => {
+    if (selectedAccount.value?.id !== accountId) return true;
+
+    if (!uid) {
+        createNotification('error', "Your UID can't be empty!", 2000);
+        return false;
+    }
+
+    if (isCustomGame.value) {
+        return run(() => updateAccount(selectedGame.value.name, accountId, { uid }), 'Account updated!');
+    }
+
+    const uidDigits = currentGameConfig.value.uid_digits;
+
+    if (!uidDigits.includes(uid.length)) {
+        createNotification('error', `Your UID should have ${formatDigitCounts(uidDigits)} digits!`, 2000);
+        return false;
+    }
+
+    const server = detectServer(uid);
+
+    if (!server) createNotification('error', "Couldn't detect server, pick it manually.", 2000);
+
+    return run(
+        () => updateAccount(selectedGame.value.name, accountId, { uid, server }),
+        server ? 'Account updated!' : "UID saved, but the server couldn't be detected. Pick it manually.",
+        server ? 1000 : 3000,
+    );
+};
+
+const saveLabel = async (label, accountId) => {
+    if (!label) {
+        createNotification('error', "Your label can't be empty!", 2000);
+        return true;
+    }
+
+    if (label === findAccount(accountId)?.label) return true;
+
+    return run(() => updateAccount(selectedGame.value.name, accountId, { label }), 'Account updated!');
+};
+
+const saveMonthlySub = async (raw, accountId) => {
+    const monthlySubRemaining = Number(raw);
+
+    if (!Number.isInteger(monthlySubRemaining) || monthlySubRemaining < 0) {
+        createNotification('error', 'Enter a valid number of days', 2000);
+        return false;
+    }
+
+    if (monthlySubRemaining === Number(findAccount(accountId)?.monthlySubRemaining ?? 0)) return true;
+
+    return run(
+        () => updateAccount(selectedGame.value.name, accountId, { monthlySubRemaining }),
+        'Subscription updated!',
+    );
+};
+
+const saveGameName = async (name, gameKey) => {
+    const trimmed = name.trim();
+    const game = accountsPerGame.value.find((group) => group.name === gameKey);
+
+    if (!game || trimmed === game.displayName) return true;
+
+    return run(() => renameCustomGame(gameKey, trimmed), 'Game renamed!');
+};
+
+const uidEdit = useInlineEdit({ read: () => selectedAccount.value?.uid ?? '', save: saveUid });
+const labelEdit = useInlineEdit({ read: (accountId) => findAccount(accountId)?.label ?? '', save: saveLabel });
+const monthlySubEdit = useInlineEdit({
+    read: () => selectedAccount.value?.monthlySubRemaining ?? 0,
+    save: saveMonthlySub,
+});
+const gameNameEdit = useInlineEdit({ read: () => selectedGame.value?.displayName ?? '', save: saveGameName });
 
 const currentGameConfig = computed(() => gameConfig.value?.[selectedGame.value?.name]);
 
@@ -395,6 +580,10 @@ const selectedGame = computed(
         trackedGames.value[0] ??
         null,
 );
+
+const isCustomGame = computed(() => Boolean(selectedGame.value?.custom));
+
+const taskCategories = computed(() => Object.keys(selectedAccount.value?.tasks ?? {}));
 
 const isFavorite = computed(
     () => Boolean(selectedGame.value) && settings.value.favoriteGame === selectedGame.value.name,
@@ -440,9 +629,12 @@ const hasUrgentTasks = (gameName) =>
         ) ?? false;
 
 watch([selectedGameName, selectedAccountId], () => {
-    cancelLabelEdit();
-    cancelUidEdit();
+    labelEdit.cancel();
+    uidEdit.cancel();
+    monthlySubEdit.cancel();
+    gameNameEdit.cancel();
     editingServer.value = false;
+    tasksScroll.value?.scrollTo({ top: 0 });
 });
 
 const selectGame = (gameGroup) => {
@@ -481,9 +673,11 @@ const run = async (action, successMessage, duration = 1000) => {
     }
 };
 
+const serverFor = (game) => (game.custom ? '' : defaultServer(game.name));
+
 const insertAccount = async () => {
     const gameName = selectedGame.value.name;
-    const server = selectedAccount.value?.server ?? defaultServer(gameName);
+    const server = selectedAccount.value?.server ?? serverFor(selectedGame.value);
 
     await run(() => insertAccounts([{ name: gameName, server }]), 'Account created!');
 };
@@ -498,7 +692,51 @@ const deleteAccount = async () => {
 const addGame = async (game) => {
     showGamePicker.value = false;
 
-    await run(() => insertAccounts([{ name: game.name, server: defaultServer(game.name) }]), 'Account created!');
+    await run(() => insertAccounts([{ name: game.name, server: serverFor(game) }]), 'Account created!');
+};
+
+const addCustomGame = async () => {
+    showGamePicker.value = false;
+
+    let created;
+
+    try {
+        created = await createCustomGame();
+    } catch (err) {
+        createNotification('error', `Error: ${err.message}`, 2000);
+        return;
+    }
+
+    selectedGameName.value = created.key;
+    selectedAccountId.value = created.account.id;
+    createNotification('success', 'Game created!', 1000);
+
+    await nextTick();
+    startGameNameEdit();
+};
+
+const deleteGame = async () => {
+    const game = selectedGame.value;
+    const ok = await confirm(`Delete ${game.displayName} with all its accounts and tasks?`, { confirmText: 'Delete' });
+    if (!ok) return;
+
+    const deleted = await run(() => deleteCustomGame(game.name), 'Game deleted!');
+
+    if (deleted) {
+        selectedGameName.value = null;
+        selectedAccountId.value = null;
+    }
+};
+
+const startGameNameEdit = () => {
+    if (isCustomGame.value) gameNameEdit.start(selectedGame.value.name);
+};
+
+const removeCustomTask = async (task) => {
+    const ok = await confirm(`Delete the task "${task.label}"?`, { confirmText: 'Delete' });
+    if (!ok) return;
+
+    await run(() => deleteCustomTask(selectedGame.value.name, task.id), 'Task deleted!');
 };
 
 const toggleTask = async (task) => {
@@ -510,148 +748,33 @@ const toggleTask = async (task) => {
     );
 };
 
-const startUidEdit = () => {
-    editingUid.value = true;
-    editUidValue.value = selectedAccount.value.uid ? String(selectedAccount.value.uid) : '';
-    nextTick(() => {
-        uidInput.value?.select();
-    });
-};
-
-const commitUidEdit = async (accountId) => {
-    if (!editingUid.value) return;
-
-    if (selectedAccount.value.id !== accountId) {
-        cancelUidEdit();
-        return;
-    }
-
-    const newUid = editUidValue.value;
-    const { uid_digits: uidDigits, has_uid_pattern: hasUidPattern, servers } = currentGameConfig.value;
-    let server;
-
-    if (!newUid) {
-        createNotification('error', "Your UID can't be empty!", 2000);
-        return;
-    }
-
-    if (!uidDigits.includes(newUid.length)) {
-        createNotification('error', `Your UID should have ${formatDigitCounts(uidDigits)} digits!`, 2000);
-        return;
-    }
-
-    if (hasUidPattern) {
-        server = Object.entries(servers)
-            .flatMap(([name, s]) => (s.uid_prefix ?? []).map((prefix) => [name, prefix]))
-            .filter(([, prefix]) => newUid.startsWith(prefix))
-            .sort(([, a], [, b]) => b.length - a.length)[0]?.[0];
-
-        if (!server) {
-            createNotification('error', "Couldn't detect server, pick it manually.", 2000);
-        }
-    } else {
-        server = selectedAccount.value.server;
-    }
-
-    const saved = await run(
-        () => updateAccount(selectedGame.value.name, accountId, { uid: newUid, server }),
-        server ? 'Account updated!' : "UID saved, but the server couldn't be detected. Pick it manually.",
-        server ? 1000 : 3000,
-    );
-
-    if (saved) editingUid.value = false;
-};
-
-const cancelUidEdit = () => {
-    editingUid.value = false;
-    editingServer.value = false;
-};
-
-const commitAndCancelUidEdit = async (accountId) => {
-    await commitUidEdit(accountId);
-    cancelUidEdit();
-};
+const startUidEdit = () => uidEdit.start(selectedAccount.value.id);
 
 const startLabelEdit = (account) => {
     if (selectedAccount.value.id !== account.id) {
         selectedAccountId.value = account.id;
         return;
     }
-    editingLabelId.value = account.id;
-    editLabelValue.value = account.label;
-    nextTick(() => {
-        labelInput.value?.[0].select();
-    });
+
+    labelEdit.start(account.id);
 };
 
-const commitLabelEdit = async () => {
-    if (!editingLabelId.value) return;
-
-    const newLabel = editLabelValue.value;
-    if (newLabel.length === 0) {
-        createNotification('error', "Your label can't be empty!", 2000);
-        cancelLabelEdit();
-        return;
-    }
-
-    const saved = await run(
-        () => updateAccount(selectedGame.value.name, selectedAccount.value.id, { label: newLabel }),
-        'Account updated!',
-    );
-
-    if (saved) editingLabelId.value = null;
-};
-
-const cancelLabelEdit = () => {
-    editingLabelId.value = null;
-};
-
-const commitAndMoveToNext = async (currentAccount) => {
-    if (!editingLabelId.value) return;
-    await commitLabelEdit();
+const commitAndMoveToNext = async (account) => {
+    if (!(await labelEdit.commit())) return;
 
     const accounts = selectedGame.value.accounts;
-    const accountIndex = accounts.findIndex((a) => a.id === currentAccount.id);
-
-    if (accountIndex === -1) return;
-
-    const next = accounts[accountIndex + 1];
+    const index = accounts.findIndex((candidate) => candidate.id === account.id);
+    const next = index === -1 ? null : accounts[index + 1];
 
     if (!next) return;
 
     selectedAccountId.value = next.id;
-    startLabelEdit(next);
+    await nextTick();
+    labelEdit.start(next.id);
 };
 
 const startMonthlySubEdit = () => {
-    if (editingMonthlySub.value) return;
-
-    monthlySubValue.value = selectedAccount.value?.monthlySubRemaining ?? 0;
-    editingMonthlySub.value = true;
-    nextTick(() => monthlySubInput.value?.select());
-};
-
-const cancelMonthlySubEdit = () => {
-    editingMonthlySub.value = false;
-};
-
-const saveMonthlySub = async () => {
-    if (!editingMonthlySub.value) return;
-    editingMonthlySub.value = false;
-
-    const monthlySubRemaining = Number(monthlySubValue.value);
-    if (!Number.isInteger(monthlySubRemaining) || monthlySubRemaining < 0) {
-        createNotification('error', 'Enter a valid number of days', 2000);
-        return;
-    }
-
-    const account = selectedAccount.value;
-    if (monthlySubRemaining === Number(account.monthlySubRemaining ?? 0)) return;
-
-    await run(
-        () => updateAccount(selectedGame.value.name, account.id, { monthlySubRemaining }),
-        'Subscription updated!',
-    );
+    if (!monthlySubEdit.editing) monthlySubEdit.start(selectedAccount.value.id);
 };
 
 const availableServers = computed(() => Object.keys(currentGameConfig.value?.servers ?? {}));
@@ -659,7 +782,11 @@ const availableServers = computed(() => Object.keys(currentGameConfig.value?.ser
 const formatDigitCounts = (counts) =>
     counts.length === 1 ? `${counts[0]}` : `${counts.slice(0, -1).join(', ')} or ${counts.at(-1)}`;
 
-const uidMaxLength = computed(() => Math.max(...(currentGameConfig.value?.uid_digits ?? [])));
+const uidMaxLength = computed(() => {
+    const digits = currentGameConfig.value?.uid_digits;
+
+    return isCustomGame.value || !digits?.length ? CUSTOM_UID_MAX : Math.max(...digits);
+});
 
 const selectServer = async (server) => {
     editingServer.value = false;
@@ -747,20 +874,25 @@ const handleImageError = (game) => {
 
 const loadedImageVersions = {};
 
-const reportTask = () =>
+const reportTask = () => {
+    const taskTargets = Object.entries(selectedAccount.value.tasks).flatMap(([group, tasks]) =>
+        tasks.filter((task) => !task.custom).map((task) => ({ id: String(task.id), label: task.label, group })),
+    );
+
     openReport({
         game: selectedGame.value.name,
         topic: 'tasks',
         server: selectedAccount.value.server,
-        targets: Object.entries(selectedAccount.value.tasks).flatMap(([group, tasks]) =>
-            tasks.map((task) => ({ id: String(task.id), label: task.label, group })),
-        ),
+        targets: [...taskTargets, { id: NOT_LISTED_TARGET, label: 'Not Listed', group: 'Other' }],
     });
+};
+
+const imageGames = computed(() => trackedGames.value.filter((game) => !game.custom));
 
 watch(
-    () => trackedGames.value.map((game) => `${game.name}:${game.game_version}`).join('|'),
+    () => imageGames.value.map((game) => `${game.name}:${game.game_version}`).join('|'),
     async () => {
-        const games = trackedGames.value;
+        const games = imageGames.value;
 
         await Promise.all(
             games.flatMap((game) => {
