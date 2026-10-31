@@ -1,6 +1,4 @@
-const MINUTE = 60_000;
-const HOUR = 3_600_000;
-const DAY = 86_400_000;
+import { DAY, HOUR, MINUTE } from './serverTime.js';
 
 export function slugify(name) {
     return name
@@ -24,6 +22,19 @@ export function formatCountdown(ms) {
     if (hours > 0) return `${hours}h ${minutes}m`;
 
     return `${minutes}m`;
+}
+
+export function formatDuration(ms) {
+    const parts = [
+        [Math.floor(ms / DAY), 'day'],
+        [Math.floor((ms % DAY) / HOUR), 'hour'],
+        [Math.floor((ms % HOUR) / MINUTE), 'minute'],
+    ];
+
+    return parts
+        .filter(([amount]) => amount > 0)
+        .map(([amount, unit]) => `${amount} ${unit}${amount === 1 ? '' : 's'}`)
+        .join(' ');
 }
 
 export function customGameAbbr(name) {

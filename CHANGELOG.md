@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.2.6] - 2026-10-31
+### Added
+- Custom tasks can now reset on their own: pick Daily, Weekly, Monthly or Endgame as the category and set when it resets. Any other category still ends at its deadline
+- Custom Daily tasks reset every day at a set time, Custom Weekly ones from a first reset every 1 to 52 weeks, and Custom Monthly ones on chosen days at a set time. Days past the end of a short month reset on its last day
+- Custom Endgame tasks take a start and an end and keep cycling with the same length. Before the first start they show "Starts in"
+- Edit custom tasks: hover one and click the gear next to the delete button to change its name, category or timing.
+- If your accounts were saved by a newer version, you can now start fresh instead of only updating. Your current data is kept as a backup you can import later
+### Changed
+- The category field now always lists every category, including Daily, Weekly, Monthly and Endgame, no matter what's typed
+- Categories ignore case and extra spaces, so typing "event" adds the task to Event
+- Adding a task now previews when it ends or next resets
+- Account backups use a new format. Older files are upgraded automatically and kept as a backup
+### Fixed
+- The schedule's month arrows no longer move when the month changes
+
 ## [1.2.5] - 2026-10-31
 ### Added
 - Custom games: add your own game from "+ Add Game" and track it like any other, with accounts, UIDs and labels. Click its name to rename it

@@ -127,6 +127,9 @@ export default {
         renameCustomGame: withAccounts((service, gameKey, name) => service.renameCustomGame(gameKey, name)),
         deleteCustomGame: withAccounts((service, gameKey) => service.deleteCustomGame(gameKey)),
         addCustomTask: withAccounts((service, gameKey, task) => service.addCustomTask(gameKey, task)),
+        updateCustomTask: withAccounts((service, gameKey, taskId, task) =>
+            service.updateCustomTask(gameKey, taskId, task),
+        ),
         deleteCustomTask: withAccounts((service, gameKey, taskId) => service.deleteCustomTask(gameKey, taskId)),
         exportToFile: async () => {
             downloadTextFile(backupFileName(), (await ready()).exportAccounts());

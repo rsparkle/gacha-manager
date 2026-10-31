@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('api', {
     renameCustomGame: invoke('renameCustomGame'),
     deleteCustomGame: invoke('deleteCustomGame'),
     addCustomTask: invoke('addCustomTask'),
+    updateCustomTask: invoke('updateCustomTask'),
     deleteCustomTask: invoke('deleteCustomTask'),
     exportAccounts: invoke('exportAccounts'),
     importAccounts: invoke('importAccounts'),

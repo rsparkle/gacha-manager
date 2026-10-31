@@ -49,23 +49,28 @@ function recoverCorruptAccounts(filePath, err) {
         throw err;
     }
 
-    fs.copyFileSync(filePath, backupPath(filePath, `corrupt-${Date.now()}`));
+    return startFresh(filePath, 'corrupt');
+}
+
+function startFresh(filePath, reason) {
+    fs.copyFileSync(filePath, backupPath(filePath, `${reason}-${Date.now()}`));
     writeFileAtomic(filePath, serializeUserData(emptyUserData()));
 
     return emptyUserData();
 }
 
-function askToUpdate(err) {
+function askToUpdate(filePath, err) {
     const choice = dialog.showMessageBoxSync({
         type: 'error',
         title: 'Accounts file is from a newer version',
         message: 'Your accounts were saved by a newer version of Gacha Manager.',
-        detail: 'Download and install the latest version to open them. Nothing was changed.',
-        buttons: ['Download latest version', 'Quit'],
+        detail: 'Download and install the latest version to open them, or start fresh. Starting fresh saves your current file as a backup first, so you can import it after updating.',
+        buttons: ['Download latest version', 'Start fresh', 'Quit'],
         defaultId: 0,
-        cancelId: 1,
+        cancelId: 2,
     });
 
+    if (choice === 1) return startFresh(filePath, 'newer');
     if (choice === 0) shell.openExternal(RELEASES_URL);
 
     err.userDeclined = true;
@@ -83,7 +88,7 @@ function loadAccounts(filePath) {
     try {
         result = parseUserData(fs.readFileSync(filePath, 'utf-8'));
     } catch (err) {
-        if (err instanceof NewerUserDataVersionError) return askToUpdate(err);
+        if (err instanceof NewerUserDataVersionError) return askToUpdate(filePath, err);
         if (err instanceof UserDataMigrationError) throw err;
 
         return recoverCorruptAccounts(filePath, err);

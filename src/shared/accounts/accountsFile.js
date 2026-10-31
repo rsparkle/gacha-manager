@@ -1,6 +1,6 @@
-import { emptyCustomData, isValidCustomData } from './customData.js';
+import { emptyCustomData, isValidCustomData, normalizeCustomData } from './customData.js';
 
-export const USER_DATA_VERSION = 2;
+export const USER_DATA_VERSION = 3;
 
 export class UserDataMigrationError extends Error {
     name = 'UserDataMigrationError';
@@ -9,6 +9,7 @@ export class UserDataMigrationError extends Error {
 const MIGRATIONS = {
     0: (state) => state,
     1: (state) => ({ ...state, custom: emptyCustomData() }),
+    2: (state) => state,
 };
 
 export class NewerUserDataVersionError extends Error {
@@ -95,7 +96,7 @@ export function migrateUserData(data) {
         throw new Error('Invalid custom games or tasks');
     }
 
-    return { accounts: state.accounts, custom: state.custom, fromVersion };
+    return { accounts: state.accounts, custom: normalizeCustomData(state.custom), fromVersion };
 }
 
 export function backupFileName(date = new Date()) {

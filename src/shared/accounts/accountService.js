@@ -8,16 +8,18 @@ import {
     CUSTOM_TASK_MAX_MINUTES,
     computeCustomTask,
     createCustomId,
+    currentTimeZone,
     customTaskEnd,
     isCustomKey,
     nextCustomGameColor,
     nextCustomGameName,
+    normalizeCustomReset,
 } from './customData.js';
 import { getLiveVersion } from '../liveVersion.js';
+import { DAY } from '../serverTime.js';
 
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
 const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'deadlineNotifications', 'monthlySubNotifications'];
-const DAY_MS = 86_400_000;
 
 function withoutKey(object, key) {
     const next = { ...object };
@@ -318,8 +320,8 @@ export function createAccountService({ storage, settings }) {
 
         if (current.isCompleted === Boolean(completed)) return;
 
-        if (completed && current.ended) {
-            throw new Error('This task has already ended');
+        if (completed && current.isDisabled) {
+            throw new Error(current.ended ? 'This task has already ended' : 'This task is not active right now');
         }
 
         const tasks = completed ? { ...account.tasks, [taskId]: now.toISOString() } : withoutKey(account.tasks, taskId);
@@ -406,7 +408,7 @@ export function createAccountService({ storage, settings }) {
                 try {
                     const currentReset = processor.getLastDailyReset(gameName, account.server, now);
                     const lastReset = processor.getLastDailyReset(gameName, account.server, new Date(lastMs));
-                    elapsedDays = Math.round((currentReset - lastReset) / DAY_MS);
+                    elapsedDays = Math.round((currentReset - lastReset) / DAY);
                 } catch (err) {
                     console.warn(err.message);
                     continue;
@@ -534,17 +536,12 @@ export function createAccountService({ storage, settings }) {
         clearMissingFavorite();
     }
 
-    function addCustomTask(gameKey, { label, category, minutes } = {}) {
-        if (!hasGame(gameKey)) {
-            throw new Error(`Unknown game: ${gameKey}`);
-        }
-
+    function buildCustomTask(id, { label, category, minutes, reset } = {}, zone) {
         const task = {
-            id: createCustomId(),
+            id,
             label: String(label ?? '').trim(),
             category: String(category ?? '').trim(),
         };
-        const duration = Number(minutes);
 
         if (!task.label) throw new Error('Give the task a name');
         if (task.label.length > CUSTOM_TASK_LABEL_MAX) {
@@ -556,16 +553,50 @@ export function createAccountService({ storage, settings }) {
             throw new Error(`The category can be up to ${CUSTOM_TASK_CATEGORY_MAX} characters`);
         }
 
-        if (!Number.isInteger(duration) || duration < 1) throw new Error('Set a deadline of at least 1 minute');
-        if (duration > CUSTOM_TASK_MAX_MINUTES) throw new Error('The deadline can be at most 366 days away');
+        if (reset != null) {
+            task.reset = normalizeCustomReset({ ...reset, zone });
+        } else {
+            const duration = Number(minutes);
 
-        const now = new Date();
-        task.createdAt = now.toISOString();
-        task.endsAt = customTaskEnd(duration, now).toISOString();
+            if (!Number.isInteger(duration) || duration < 1) throw new Error('Set a deadline of at least 1 minute');
+            if (duration > CUSTOM_TASK_MAX_MINUTES) throw new Error('The deadline can be at most 366 days away');
+
+            const now = new Date();
+            task.createdAt = now.toISOString();
+            task.endsAt = customTaskEnd(duration, now).toISOString();
+        }
+
+        return task;
+    }
+
+    function addCustomTask(gameKey, input) {
+        if (!hasGame(gameKey)) {
+            throw new Error(`Unknown game: ${gameKey}`);
+        }
+
+        const task = buildCustomTask(createCustomId(), input, currentTimeZone());
 
         save(accounts, {
             ...custom,
             tasks: { ...custom.tasks, [gameKey]: [...(custom.tasks[gameKey] ?? []), task] },
+        });
+
+        return task;
+    }
+
+    function updateCustomTask(gameKey, taskId, input) {
+        const customTasks = custom.tasks[gameKey] ?? [];
+        const existing = customTasks.find((task) => task.id === taskId);
+
+        if (!existing) {
+            throw new Error(`Unknown task: ${taskId}`);
+        }
+
+        const task = buildCustomTask(taskId, input, existing.reset?.zone ?? currentTimeZone());
+
+        save(accounts, {
+            ...custom,
+            tasks: { ...custom.tasks, [gameKey]: customTasks.map((stored) => (stored.id === taskId ? task : stored)) },
         });
 
         return task;
@@ -635,6 +666,7 @@ export function createAccountService({ storage, settings }) {
         renameCustomGame,
         deleteCustomGame,
         addCustomTask,
+        updateCustomTask,
         deleteCustomTask,
         syncCalendarMonthlySubs,
         saveSettings,

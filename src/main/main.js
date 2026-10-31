@@ -733,6 +733,8 @@ handle('deleteCustomGame', (gameKey) => accounts.deleteCustomGame(gameKey));
 
 handle('addCustomTask', ({ gameKey, task }) => accounts.addCustomTask(gameKey, task));
 
+handle('updateCustomTask', ({ gameKey, taskId, task }) => accounts.updateCustomTask(gameKey, taskId, task));
+
 handle('deleteCustomTask', ({ gameKey, taskId }) => accounts.deleteCustomTask(gameKey, taskId));
 
 handle('exportAccounts', exportAccountsToFile);

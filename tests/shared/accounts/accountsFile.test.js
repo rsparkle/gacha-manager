@@ -88,8 +88,27 @@ describe('accounts.json versions', () => {
         expect(custom.tasks['Genshin Impact']).toHaveLength(1);
     });
 
+    it('v3 keeps reset rules', () => {
+        const { custom } = migrateUserData(fixture(3));
+        const [weekly, monthly] = custom.tasks['custom:5d3e9b70-1c2a-4f8e-9b6d-2a7c4e1f0b93'];
+        const [, daily, cycle] = custom.tasks['Genshin Impact'];
+
+        expect(weekly.reset).toEqual({
+            kind: 'weekly',
+            zone: 'Europe/Lisbon',
+            anchor: '2026-11-02T04:00:00.000Z',
+            everyWeeks: 1,
+        });
+        expect(monthly.reset).toMatchObject({ kind: 'monthly', time: '04:00', monthDays: [1, 15] });
+        expect(daily.reset).toMatchObject({ kind: 'daily', time: '04:00' });
+        expect(cycle.reset).toMatchObject({ kind: 'cycle', startsAt: '2026-10-26T04:00:00.000Z' });
+        expect(weekly).not.toHaveProperty('endsAt');
+    });
+
     it.each(versions.slice(0, -1))('migration from v%i exists', (version) => {
-        expect(() => migrateUserData({ version, accounts: {} })).not.toThrow();
+        const custom = version >= 2 ? { custom: EMPTY_CUSTOM } : {};
+
+        expect(() => migrateUserData({ version, accounts: {}, ...custom })).not.toThrow();
     });
 
     it('keeps every account', () => {

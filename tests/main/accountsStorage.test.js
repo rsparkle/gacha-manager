@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccountsFileStorage } from '../../src/main/accountsStorage.js';
+import { USER_DATA_VERSION } from '../../src/shared/accounts/accountsFile.js';
 
 const state = vi.hoisted(() => ({ dialogChoice: 1 }));
 
@@ -40,7 +41,7 @@ const CUSTOM = {
         ],
     },
 };
-const EMPTY_FILE = { version: 2, accounts: {}, custom: EMPTY_CUSTOM };
+const EMPTY_FILE = { version: USER_DATA_VERSION, accounts: {}, custom: EMPTY_CUSTOM };
 
 beforeEach(() => {
     dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gacha-manager-test-'));
@@ -62,7 +63,7 @@ describe('loading accounts.json', () => {
         writeAccountsFile(legacy);
 
         expect(storage().load()).toEqual({ accounts: legacy, custom: EMPTY_CUSTOM });
-        expect(readAccountsFile()).toEqual({ version: 2, accounts: legacy, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual({ version: USER_DATA_VERSION, accounts: legacy, custom: EMPTY_CUSTOM });
         expect(JSON.parse(fs.readFileSync(path.join(dir, 'accounts.v0-backup.json'), 'utf-8'))).toEqual(legacy);
     });
 
@@ -71,18 +72,18 @@ describe('loading accounts.json', () => {
         writeAccountsFile(v1);
 
         expect(storage().load()).toEqual({ accounts: v1.accounts, custom: EMPTY_CUSTOM });
-        expect(readAccountsFile()).toEqual({ version: 2, accounts: v1.accounts, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual({ version: USER_DATA_VERSION, accounts: v1.accounts, custom: EMPTY_CUSTOM });
         expect(JSON.parse(fs.readFileSync(path.join(dir, 'accounts.v1-backup.json'), 'utf-8'))).toEqual(v1);
     });
 
     it('loads custom games and tasks', () => {
-        writeAccountsFile({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
+        writeAccountsFile({ version: USER_DATA_VERSION, accounts: { Test: [account()] }, custom: CUSTOM });
 
         expect(storage().load()).toEqual({ accounts: { Test: [account()] }, custom: CUSTOM });
     });
 
     it('no backup when current', () => {
-        writeAccountsFile({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
+        writeAccountsFile({ version: USER_DATA_VERSION, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
 
         storage().load();
 
@@ -108,7 +109,7 @@ describe('loading accounts.json', () => {
         expect(fs.readFileSync(accountsPath(), 'utf-8')).toBe('{ not json');
     });
 
-    it('file from newer version', () => {
+    it('file from newer version: download', () => {
         const newer = { version: 99, accounts: {} };
         writeAccountsFile(newer);
         state.dialogChoice = 0;
@@ -125,7 +126,35 @@ describe('saving accounts.json', () => {
     it('writes the versioned file without leftovers', () => {
         storage().save({ accounts: { Test: [account()] }, custom: CUSTOM });
 
-        expect(readAccountsFile()).toEqual({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
+        expect(readAccountsFile()).toEqual({
+            version: USER_DATA_VERSION,
+            accounts: { Test: [account()] },
+            custom: CUSTOM,
+        });
         expect(fs.readdirSync(dir)).toEqual(['accounts.json']);
+    });
+
+    it('file from newer version: start fresh', () => {
+        const newer = { version: 99, accounts: {} };
+        writeAccountsFile(newer);
+        state.dialogChoice = 1;
+
+        expect(storage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readAccountsFile()).toEqual(EMPTY_FILE);
+        expect(shell.openExternal).not.toHaveBeenCalled();
+
+        const backup = fs.readdirSync(dir).find((name) => name.startsWith('accounts.newer-'));
+
+        expect(JSON.parse(fs.readFileSync(path.join(dir, backup), 'utf-8'))).toEqual(newer);
+    });
+
+    it('file from newer version: quit', () => {
+        const newer = { version: 99, accounts: {} };
+        writeAccountsFile(newer);
+        state.dialogChoice = 2;
+
+        expect(() => storage().load()).toThrow(expect.objectContaining({ userDeclined: true }));
+        expect(shell.openExternal).not.toHaveBeenCalled();
+        expect(readAccountsFile()).toEqual(newer);
     });
 });

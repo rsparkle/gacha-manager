@@ -82,6 +82,10 @@ function addCustomTask(gameKey, task) {
     return changeAccounts(() => platform.accounts.addCustomTask(gameKey, task));
 }
 
+function updateCustomTask(gameKey, taskId, task) {
+    return changeAccounts(() => platform.accounts.updateCustomTask(gameKey, taskId, task));
+}
+
 function deleteCustomTask(gameKey, taskId) {
     return changeAccounts(() => platform.accounts.deleteCustomTask(gameKey, taskId));
 }
@@ -117,6 +121,7 @@ export function useAccounts() {
         renameCustomGame,
         deleteCustomGame,
         addCustomTask,
+        updateCustomTask,
         deleteCustomTask,
         exportAccounts,
         importAccounts,

@@ -86,6 +86,18 @@ export function createSettingsStore() {
     };
 }
 
+const NEWER_DATA_PROMPT =
+    'Your accounts were saved by a newer version of Gacha Manager.\n\n' +
+    'Reload the page to get the latest version, or press OK to start fresh. ' +
+    'Starting fresh keeps your current data as a backup, so you can import it after updating.';
+
+function startFresh(text, reason) {
+    write(`${KEYS.accounts}.${reason}-${Date.now()}`, text);
+    write(KEYS.accounts, serializeUserData(emptyUserData()));
+
+    return emptyUserData();
+}
+
 export function createAccountsStorage() {
     return {
         load() {
@@ -98,13 +110,16 @@ export function createAccountsStorage() {
             try {
                 result = parseUserData(text);
             } catch (err) {
-                if (err instanceof NewerUserDataVersionError || err instanceof UserDataMigrationError) throw err;
+                if (err instanceof NewerUserDataVersionError) {
+                    if (globalThis.confirm?.(NEWER_DATA_PROMPT)) return startFresh(text, 'newer');
+                    throw err;
+                }
+
+                if (err instanceof UserDataMigrationError) throw err;
 
                 console.error('Saved accounts could not be read, starting fresh:', err);
-                write(`${KEYS.accounts}.corrupt-${Date.now()}`, text);
-                write(KEYS.accounts, serializeUserData(emptyUserData()));
 
-                return emptyUserData();
+                return startFresh(text, 'corrupt');
             }
 
             if (result.fromVersion !== USER_DATA_VERSION) {

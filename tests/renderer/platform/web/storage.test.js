@@ -7,6 +7,7 @@ import {
     write,
 } from '../../../../src/renderer/platform/web/storage.js';
 import { createLocalStorage } from '../../../helpers/stores.js';
+import { USER_DATA_VERSION } from '../../../../src/shared/accounts/accountsFile.js';
 
 let localStorage;
 
@@ -101,11 +102,18 @@ describe('accounts storage', () => {
     it('saves the versioned file', () => {
         createAccountsStorage().save({ accounts: { Test: [account()] }, custom: CUSTOM });
 
-        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({
+            version: USER_DATA_VERSION,
+            accounts: { Test: [account()] },
+            custom: CUSTOM,
+        });
     });
 
     it('loads custom games', () => {
-        localStorage.setItem(KEYS.accounts, JSON.stringify({ version: 2, accounts: {}, custom: CUSTOM }));
+        localStorage.setItem(
+            KEYS.accounts,
+            JSON.stringify({ version: USER_DATA_VERSION, accounts: {}, custom: CUSTOM }),
+        );
 
         expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: CUSTOM });
     });
@@ -115,7 +123,11 @@ describe('accounts storage', () => {
         localStorage.setItem(KEYS.accounts, legacy);
 
         expect(createAccountsStorage().load()).toEqual({ accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
-        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({
+            version: USER_DATA_VERSION,
+            accounts: { Test: [account()] },
+            custom: EMPTY_CUSTOM,
+        });
         expect(localStorage.getItem(`${KEYS.accounts}.v0-backup`)).toBe(legacy);
     });
 
@@ -125,7 +137,11 @@ describe('accounts storage', () => {
 
         createAccountsStorage().load();
 
-        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: { Test: [account()] }, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({
+            version: USER_DATA_VERSION,
+            accounts: { Test: [account()] },
+            custom: EMPTY_CUSTOM,
+        });
         expect(localStorage.getItem(`${KEYS.accounts}.v1-backup`)).toBe(v1);
     });
 
@@ -134,21 +150,42 @@ describe('accounts storage', () => {
         localStorage.setItem(KEYS.accounts, '{ not json');
 
         expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
-        expect(readJson(KEYS.accounts)).toEqual({ version: 2, accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({ version: USER_DATA_VERSION, accounts: {}, custom: EMPTY_CUSTOM });
 
         const backup = [...localStorage.items.keys()].find((key) => key.startsWith(`${KEYS.accounts}.corrupt-`));
 
         expect(localStorage.getItem(backup)).toBe('{ not json');
     });
 
-    it('newer version is left untouched', () => {
+    it('newer version: declining leaves it untouched', () => {
         const newer = JSON.stringify({ version: 99, accounts: {} });
         localStorage.setItem(KEYS.accounts, newer);
+        vi.stubGlobal(
+            'confirm',
+            vi.fn(() => false),
+        );
 
         expect(() => createAccountsStorage().load()).toThrow(
             expect.objectContaining({ name: 'NewerUserDataVersionError' }),
         );
+        expect(globalThis.confirm).toHaveBeenCalledWith(expect.stringContaining('newer version'));
         expect(localStorage.getItem(KEYS.accounts)).toBe(newer);
+    });
+
+    it('newer version: start fresh keeps a backup', () => {
+        const newer = JSON.stringify({ version: 99, accounts: {} });
+        localStorage.setItem(KEYS.accounts, newer);
+        vi.stubGlobal(
+            'confirm',
+            vi.fn(() => true),
+        );
+
+        expect(createAccountsStorage().load()).toEqual({ accounts: {}, custom: EMPTY_CUSTOM });
+        expect(readJson(KEYS.accounts)).toEqual({ version: USER_DATA_VERSION, accounts: {}, custom: EMPTY_CUSTOM });
+
+        const backup = [...localStorage.items.keys()].find((key) => key.startsWith(`${KEYS.accounts}.newer-`));
+
+        expect(localStorage.getItem(backup)).toBe(newer);
     });
 });
 

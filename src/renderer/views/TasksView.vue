@@ -177,11 +177,7 @@
                             >
                                 Report
                             </button>
-                            <button
-                                v-if="taskCategories.length > 0"
-                                class="btn-edit"
-                                @click="showCustomTaskDialog = true"
-                            >
+                            <button v-if="taskCategories.length > 0" class="btn-edit" @click="openCustomTaskDialog()">
                                 Add Task
                             </button>
                             <button v-if="!uidEdit.editing" class="btn-edit" @click="startUidEdit">Edit UID</button>
@@ -383,19 +379,34 @@
                                             ></div>
                                         </div>
                                     </div>
+                                    <div v-else-if="task.startsIn" class="task-completion">
+                                        <span class="task-countdown"
+                                            >Starts in {{ formatCountdown(task.startsIn) }}</span
+                                        >
+                                    </div>
                                     <div v-else-if="task.ended" class="task-completion">
                                         <span class="task-countdown">Ended</span>
                                     </div>
-                                    <button
-                                        v-if="task.custom"
-                                        type="button"
-                                        class="task-delete"
-                                        title="Delete task"
-                                        aria-label="Delete task"
-                                        @click.stop="removeCustomTask(task)"
-                                    >
-                                        ×
-                                    </button>
+                                    <div v-if="task.custom" class="task-actions">
+                                        <button
+                                            type="button"
+                                            class="task-action task-action--edit"
+                                            title="Edit task"
+                                            aria-label="Edit task"
+                                            @click.stop="openCustomTaskDialog(task)"
+                                        >
+                                            ⚙&#xFE0E;
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="task-action task-action--delete"
+                                            title="Delete task"
+                                            aria-label="Delete task"
+                                            @click.stop="removeCustomTask(task)"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -403,7 +414,7 @@
                             v-if="taskCategories.length === 0"
                             type="button"
                             class="task-card task-card-add"
-                            @click="showCustomTaskDialog = true"
+                            @click="openCustomTaskDialog()"
                         >
                             + Add task
                         </button>
@@ -420,6 +431,7 @@
         :game-key="selectedGame?.name ?? null"
         :game-name="selectedGame ? gameLabel(selectedGame) : ''"
         :categories="taskCategories"
+        :task="editingTask"
         @close="showCustomTaskDialog = false"
     />
 </template>
@@ -469,6 +481,7 @@ const sidebarIcons = ref({});
 const showGamePicker = ref(false);
 const showRecentCodes = ref(false);
 const showCustomTaskDialog = ref(false);
+const editingTask = ref(null);
 const selectedGameName = ref(null);
 const selectedAccountId = ref(null);
 const failedImages = ref(new Set());
@@ -730,6 +743,11 @@ const deleteGame = async () => {
 
 const startGameNameEdit = () => {
     if (isCustomGame.value) gameNameEdit.start(selectedGame.value.name);
+};
+
+const openCustomTaskDialog = (task = null) => {
+    editingTask.value = task;
+    showCustomTaskDialog.value = true;
 };
 
 const removeCustomTask = async (task) => {

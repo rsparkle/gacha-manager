@@ -1,15 +1,12 @@
+import { DAY, MINUTE, compileGameClock, parseClock, shiftDate, toDateKey, zonedInstant } from './serverTime.js';
 import {
-    DAY,
-    MINUTE,
-    addZonedDays,
-    compileGameClock,
-    localDate,
-    mod,
-    parseClock,
-    shiftDate,
-    toDateKey,
-    zonedInstant,
-} from './serverTime.js';
+    anchoredWindow,
+    applyResetWindow,
+    dailyWindow,
+    getLastDailyReset,
+    monthlyWindow,
+    weeklyWindow,
+} from './resetWindows.js';
 import {
     currentPatch,
     patchEndDate,
@@ -106,65 +103,14 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         );
     }
 
-    function getLastDailyReset(now, server) {
-        const today = toDateKey(localDate(now, server.zone));
-        const reset = zonedInstant(today, server.resetMinutes, server.zone);
-
-        return reset > now ? zonedInstant(shiftDate(today, -1), server.resetMinutes, server.zone) : reset;
-    }
-
-    function getWeeklyWindow({ gameConfig, lastDailyReset, server, reset }) {
-        const weekday = reset.weekday ?? gameConfig.weekly_reset_weekday;
-        const serverWeekday = localDate(lastDailyReset, server.zone).getUTCDay();
-        const last = addZonedDays(lastDailyReset, -mod(serverWeekday - weekday, 7), server.zone);
-
-        return { last, next: addZonedDays(last, 7, server.zone) };
-    }
-
-    function getMonthlyWindow({ now, server, lastDailyReset, reset }) {
-        const local = localDate(lastDailyReset, server.zone);
-        const year = local.getUTCFullYear();
-        const month = local.getUTCMonth();
-        const boundaries = [];
-
-        for (const shift of [-1, 0, 1]) {
-            const monthLength = new Date(Date.UTC(year, month + shift + 1, 0)).getUTCDate();
-
-            for (const day of reset.monthDays) {
-                const dateKey = toDateKey(Date.UTC(year, month + shift, Math.min(day, monthLength)));
-
-                boundaries.push(zonedInstant(dateKey, server.resetMinutes, server.zone));
-            }
-        }
-
-        boundaries.sort((a, b) => a - b);
-
-        const nextIndex = boundaries.findIndex((date) => date > now);
-
-        return {
-            last: boundaries[nextIndex - 1],
-            next: boundaries[nextIndex],
-        };
-    }
-
     function getIntervalWindow(context) {
         const { now, reset } = context;
 
         const startTime = reset.startTime ?? 'dailyReset';
         const { zone } = clockFor(startTime, context);
         const anchor = atLabel(reset.anchor, startTime, context);
-        const cycles = Math.floor((now - anchor) / (reset.intervalDays * DAY));
 
-        let last = addZonedDays(anchor, cycles * reset.intervalDays, zone);
-
-        if (last > now) last = addZonedDays(last, -reset.intervalDays, zone);
-
-        let next = addZonedDays(last, reset.intervalDays, zone);
-
-        if (next <= now) {
-            last = next;
-            next = addZonedDays(last, reset.intervalDays, zone);
-        }
+        let { last, next } = anchoredWindow({ now, anchor, intervalDays: reset.intervalDays, zone });
 
         if (reset.patchCollision) {
             const maintenanceStart = getPatchMaintenanceStarts(context).find(
@@ -194,12 +140,9 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
     }
 
     const RESET_HANDLERS = {
-        daily: ({ lastDailyReset, server }) => ({
-            last: lastDailyReset,
-            next: addZonedDays(lastDailyReset, 1, server.zone),
-        }),
-        weekly: getWeeklyWindow,
-        monthly: getMonthlyWindow,
+        daily: dailyWindow,
+        weekly: weeklyWindow,
+        monthly: monthlyWindow,
         interval: getIntervalWindow,
         window: getWindow,
     };
@@ -357,23 +300,6 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         task.duration = 0;
         task.nextReset = 0;
         task.isCompleted = false;
-    }
-
-    function applyResetWindow(task, { last, next, isDisabled }, now) {
-        task.isDisabled = Boolean(isDisabled);
-
-        task.duration = task.isDisabled ? 0 : next ? next - last : null;
-
-        task.nextReset = task.isDisabled ? 0 : next ? next - now : null;
-
-        const completedAt = task.last_completed == null ? NaN : new Date(task.last_completed).getTime();
-
-        task.isCompleted =
-            !task.isDisabled &&
-            Number.isFinite(completedAt) &&
-            completedAt >= last.getTime() &&
-            (next === null || completedAt < next.getTime()) &&
-            completedAt <= now.getTime();
     }
 
     function assertValidNow(now) {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { customGameAbbr, formatCountdown, slugify, thumbnailPath } from '../../src/shared/format.js';
+import { customGameAbbr, formatCountdown, formatDuration, slugify, thumbnailPath } from '../../src/shared/format.js';
 
 describe('slugify', () => {
     it.each([
@@ -66,6 +66,22 @@ describe('formatCountdown', () => {
         [41 * DAY + 23 * HOUR, '41d 23h'],
     ])('%i ms -> %s', (ms, text) => {
         expect(formatCountdown(ms)).toBe(text);
+    });
+});
+
+describe('formatDuration', () => {
+    const MINUTE = 60_000;
+    const HOUR = 60 * MINUTE;
+    const DAY = 24 * HOUR;
+
+    it.each([
+        [14 * DAY, '14 days'],
+        [DAY + HOUR + MINUTE, '1 day 1 hour 1 minute'],
+        [27 * DAY + 2 * HOUR + 34 * MINUTE, '27 days 2 hours 34 minutes'],
+        [12 * HOUR + 30 * MINUTE, '12 hours 30 minutes'],
+        [MINUTE, '1 minute'],
+    ])('%i → %s', (ms, text) => {
+        expect(formatDuration(ms)).toBe(text);
     });
 });
 

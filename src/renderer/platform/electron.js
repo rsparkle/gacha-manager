@@ -34,6 +34,7 @@ export default {
         renameCustomGame: (gameKey, name) => call('renameCustomGame', { gameKey, name }),
         deleteCustomGame: (gameKey) => call('deleteCustomGame', gameKey),
         addCustomTask: (gameKey, task) => call('addCustomTask', { gameKey, task }),
+        updateCustomTask: (gameKey, taskId, task) => call('updateCustomTask', { gameKey, taskId, task }),
         deleteCustomTask: (gameKey, taskId) => call('deleteCustomTask', { gameKey, taskId }),
         exportToFile: () => call('exportAccounts'),
         importFromFile: () => call('importAccounts'),

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAccountService } from '../../../src/shared/accounts/accountService.js';
 import { serializeUserData } from '../../../src/shared/accounts/accountsFile.js';
+import { currentTimeZone } from '../../../src/shared/accounts/customData.js';
 import { createMemoryStorage, createStore } from '../../helpers/stores.js';
 import { makeConfig, makeTask, makeTasks } from '../../helpers/builders.js';
 
@@ -650,6 +651,177 @@ describe('custom tasks', () => {
         expect(open).toMatchObject({ ended: true, isDisabled: true, isCompleted: false, nextReset: 0, duration: 0 });
         expect(done).toMatchObject({ ended: true, isDisabled: false, isCompleted: true, nextReset: 0, duration: 0 });
         expect(() => service.setTaskCompleted(GAME, task.id, 'acc-1', true)).toThrow('This task has already ended');
+    });
+
+    it('reset tasks store the rule with the local time zone and no deadline', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+
+        const task = service.addCustomTask(GAME, {
+            label: 'Store refresh',
+            category: 'Weekly',
+            minutes: 90,
+            reset: { kind: 'weekly', zone: 'Mars/Olympus', anchor: '2026-11-10T13:30:00Z', everyWeeks: '2' },
+        });
+
+        expect(task).toEqual({
+            id: expect.stringMatching(/^custom:/),
+            label: 'Store refresh',
+            category: 'Weekly',
+            reset: { kind: 'weekly', zone: currentTimeZone(), anchor: '2026-11-10T13:30:00.000Z', everyWeeks: 2 },
+        });
+        expect(storage.savedCustom.tasks[GAME]).toEqual([task]);
+        expect(tasksOf(service, GAME).Weekly.find((entry) => entry.id === task.id)).toMatchObject({
+            ended: false,
+            duration: 14 * 24 * 3_600_000,
+            nextReset: 90 * 60_000,
+        });
+    });
+
+    it('reset tasks reopen after the reset instead of ending', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, {
+            label: 'Login',
+            category: 'Login bonus',
+            reset: { kind: 'daily', time: '00:00' },
+        });
+        const current = () => tasksOf(service, GAME)['Login bonus'][0];
+
+        service.setTaskCompleted(GAME, task.id, 'acc-1', true);
+        expect(current()).toMatchObject({ isCompleted: true });
+
+        vi.setSystemTime(new Date('2026-11-11T12:01:00Z'));
+
+        expect(current()).toMatchObject({ ended: false, isDisabled: false, isCompleted: false });
+        expect(() => service.setTaskCompleted(GAME, task.id, 'acc-1', true)).not.toThrow();
+        expect(current()).toMatchObject({ isCompleted: true });
+    });
+
+    it('cycle tasks land on the current cycle', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+
+        const task = service.addCustomTask(GAME, {
+            label: 'Abyss',
+            category: 'Endgame',
+            reset: { kind: 'cycle', startsAt: '2026-10-26T04:00:00Z', endsAt: '2026-11-09T04:00:00Z' },
+        });
+
+        expect(task.reset).toMatchObject({ startsAt: '2026-10-26T04:00:00.000Z', endsAt: '2026-11-09T04:00:00.000Z' });
+        expect(tasksOf(service, GAME).Endgame[0]).toMatchObject({
+            ended: false,
+            isDisabled: false,
+            duration: 14 * 24 * 3_600_000,
+            nextReset: 12 * 24 * 3_600_000 + 16 * 3_600_000,
+        });
+    });
+
+    it('cycles that have not started cannot be completed', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, {
+            label: 'Abyss',
+            category: 'Endgame',
+            reset: { kind: 'cycle', startsAt: '2026-12-01T04:00:00Z', endsAt: '2026-12-15T04:00:00Z' },
+        });
+
+        expect(() => service.setTaskCompleted(GAME, task.id, 'acc-1', true)).toThrow(
+            'This task is not active right now',
+        );
+        expect(storage.saved[GAME][0].tasks).toEqual({});
+    });
+
+    it.each([
+        [{ kind: 'hourly' }, 'Unknown reset rule'],
+        [{ kind: 'daily' }, 'Set a reset time'],
+        [{ kind: 'weekly', anchor: '2026-11-02T04:00:00Z', everyWeeks: 0 }, 'Reset every 1 to 52 weeks'],
+        [{ kind: 'monthly', time: '04:00', monthDays: [] }, 'Pick at least one day'],
+        [{ kind: 'cycle', startsAt: '2026-11-08T04:00:00Z', endsAt: '2026-11-01T04:00:00Z' }, 'after the start'],
+    ])('rejects the reset rule %j without saving', (reset, message) => {
+        const { service, storage } = load();
+
+        expect(() => service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60, reset })).toThrow(
+            message,
+        );
+        expect(storage.saves).toBe(0);
+    });
+
+    it('edit keeps the id and completions', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60 });
+        service.setTaskCompleted(GAME, task.id, 'acc-1', true);
+
+        const edited = service.updateCustomTask(GAME, task.id, {
+            label: ' Login bonus ',
+            category: 'Login',
+            reset: { kind: 'daily', time: '00:00' },
+        });
+
+        expect(edited).toEqual({
+            id: task.id,
+            label: 'Login bonus',
+            category: 'Login',
+            reset: { kind: 'daily', zone: currentTimeZone(), time: '00:00' },
+        });
+        expect(storage.savedCustom.tasks[GAME]).toEqual([edited]);
+        expect(storage.saved[GAME][0].tasks).toEqual({ [task.id]: '2026-11-10T12:00:00.000Z' });
+        expect(tasksOf(service, GAME).Login[0]).toMatchObject({ id: task.id, isCompleted: true });
+    });
+
+    it('edit keeps the zone the rule was made in', () => {
+        const zoned = { kind: 'daily', zone: 'Asia/Tokyo', time: '04:00' };
+        const { service } = load({
+            accounts: { [GAME]: [account()] },
+            custom: {
+                games: {},
+                tasks: { [GAME]: [{ id: 'custom:t', label: 'Login', category: 'Daily', reset: zoned }] },
+            },
+        });
+
+        expect(
+            service.updateCustomTask(GAME, 'custom:t', {
+                label: 'Login',
+                category: 'Daily',
+                reset: { kind: 'daily', time: '05:00' },
+            }).reset,
+        ).toEqual({
+            ...zoned,
+            time: '05:00',
+        });
+    });
+
+    it('edit can turn a rule back into a one-off', () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, {
+            label: 'Login',
+            category: 'Daily',
+            reset: { kind: 'daily', time: '00:00' },
+        });
+
+        expect(service.updateCustomTask(GAME, task.id, { label: 'Login', category: 'Event', minutes: 30 })).toEqual({
+            id: task.id,
+            label: 'Login',
+            category: 'Event',
+            createdAt: '2026-11-10T12:00:00.000Z',
+            endsAt: '2026-11-10T12:30:00.000Z',
+        });
+    });
+
+    it('edit rejects bad input and unknown tasks without saving', () => {
+        const { service, storage } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60 });
+        const saves = storage.saves;
+
+        expect(() => service.updateCustomTask(GAME, task.id, { label: '', category: 'Events', minutes: 60 })).toThrow(
+            'Give the task a name',
+        );
+        expect(() => service.updateCustomTask(GAME, 'custom:nope', { label: 'x', category: 'y', minutes: 5 })).toThrow(
+            'Unknown task: custom:nope',
+        );
+        expect(storage.saves).toBe(saves);
     });
 
     it('delete removes the task and its completions', () => {

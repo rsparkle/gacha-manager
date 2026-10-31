@@ -731,7 +731,7 @@
 
 .task.custom:hover,
 .task.custom:focus-within {
-    padding-right: 32px;
+    padding-right: 56px;
 }
 
 .task:hover {
@@ -764,6 +764,14 @@
     opacity: 0.34;
     cursor: default;
     pointer-events: none;
+}
+
+.task.disabled.custom {
+    pointer-events: auto;
+}
+
+.task.disabled.custom:hover {
+    background: transparent;
 }
 
 .task.disabled .task-check {
@@ -811,10 +819,27 @@
     background: transparent;
 }
 
-.task-delete {
+.task-actions {
     position: absolute;
     top: 50%;
     right: 5px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-50%);
+    transition:
+        opacity 120ms ease,
+        visibility 120ms ease;
+}
+
+.task:hover .task-actions,
+.task-actions:focus-within {
+    opacity: 1;
+    visibility: visible;
+}
+
+.task-action {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -828,22 +853,18 @@
     cursor: pointer;
     font-size: 16px;
     line-height: 1;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-50%);
-    transition:
-        opacity 120ms ease,
-        visibility 120ms ease,
-        color 120ms ease;
+    transition: color 120ms ease;
 }
 
-.task:hover .task-delete,
-.task-delete:focus-visible {
-    opacity: 1;
-    visibility: visible;
+.task-action--edit {
+    font-size: 13px;
 }
 
-.task-delete:hover {
+.task-action--edit:hover {
+    color: var(--text);
+}
+
+.task-action--delete:hover {
     color: var(--urgent);
 }
 
@@ -871,10 +892,10 @@
 
 @media (hover: none) {
     .task.custom {
-        padding-right: 32px;
+        padding-right: 56px;
     }
 
-    .task-delete {
+    .task-actions {
         opacity: 1;
         visibility: visible;
     }
@@ -933,7 +954,7 @@
 .account-tab-add:focus-visible,
 .task:focus-visible,
 .task-card-add:focus-visible,
-.task-delete:focus-visible,
+.task-action:focus-visible,
 .game-picker-item:focus-visible,
 .server-clickable:focus-visible {
     outline: 2px solid var(--accent);

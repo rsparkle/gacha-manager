@@ -37,6 +37,8 @@
     font-size: 23px;
     font-weight: 700;
     letter-spacing: -0.02em;
+    justify-content: center;
+    min-width: 7em;
     color: var(--text);
     display: flex;
     align-items: baseline;
