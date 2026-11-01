@@ -64,7 +64,7 @@ const icons = {
     display: flex;
     align-items: flex-start;
     gap: 10px;
-    padding: 11px 16px;
+    padding: 12px 16px;
     border-radius: 10px;
     min-width: 260px;
     max-width: 420px;
@@ -73,14 +73,10 @@ const icons = {
     font-size: 13px;
     line-height: 1.45;
     font-weight: 500;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--notif-border);
-    background: var(--notif-bg);
-    color: var(--notif-text);
-    box-shadow:
-        0 4px 24px var(--notif-shadow),
-        0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    border: 1px solid color-mix(in srgb, var(--tone) 55%, var(--border));
+    background: color-mix(in srgb, var(--tone) 20%, var(--card-solid));
+    color: color-mix(in srgb, var(--tone) 80%, var(--text));
+    box-shadow: var(--shadow-popover);
 }
 
 .notif-icon {
@@ -97,8 +93,6 @@ const icons = {
     object-fit: contain;
     flex-shrink: 0;
     margin-top: -2px;
-    font-size: unset;
-    font-weight: unset;
     opacity: 1;
 }
 
@@ -114,7 +108,7 @@ const icons = {
     left: 0;
     height: 2px;
     width: 100%;
-    background: var(--notif-progress);
+    background: color-mix(in srgb, var(--tone) 60%, transparent);
     transform-origin: left;
     animation: notifShrink linear forwards;
 }
@@ -130,31 +124,19 @@ const icons = {
 }
 
 .notif--success {
-    --notif-bg: rgba(16, 38, 26, 0.88);
-    --notif-border: rgba(34, 197, 94, 0.3);
-    --notif-text: #86efac;
-    --notif-shadow: rgba(34, 197, 94, 0.12);
-    --notif-progress: rgba(34, 197, 94, 0.6);
+    --tone: var(--done);
 }
 
 .notif--error {
-    --notif-bg: rgba(38, 10, 10, 0.88);
-    --notif-border: rgba(248, 113, 113, 0.3);
-    --notif-text: #fca5a5;
-    --notif-shadow: rgba(248, 113, 113, 0.12);
-    --notif-progress: rgba(248, 113, 113, 0.6);
+    --tone: var(--danger);
 }
 
 .notif--waiting {
-    --notif-bg: rgba(34, 24, 8, 0.88);
-    --notif-border: rgba(251, 191, 36, 0.28);
-    --notif-text: #fcd34d;
-    --notif-shadow: rgba(251, 191, 36, 0.1);
-    --notif-progress: rgba(251, 191, 36, 0.55);
+    --tone: var(--muted2);
 }
 
 .notif--waiting .notif-icon:not(.notif-icon--img) {
-    animation: notifSpin 1s linear infinite;
+    animation: notifSpin 1000ms linear infinite;
     display: inline-block;
 }
 
@@ -165,11 +147,15 @@ const icons = {
 }
 
 .notif-enter-active {
-    transition: all 0.28s cubic-bezier(0.34, 1.5, 0.64, 1);
+    transition:
+        opacity 300ms ease,
+        transform 300ms cubic-bezier(0.34, 1.5, 0.64, 1);
 }
 
 .notif-leave-active {
-    transition: all 0.3s ease;
+    transition:
+        opacity 300ms ease,
+        transform 300ms ease;
     pointer-events: none;
 }
 
@@ -184,6 +170,6 @@ const icons = {
 }
 
 .notif-move {
-    transition: transform 0.28s ease;
+    transition: transform 300ms ease;
 }
 </style>

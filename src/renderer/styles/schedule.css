@@ -34,22 +34,22 @@
 }
 
 .schedule-month-label {
-    font-size: 23px;
+    font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.02em;
-    justify-content: center;
-    min-width: 7em;
     color: var(--text);
     display: flex;
     align-items: baseline;
+    justify-content: center;
     gap: 10px;
+    min-width: 7em;
 }
 
 .schedule-month-label .year {
     font-size: 13px;
     font-weight: 600;
-    letter-spacing: normal;
     color: var(--muted);
+    font-variant-numeric: tabular-nums;
 }
 
 .nav-btn {
@@ -58,7 +58,7 @@
     justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 7px;
+    border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--panel);
     color: var(--text);
@@ -80,8 +80,8 @@
 .server-select {
     display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 3px;
+    gap: 4px;
+    padding: 4px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
@@ -91,12 +91,11 @@
     min-height: 28px;
     padding: 4px 10px;
     border: 0;
-    border-radius: 5px;
+    border-radius: 6px;
     background: transparent;
     color: var(--muted2);
     font-size: 11px;
     font-weight: 600;
-    font-family: 'Sora', sans-serif;
     cursor: pointer;
     transition:
         background-color 120ms ease,
@@ -124,15 +123,14 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 9px;
-    border-radius: 7px;
+    padding: 6px 10px;
+    border-radius: 8px;
     border: 1px solid var(--border);
     background: var(--panel);
     cursor: pointer;
-    font-family: inherit;
     transition:
-        background 0.15s ease,
-        border-color 0.15s ease;
+        background 120ms ease,
+        border-color 120ms ease;
 }
 
 .game-badge:hover {
@@ -143,7 +141,6 @@
 .game-badge--disabled {
     opacity: 0.35;
     filter: grayscale(1);
-    box-shadow: none;
     border-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -161,7 +158,6 @@
 
 .game-badge-name {
     font-size: 11px;
-    letter-spacing: normal;
     font-weight: 600;
     white-space: nowrap;
     color: var(--gc);
@@ -183,7 +179,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--card-solid);
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-card);
 }
 
 .calendar-weeks {
@@ -201,7 +197,6 @@
     color: var(--muted);
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: normal;
     text-align: center;
 }
 
@@ -216,7 +211,6 @@
     padding: 12px 0;
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: normal;
     color: var(--muted2);
     text-align: center;
     pointer-events: none;
@@ -275,7 +269,6 @@
     position: absolute;
     inset: 0;
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.04);
 }
 
 .cell-art-images {
@@ -292,8 +285,6 @@
     background-size: cover;
     background-repeat: no-repeat;
     background-position: top center;
-    opacity: 0.94;
-    filter: saturate(0.95) contrast(1.02);
 }
 
 .cell-art-shade {
@@ -314,7 +305,7 @@
     place-items: center;
     border-radius: 50%;
     font-size: 11px;
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-weight: 600;
     letter-spacing: 0.04em;
     color: var(--muted2);
@@ -355,21 +346,18 @@
 }
 
 .event {
-    width: auto;
     max-width: 100%;
     min-width: 0;
     height: 25px;
     flex: 0 1 auto;
     display: inline-flex;
     align-items: center;
-    justify-content: flex-start;
     gap: 4px;
-    padding: 0 7px;
-    border-radius: 5px;
+    padding: 0 8px;
+    border-radius: 6px;
     border: 1px solid color-mix(in srgb, var(--gc) 38%, var(--border));
     background: color-mix(in srgb, var(--gc) 20%, color-mix(in srgb, var(--bg) 92%, transparent));
     color: var(--text);
-    font-family: system-ui, sans-serif;
     font-size: 10px;
     font-weight: 600;
     line-height: 1;
@@ -377,9 +365,9 @@
     overflow: hidden;
     cursor: default;
     transition:
-        background 0.12s ease,
-        border-color 0.12s ease,
-        color 0.12s ease;
+        background 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .event:hover,
@@ -391,7 +379,7 @@
 }
 
 .event.estimated {
-    opacity: 0.68;
+    opacity: 0.7;
     border-style: dashed;
 }
 
@@ -413,10 +401,10 @@
     width: 290px;
     max-width: calc(100vw - 24px);
     overflow: hidden;
-    border-radius: 9px;
+    border-radius: 10px;
     border: 1px solid color-mix(in srgb, var(--gc) 52%, var(--border));
     background: var(--card-solid);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-popover);
     color: var(--text);
     pointer-events: none;
 }
@@ -425,14 +413,9 @@
     width: 220px;
 }
 
-.schedule-event-tooltip--landscape {
-    width: 290px;
-}
-
 .schedule-event-tooltip-hero {
     position: relative;
     width: 100%;
-    overflow: visible;
     background-size: cover;
     background-repeat: no-repeat;
     background-position: top center;
@@ -453,23 +436,18 @@
     align-items: center;
     flex-shrink: 0;
     margin-top: 18px;
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
 }
 
 .estimated-label {
     position: relative;
     z-index: 1;
-    padding: 3px 6px;
+    padding: 4px 6px;
     border-radius: 2px;
     border: 1px dashed color-mix(in srgb, var(--urgent) 55%, transparent);
     background: var(--card-solid);
     color: var(--urgent);
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: normal;
 }
 
 .estimated-sticker {
@@ -486,10 +464,7 @@
 
 .schedule-event-tooltip-hero-shade {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: -2px;
+    inset: 0 0 -2px;
     pointer-events: none;
     background: linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.16) 72%, rgba(0, 0, 0, 0.68) 100%);
 }
@@ -508,7 +483,6 @@
     color: #fff;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: normal;
 }
 
 .schedule-event-tooltip-game--inline {
@@ -537,7 +511,6 @@
     color: var(--muted);
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: normal;
     white-space: nowrap;
 }
 
@@ -557,7 +530,7 @@
 
 .schedule-event-tooltip-time {
     color: var(--muted2);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     letter-spacing: 0.03em;
 }
@@ -565,7 +538,7 @@
 .schedule-event-tooltip-countdown {
     display: flex;
     align-items: baseline;
-    gap: 7px;
+    gap: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--border);
 }
@@ -574,12 +547,11 @@
     color: var(--muted);
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: normal;
 }
 
 .schedule-event-tooltip-countdown-value {
     color: var(--accent);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 14px;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -607,7 +579,7 @@
 
 .event-tooltip-enter-active,
 .event-tooltip-leave-active {
-    transition: opacity 0.12s ease;
+    transition: opacity 120ms ease;
 }
 
 .event-tooltip-enter-from,

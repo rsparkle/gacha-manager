@@ -31,7 +31,7 @@
     padding: 0 24px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     text-align: center;
 }
 

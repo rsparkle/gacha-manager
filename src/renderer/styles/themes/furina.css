@@ -53,99 +53,13 @@
     inset: 0;
     pointer-events: none;
     background-image:
-        radial-gradient(
-            circle at 346px 92px,
-            transparent 8.8px,
-            color-mix(in srgb, var(--water-light) 26%, transparent) 10px,
-            transparent 11.2px
-        ),
-        radial-gradient(circle at 342.5px 88.5px, rgba(255, 255, 255, 0.4) 0, transparent 3px),
-        radial-gradient(
-            circle at 64px 52px,
-            transparent 10.9px,
-            color-mix(in srgb, var(--water-light) 26%, transparent) 12.1px,
-            transparent 13.3px
-        ),
-        radial-gradient(circle at 59.8px 47.8px, rgba(255, 255, 255, 0.4) 0, transparent 3.6px),
-        radial-gradient(
-            circle at 111px 202px,
-            transparent 9.7px,
-            color-mix(in srgb, var(--water-light) 26%, transparent) 10.9px,
-            transparent 12.1px
-        ),
-        radial-gradient(circle at 107.2px 198.2px, rgba(255, 255, 255, 0.4) 0, transparent 3.3px),
-        radial-gradient(
-            circle at 274px 124px,
-            transparent 2.9px,
-            color-mix(in srgb, var(--water-light) 34%, transparent) 4.1px,
-            transparent 5.3px
-        ),
-        radial-gradient(circle at 272.6px 122.6px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
-        radial-gradient(
-            circle at 237px 229px,
-            transparent 3px,
-            color-mix(in srgb, var(--water-light) 34%, transparent) 4.2px,
-            transparent 5.4px
-        ),
-        radial-gradient(circle at 235.5px 227.5px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
-        radial-gradient(
-            circle at 61px 232px,
-            transparent 3px,
-            color-mix(in srgb, var(--water-light) 34%, transparent) 4.2px,
-            transparent 5.4px
-        ),
-        radial-gradient(circle at 59.5px 230.5px, rgba(255, 255, 255, 0.4) 0, transparent 1.3px),
-        radial-gradient(
-            circle at 304px 78px,
-            transparent 5.6px,
-            color-mix(in srgb, var(--water-light) 34%, transparent) 6.8px,
-            transparent 8px
-        ),
-        radial-gradient(circle at 301.6px 75.6px, rgba(255, 255, 255, 0.4) 0, transparent 2px),
-        radial-gradient(
-            circle at 46px 162px,
-            transparent 1.7px,
-            color-mix(in srgb, var(--water-light) 40%, transparent) 2.9px,
-            transparent 4.1px
-        ),
-        radial-gradient(
-            circle at 40px 71px,
-            transparent 0.9px,
-            color-mix(in srgb, var(--water-light) 40%, transparent) 2.1px,
-            transparent 3.3px
-        ),
-        radial-gradient(
-            circle at 83px 89px,
-            transparent 1.4px,
-            color-mix(in srgb, var(--water-light) 40%, transparent) 2.6px,
-            transparent 3.8px
-        ),
-        radial-gradient(
-            circle at 291px 45px,
-            transparent 1.7px,
-            color-mix(in srgb, var(--water-light) 40%, transparent) 2.9px,
-            transparent 4.1px
-        );
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='571' height='350'><defs><radialGradient id='h'><stop offset='0' stop-color='white' stop-opacity='.4'/><stop offset='1' stop-color='white' stop-opacity='0'/></radialGradient></defs><g fill='none' stroke='%239fdcff' stroke-opacity='.26' stroke-width='1.2'><circle cx='346' cy='92' r='10'/><circle cx='64' cy='52' r='12'/><circle cx='111' cy='202' r='11'/></g><g fill='url(%23h)'><circle cx='342.5' cy='88.5' r='3'/><circle cx='60' cy='48' r='3.5'/><circle cx='107' cy='198' r='3.5'/></g></svg>"),
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='433' height='290'><defs><radialGradient id='h'><stop offset='0' stop-color='white' stop-opacity='.4'/><stop offset='1' stop-color='white' stop-opacity='0'/></radialGradient></defs><g fill='none' stroke='%239fdcff' stroke-opacity='.34' stroke-width='1.2'><circle cx='274' cy='124' r='4'/><circle cx='237' cy='229' r='4'/><circle cx='61' cy='232' r='4'/><circle cx='304' cy='78' r='7'/></g><g fill='url(%23h)'><circle cx='272.5' cy='122.5' r='1.5'/><circle cx='235.5' cy='227.5' r='1.5'/><circle cx='59.5' cy='230.5' r='1.5'/><circle cx='301.5' cy='75.5' r='2'/></g></svg>"),
+        url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='317' height='230'><g fill='none' stroke='%239fdcff' stroke-opacity='.4' stroke-width='1.2'><circle cx='46' cy='162' r='3'/><circle cx='40' cy='71' r='2'/><circle cx='83' cy='89' r='2.5'/><circle cx='291' cy='45' r='3'/></g></svg>");
     background-size:
         571px 350px,
-        571px 350px,
-        571px 350px,
-        571px 350px,
-        571px 350px,
-        571px 350px,
         433px 290px,
-        433px 290px,
-        433px 290px,
-        433px 290px,
-        433px 290px,
-        433px 290px,
-        433px 290px,
-        433px 290px,
-        317px 230px,
-        317px 230px,
-        317px 230px,
         317px 230px;
-    background-position: 0 0;
 }
 
 .furina .game-item {
@@ -153,7 +67,7 @@
 }
 
 .furina .game-item.active::before {
-    left: -9px;
+    left: -6px;
     width: 8px;
     height: 8px;
     border-radius: 50%;

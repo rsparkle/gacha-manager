@@ -112,7 +112,7 @@ const onFocusOut = (event) => {
     border: 1px solid var(--border-hover);
     border-radius: 6px;
     background: var(--panel);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-popover);
 }
 
 .category-option {
@@ -121,7 +121,6 @@ const onFocusOut = (event) => {
     border-radius: 4px;
     background: none;
     color: var(--muted2);
-    font-family: inherit;
     font-size: 12px;
     font-weight: 400;
     text-align: left;

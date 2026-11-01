@@ -76,7 +76,7 @@
 }
 
 .nikki .game-item.active::before {
-    left: -9px;
+    left: -6px;
     width: 14px;
     height: 14px;
     border-radius: 0;

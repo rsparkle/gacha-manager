@@ -188,11 +188,11 @@ const submit = async () => {
 
 .report-game {
     flex-shrink: 0;
-    padding: 2px 7px;
+    padding: 2px 8px;
     border: 1px solid color-mix(in srgb, var(--game-color) 55%, var(--border));
-    border-radius: 5px;
+    border-radius: 6px;
     color: var(--game-color);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 700;
 }
@@ -228,7 +228,7 @@ const submit = async () => {
 
 .report-option {
     position: relative;
-    padding: 5px 11px;
+    padding: 6px 12px;
     border: 1px solid var(--border-hover);
     border-radius: 6px;
     background: var(--panel);

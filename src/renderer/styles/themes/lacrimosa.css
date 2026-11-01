@@ -62,7 +62,7 @@
 }
 
 .lacrimosa .game-item.active::before {
-    left: -10px;
+    left: -7px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
@@ -73,7 +73,7 @@
 .lacrimosa .game-item.active::after {
     content: '';
     position: absolute;
-    left: -9px;
+    left: -6px;
     top: calc(50% - 7px);
     width: 6px;
     height: 5px;

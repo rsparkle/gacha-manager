@@ -85,7 +85,7 @@ onUnmounted(() => {
     border-radius: 10px;
     background: var(--panel);
     color: var(--text);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-popover);
 }
 
 .update-pill-body {
@@ -134,7 +134,7 @@ onUnmounted(() => {
 }
 
 .update-pill-btn {
-    padding: 5px 12px;
+    padding: 6px 12px;
     border: 0;
     border-radius: 6px;
     background: var(--accent);

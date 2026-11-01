@@ -83,15 +83,15 @@ const onDialogClick = (event) => {
     border-radius: 10px;
     background: var(--bg);
     color: var(--text);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-modal);
 }
 
 .base-dialog[open] {
-    animation: base-dialog-in 0.16s ease-out;
+    animation: base-dialog-in 200ms ease-out;
 }
 
 .base-dialog::backdrop {
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay);
 }
 
 .base-dialog--corner {
@@ -144,7 +144,7 @@ const onDialogClick = (event) => {
     cursor: pointer;
     font-size: 20px;
     line-height: 1;
-    transition: color 0.15s;
+    transition: color 120ms;
 }
 
 .base-dialog-close:hover {
@@ -165,13 +165,16 @@ const onDialogClick = (event) => {
 }
 
 .base-dialog-btn {
-    padding: 7px 16px;
+    padding: 8px 16px;
     border-radius: 8px;
     cursor: pointer;
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 600;
-    transition: all 0.15s;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .base-dialog-btn--cancel {
@@ -236,13 +239,11 @@ const onDialogClick = (event) => {
 
 .dialog-input {
     width: 100%;
-    box-sizing: border-box;
-    padding: 7px 9px;
+    padding: 8px 10px;
     border: 1px solid var(--border-hover);
     border-radius: 6px;
     background: var(--panel);
     color: var(--text);
-    font-family: inherit;
     font-size: 12px;
     font-weight: 400;
 }

@@ -26,7 +26,7 @@ const { confirmState } = useConfirm();
     position: fixed;
     inset: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,7 +42,7 @@ const { confirmState } = useConfirm();
     gap: 20px;
     min-width: 300px;
     max-width: 400px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--shadow-modal);
 }
 
 .confirm-message {
@@ -60,13 +60,16 @@ const { confirmState } = useConfirm();
 }
 
 .confirm-btn {
-    padding: 7px 16px;
+    padding: 8px 16px;
     border-radius: 8px;
     font-size: 11px;
     font-weight: 600;
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     cursor: pointer;
-    transition: all 0.15s;
+    transition:
+        background-color 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .confirm-btn--cancel {
@@ -81,20 +84,20 @@ const { confirmState } = useConfirm();
 }
 
 .confirm-btn--danger {
-    background: rgba(248, 113, 113, 0.07);
-    border: 1px solid rgba(248, 113, 113, 0.18);
-    color: rgba(248, 113, 113, 0.55);
+    background: color-mix(in srgb, var(--danger) 7%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger) 18%, transparent);
+    color: color-mix(in srgb, var(--danger) 55%, transparent);
 }
 
 .confirm-btn--danger:hover {
-    background: rgba(248, 113, 113, 0.14);
-    border-color: rgba(248, 113, 113, 0.45);
-    color: var(--urgent);
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+    color: var(--danger);
 }
 
 .confirm-enter-active,
 .confirm-leave-active {
-    transition: opacity 0.12s;
+    transition: opacity 120ms;
 }
 
 .confirm-enter-from,

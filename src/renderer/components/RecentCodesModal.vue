@@ -219,7 +219,7 @@ const copyCode = async (code) => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay);
 }
 
 .codes-modal {
@@ -230,7 +230,7 @@ const copyCode = async (code) => {
     border: 1px solid var(--border-hover);
     border-radius: 10px;
     background: var(--bg);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-modal);
 }
 
 .codes-header {
@@ -255,7 +255,7 @@ const copyCode = async (code) => {
     cursor: pointer;
     font-size: 20px;
     line-height: 1;
-    transition: color 0.15s;
+    transition: color 120ms;
 }
 
 .codes-close:hover {
@@ -300,7 +300,7 @@ const copyCode = async (code) => {
     width: 26px;
     height: 26px;
     color: var(--muted2);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     font-weight: 700;
 }
@@ -348,7 +348,7 @@ const copyCode = async (code) => {
     min-width: 0;
     overflow: hidden;
     color: var(--text);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 13px;
     letter-spacing: 0.04em;
     text-overflow: ellipsis;
@@ -408,7 +408,7 @@ const copyCode = async (code) => {
 
 .codes-enter-active,
 .codes-leave-active {
-    transition: opacity 0.12s;
+    transition: opacity 120ms;
 }
 
 .codes-enter-from,

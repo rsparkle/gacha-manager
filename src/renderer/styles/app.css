@@ -15,7 +15,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
     font: inherit;
 }
 
@@ -26,7 +28,6 @@ input {
     --panel: #17171a;
     --panel-hover: #1e1e22;
     --panel-selected: #303038;
-    --panel-blur: none;
     --card-solid: #1c1c20;
     --card-solid-hover: #212126;
     --task-bg: #121214;
@@ -37,27 +38,31 @@ input {
 
     --border: #2e2e34;
     --border-hover: #45454d;
-    --border-selected: #d4d4d8;
+    --border-selected: #c4c4cc;
 
     --text: #ececee;
     --muted: #8a8a94;
     --muted2: #b0b0b8;
 
-    --accent: #e4e4e7;
-    --accent-hover: #ffffff;
+    --accent: #dcdce2;
+    --accent-hover: #f2f2f4;
     --accent-glow: rgba(255, 255, 255, 0.06);
-    --task-progress: #e4e4e7;
+    --task-progress: #dcdce2;
     --check-fg: #0f0f11;
     --pill-active-bg: #303038;
-    --gradient-title: none;
 
-    --scrollbar-thumb: #3f3f46;
-    --scrollbar-thumb-hover: #52525b;
+    --scrollbar-thumb: #45454d;
+    --scrollbar-thumb-hover: #5a5a64;
     --scrollbar-track: #0f0f11;
 
     --done: #51bd7a;
     --urgent: #e16b6b;
     --danger: #e16b6b;
+
+    --overlay: rgba(0, 0, 0, 0.65);
+    --shadow-card: 0 6px 20px rgba(0, 0, 0, 0.2);
+    --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.4);
+    --shadow-modal: 0 12px 32px rgba(0, 0, 0, 0.5);
 
     --titlebar-h: 32px;
     --titlebar-bg: #09090a;
@@ -125,9 +130,7 @@ input {
 
 .view-toggle,
 .theme-group {
-    gap: 0;
     border: 1px solid var(--border);
-    background: transparent;
 }
 
 .view-btn,
@@ -156,13 +159,7 @@ input {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 11px;
-}
-
-.view-btn span,
-.app-tab-labels {
-    letter-spacing: normal;
-    text-transform: none;
+    padding: 4px 12px;
 }
 
 .view-btn:hover,
@@ -179,7 +176,7 @@ input {
 }
 
 .app-bar-label {
-    padding: 0 9px;
+    padding: 0 10px;
     color: var(--muted);
     font-size: 10px;
     font-weight: 600;
@@ -189,18 +186,18 @@ input {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 9px;
+    padding: 4px 10px;
 }
 
 .theme-swatch {
     width: 7px;
     height: 7px;
     flex-shrink: 0;
-    border-radius: 1px;
+    border-radius: 2px;
 }
 
 .theme-swatch.default {
-    background: #e4e4e7;
+    background: #dcdce2;
 }
 
 .theme-picker {
@@ -230,7 +227,7 @@ input {
     padding: 4px;
     border: 1px solid var(--border);
     background: var(--panel);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-popover);
 }
 
 .theme-menu .theme-btn {
@@ -241,8 +238,8 @@ input {
 .theme-menu-enter-active,
 .theme-menu-leave-active {
     transition:
-        opacity 0.12s,
-        transform 0.12s;
+        opacity 120ms,
+        transform 120ms;
 }
 
 .theme-menu-enter-from,
@@ -325,8 +322,8 @@ input {
     *::before,
     *::after {
         scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
+        animation-duration: 120ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
+        transition-duration: 120ms !important;
     }
 }

@@ -332,7 +332,7 @@ const importBackup = async () => {
     position: fixed;
     inset: 0;
     z-index: 200;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -341,10 +341,10 @@ const importBackup = async () => {
 .settings-modal {
     width: min(660px, 90vw);
     max-height: 82vh;
-    border-radius: 10px;
-    border: 1px solid var(--border-hover);
-    background: var(--bg);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--panel);
+    box-shadow: var(--shadow-modal);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -354,38 +354,43 @@ const importBackup = async () => {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 22px 28px 18px;
-    border-bottom: 1px solid var(--border);
+    padding: 26px 32px 6px;
     flex-shrink: 0;
 }
 
 .settings-title {
     margin: 0;
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--text);
 }
 
 .settings-close {
-    border: none;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
     background: transparent;
     color: var(--muted2);
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    padding: 4px 6px;
-    transition: color 0.15s;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
 }
 
 .settings-close:hover {
+    background: color-mix(in srgb, var(--text) 8%, transparent);
     color: var(--text);
 }
 
 .settings-body {
     flex: 1;
     overflow-y: auto;
-    padding: 4px 28px 20px;
+    padding: 0 32px 24px;
     display: flex;
     flex-direction: column;
 }
@@ -404,29 +409,21 @@ const importBackup = async () => {
 }
 
 .settings-section--plain {
-    border-bottom: 1px solid var(--border);
-    padding: 16px 2px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+    padding: 18px 0;
 }
 
 .settings-section--plain:last-of-type {
     border-bottom: none;
 }
 
-.settings-section {
-    padding-top: 22px;
-}
-
 .settings-section:not(.settings-section--plain) {
-    background: var(--card-solid);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 18px 20px;
-    margin-top: 14px;
+    padding-top: 22px;
 }
 
 .settings-section-title {
     margin: 0 0 4px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text);
 }
@@ -452,7 +449,7 @@ const importBackup = async () => {
 }
 
 .settings-row-title {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--text);
 }
@@ -480,28 +477,28 @@ const importBackup = async () => {
 .toggle-box {
     width: 20px;
     height: 20px;
-    border-radius: 5px;
+    border-radius: 6px;
     border: 1.5px solid var(--border-hover);
-    background: var(--task-bg);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
     color: transparent;
     transition:
-        background 0.15s,
-        border-color 0.15s,
-        color 0.1s;
+        background 120ms,
+        border-color 120ms,
+        color 120ms;
 }
 
 .toggle input:checked + .toggle-box {
     background: var(--accent);
     border-color: var(--accent);
-    color: #000;
+    color: var(--check-fg);
 }
 
 .toggle-check {
     transform: scale(0.6);
-    transition: transform 0.15s;
+    transition: transform 120ms;
 }
 
 .toggle input:checked + .toggle-box .toggle-check {
@@ -511,36 +508,28 @@ const importBackup = async () => {
 .game-groups {
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: 20px;
 }
 
 .game-group-title {
-    margin: 0 0 8px;
+    margin: 0 0 2px;
     font-size: 11px;
-    font-weight: 700;
-    color: var(--muted2);
+    font-weight: 600;
+    color: var(--muted);
 }
 
 .account-grid {
     display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
+    flex-direction: column;
 }
 
 .account-chip-row {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 8px 14px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--task-bg);
     width: 100%;
-    transition: border-color 0.15s;
-}
-
-.account-chip-row:hover {
-    border-color: var(--border-hover);
+    padding: 9px 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
 }
 
 .account-chip-label {
@@ -552,36 +541,41 @@ const importBackup = async () => {
 .account-chip-server {
     font-size: 11px;
     color: var(--muted);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
 }
 
 .chip-toggles {
     margin-left: auto;
     display: flex;
-    gap: 14px;
+    gap: 4px;
 }
 
 .text-toggle {
-    border: none;
-    background: none;
-    padding: 2px 0;
+    padding: 3px 9px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
     font-size: 11px;
     font-weight: 600;
-    color: var(--muted2);
     cursor: pointer;
-    border-bottom: 1.5px solid transparent;
     transition:
-        color 0.15s,
-        border-color 0.15s;
+        background-color 120ms ease,
+        color 120ms ease;
 }
 
 .text-toggle:not(:disabled):hover {
+    background: color-mix(in srgb, var(--text) 6%, transparent);
     color: var(--text);
 }
 
 .text-toggle.active {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    color: var(--text);
+}
+
+.text-toggle.active:not(:disabled):hover {
+    background: color-mix(in srgb, var(--accent) 24%, transparent);
 }
 
 .text-toggle:disabled {
@@ -593,63 +587,63 @@ const importBackup = async () => {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 8px;
-    padding: 14px 28px;
-    border-top: 1px solid var(--border);
+    gap: 16px;
+    padding: 12px 32px 24px;
     flex-shrink: 0;
 }
 
 .cancel-btn {
-    padding: 8px 18px;
-    border-radius: 6px;
-    border: 1px solid var(--border-hover);
+    padding: 8px 4px;
+    border: 0;
     background: transparent;
     color: var(--muted2);
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: color 120ms ease;
 }
 
 .cancel-btn:hover {
-    background: var(--panel-hover);
     color: var(--text);
 }
 
 .apply-btn {
-    padding: 8px 20px;
-    border-radius: 6px;
-    border: 1px solid var(--accent);
-    background: var(--accent-glow);
-    color: var(--accent);
+    padding: 9px 22px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--check-fg);
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: background-color 120ms ease;
 }
 
 .apply-btn:hover {
-    background: var(--accent);
-    color: #000;
+    background: var(--accent-hover);
 }
 
-.delete-cache-btn {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border-hover);
-    background: var(--task-bg);
+.delete-cache-btn,
+.backup-btn {
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--text) 7%, transparent);
     color: var(--muted2);
-    font-family: 'Sora', sans-serif;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition:
+        background-color 120ms ease,
+        color 120ms ease;
+}
+
+.delete-cache-btn {
     flex-shrink: 0;
 }
 
 .delete-cache-btn:hover {
-    border-color: var(--urgent);
-    background: color-mix(in srgb, var(--urgent) 12%, transparent);
+    background: color-mix(in srgb, var(--urgent) 14%, transparent);
     color: var(--urgent);
 }
 
@@ -659,27 +653,14 @@ const importBackup = async () => {
     flex-shrink: 0;
 }
 
-.backup-btn {
-    padding: 6px 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border-hover);
-    background: var(--task-bg);
-    color: var(--muted2);
-    font-family: 'Sora', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
 .backup-btn:hover {
-    border-color: var(--accent);
+    background: color-mix(in srgb, var(--text) 12%, transparent);
     color: var(--text);
 }
 
 .confirm-enter-active,
 .confirm-leave-active {
-    transition: opacity 0.12s;
+    transition: opacity 120ms;
 }
 
 .confirm-enter-from,

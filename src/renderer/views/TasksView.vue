@@ -169,14 +169,6 @@
                                 <span class="maintenance-dot" />
                                 {{ maintenanceLabel }}
                             </div>
-                            <button
-                                v-if="!isCustomGame"
-                                class="btn-edit"
-                                title="Report a problem with a task"
-                                @click="reportTask"
-                            >
-                                Report
-                            </button>
                             <button v-if="taskCategories.length > 0" class="btn-edit" @click="openCustomTaskDialog()">
                                 Add Task
                             </button>
@@ -197,6 +189,27 @@
                                 Delete Account
                             </button>
                             <button v-if="isCustomGame" class="btn-delete" @click="deleteGame">Delete Game</button>
+                            <button
+                                v-if="!isCustomGame"
+                                class="btn-icon"
+                                title="Report a problem with a task"
+                                aria-label="Report a problem with a task"
+                                @click="reportTask"
+                            >
+                                <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                >
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                                    <line x1="4" y1="22" x2="4" y2="15" />
+                                </svg>
+                            </button>
                             <button
                                 class="btn-icon"
                                 :class="{ active: deadlineNotificationsEnabled }"

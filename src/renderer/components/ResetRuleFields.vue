@@ -135,12 +135,11 @@ watch(rule, (value) => (reset.value = value), { immediate: true });
 }
 
 .reset-day {
-    padding: 5px 0;
+    padding: 6px 0;
     border: 1px solid var(--border);
     border-radius: 6px;
     background: var(--panel);
     color: var(--muted2);
-    font-family: inherit;
     font-size: 11px;
     cursor: pointer;
 }

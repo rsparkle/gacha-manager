@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.7] - 2026-11-01
+- UI improvements across the app, including a cleaner Settings window
+- Report button is now a flag icon next to the notification bell
+
 ## [1.2.6] - 2026-10-31
 ### Added
 - Custom tasks can now reset on their own: pick Daily, Weekly, Monthly or Endgame as the category and set when it resets. Any other category still ends at its deadline

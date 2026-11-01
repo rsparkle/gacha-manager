@@ -40,7 +40,7 @@
 .setup-header {
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
 }
 
 .setup-title {
@@ -64,7 +64,7 @@
     border: 2px solid var(--border-hover);
     border-top-color: var(--accent);
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    animation: spin 800ms linear infinite;
 }
 
 @keyframes spin {
@@ -91,7 +91,7 @@
     width: 160px;
     height: 160px;
     object-fit: contain;
-    animation: sticker-pulse 2s ease-in-out infinite;
+    animation: sticker-pulse 2000ms ease-in-out infinite;
 }
 
 @keyframes sticker-pulse {
@@ -121,7 +121,7 @@
     padding: 14px;
     overflow: hidden;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: 4px;
     background: var(--card-solid);
     cursor: pointer;
     transition:
@@ -160,7 +160,7 @@
     border: 1px solid var(--border-hover);
     border-radius: 2px;
     color: var(--check-fg);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 800;
     transition:
         background-color 120ms ease,
@@ -189,10 +189,10 @@
 
 .game-card-version {
     margin: 0;
-    padding: 1px 5px;
+    padding: 1px 6px;
     border-left: 2px solid var(--border-hover);
     color: var(--muted2);
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 10px;
     white-space: nowrap;
 }
@@ -202,7 +202,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-top: 11px;
+    padding-top: 12px;
     border-top: 1px solid var(--border);
     animation: server-open 120ms ease-out;
 }
@@ -229,17 +229,17 @@
 .server-pills {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 6px;
 }
 
 .server-pill {
-    padding: 4px 9px;
+    padding: 4px 10px;
     border: 1px solid var(--border-hover);
     border-radius: 2px;
     background: transparent;
     color: var(--muted2);
     cursor: pointer;
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
     font-weight: 600;
     transition:
@@ -273,7 +273,7 @@
     background: var(--accent);
     color: var(--check-fg);
     cursor: pointer;
-    font-family: var(--font-mono), monospace;
+    font-family: var(--font-mono);
     font-size: 12px;
     font-weight: 700;
     transition:
