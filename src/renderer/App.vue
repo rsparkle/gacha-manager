@@ -97,7 +97,6 @@
 import { watch, ref, computed, onMounted, onUnmounted } from 'vue';
 import platform from '#platform';
 
-import './styles/app.css';
 import.meta.glob('./styles/themes/*.css', { eager: true });
 import SetupView from './views/SetupView.vue';
 import TasksView from './views/TasksView.vue';

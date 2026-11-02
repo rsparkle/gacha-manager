@@ -589,6 +589,14 @@ const ICON_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'icon.ico')
     : path.join(__dirname, '../../build/icon.ico');
 
+let titleBarColors = { color: '#09090a', symbolColor: '#b0b0b8' };
+
+const applyTitleBarColors = () => {
+    if (process.platform === 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
+
+    mainWindow.setTitleBarOverlay(titleBarColors);
+};
+
 const createMainWindow = ({ minimized = false } = {}) => {
     hidingToTray = false;
 
@@ -603,7 +611,7 @@ const createMainWindow = ({ minimized = false } = {}) => {
 
         ...(process.platform !== 'darwin' && {
             titleBarStyle: 'hidden',
-            titleBarOverlay: { color: '#09090a', symbolColor: '#b0b0b8', height: 32 },
+            titleBarOverlay: { ...titleBarColors, height: 32 },
         }),
 
         webPreferences: {
@@ -645,6 +653,10 @@ const createMainWindow = ({ minimized = false } = {}) => {
         mainWindow.maximize();
         mainWindow.show();
     });
+
+    for (const event of ['show', 'maximize', 'unmaximize', 'restore']) {
+        mainWindow.on(event, applyTitleBarColors);
+    }
 
     mainWindow.on('closed', () => {
         mainWindow = null;
@@ -697,12 +709,11 @@ function handle(channel, handler) {
 ipcMain.on('hideToTray', hideToTray);
 
 ipcMain.on('setTitleBarColors', (_event, { color, symbolColor } = {}) => {
-    if (process.platform === 'darwin' || !mainWindow || mainWindow.isDestroyed()) return;
-
     const isColor = (value) => typeof value === 'string' && /^#[0-9a-f]{3,8}$/i.test(value);
     if (!isColor(color) || !isColor(symbolColor)) return;
 
-    mainWindow.setTitleBarOverlay({ color, symbolColor });
+    titleBarColors = { color, symbolColor };
+    applyTitleBarColors();
 });
 
 handle('getGameData', () => gameData.current);

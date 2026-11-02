@@ -92,13 +92,29 @@
                                                 v-for="(release, ri) in day.releases"
                                                 :key="`${release.game}-${release.label}-${ri}`"
                                                 class="cell-art-slice"
+                                                :class="{ 'cell-art-slice--tile': isTile(day, release) }"
                                                 :style="{
                                                     width: `${100 / day.releases.length}%`,
-                                                    backgroundImage: getBackgroundImageWithFallbacks(release),
+                                                    '--gc': release.color,
+                                                    backgroundImage: isTile(day, release)
+                                                        ? undefined
+                                                        : getBackgroundImageWithFallbacks(release),
                                                 }"
                                                 role="img"
                                                 :aria-label="release.label"
-                                            />
+                                            >
+                                                <template v-if="isTile(day, release)">
+                                                    <img
+                                                        v-if="gameIcons[release.game]"
+                                                        :src="gameIcons[release.game]"
+                                                        alt=""
+                                                        class="cell-art-tile-icon"
+                                                    />
+                                                    <span v-else class="cell-art-tile-name">
+                                                        {{ release.source ?? gameAbbr(release.game) }}
+                                                    </span>
+                                                </template>
+                                            </div>
                                         </div>
 
                                         <div class="cell-art-shade" />
@@ -248,6 +264,7 @@ const scheduleData = ref({});
 const selectedGames = ref([]);
 const gameIcons = reactive({});
 const imageUrls = reactive({});
+const missingImages = reactive({});
 
 const activeEvent = ref(null);
 const pinned = ref(false);
@@ -302,9 +319,11 @@ const activeEventHasImage = computed(() => {
     return Boolean(activeEvent.value.imgFiles?.length);
 });
 
-const isPortraitTooltip = (event) => Boolean(event?.portrait);
+const isPortrait = (event) => Boolean(event?.portrait) && !missingImages[event.imgFiles?.[0]];
 
-const activeEventIsPortrait = computed(() => isPortraitTooltip(activeEvent.value));
+const isTile = (day, release) => day.releases.length > 1 && !isPortrait(release);
+
+const activeEventIsPortrait = computed(() => isPortrait(activeEvent.value));
 
 const tooltipStyle = computed(() => ({
     '--gc': activeEvent.value?.color ?? 'var(--accent)',
@@ -373,8 +392,14 @@ const loadEventImages = () =>
                     const url =
                         (await platform.images.getUrl(thumbnailPath(file))) ?? (await platform.images.getUrl(file));
 
-                    if (url) imageUrls[file] = url;
+                    if (url) {
+                        imageUrls[file] = url;
+                        delete missingImages[file];
+                    } else {
+                        missingImages[file] = true;
+                    }
                 } catch (err) {
+                    missingImages[file] = true;
                     console.error(`Failed to load ${file}:`, err);
                 } finally {
                     pendingImages.delete(file);
@@ -508,7 +533,7 @@ const showEventTooltip = (event, domEvent) => {
 
     if (!rect) return;
 
-    const portrait = isPortraitTooltip(event);
+    const portrait = isPortrait(event);
     const tooltipWidth = portrait ? 220 : 290;
     const tooltipHalfWidth = tooltipWidth / 2;
     const viewportPadding = 12;

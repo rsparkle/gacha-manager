@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import platform from '#platform';
+import './styles/app.css';
 import App from './App.vue';
 import '@fontsource-variable/nunito';
 

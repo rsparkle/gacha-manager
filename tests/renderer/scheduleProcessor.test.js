@@ -20,7 +20,7 @@ function pick(events, part) {
 const img = {
     game: (version) => `games/test_game_${version}.webp`,
     livestream: (version) => `games/test_game_${version}_livestream.webp`,
-    character: (slug) => `characters/${slug}.webp`,
+    character: (slug) => `characters/test_game_${slug}.webp`,
     fallback: 'games/test_game_default.webp',
 };
 
@@ -42,6 +42,7 @@ describe('timeline', () => {
             'v1.1_secondPhase': '2026-10-27T10:00:00.000Z',
             'v1.2_release': '2026-11-18T03:00:00.000Z',
             'v1.2_secondPhase': '2026-12-08T10:00:00.000Z',
+            'v1.3_release': '2026-12-30T03:00:00.000Z',
             'v1.1_drip_day1': '2026-08-31T04:00:00.000Z',
             'v1.1_drip_day2': '2026-09-01T04:00:00.000Z',
             'v1.2_drip_day1': '2026-10-12T04:00:00.000Z',
@@ -583,14 +584,49 @@ describe('patch history', () => {
         expect(events['v1.0_release'].imgFiles).toEqual([img.character('alice'), img.game('1.0'), img.fallback]);
     });
 
-    it('version-only rows only name the next livestream and drip', () => {
+    it('version-only rows only get a release, livestream and drip', () => {
         const events = schedule();
 
         expect(Object.keys(pick(events, 'v1.3_'))).toEqual([
+            'v1.3_release',
             'v1.3_drip_day1',
             'v1.3_drip_day2',
             'v1.3_livestream',
         ]);
+    });
+
+    it('version-only release opens when the last dated patch ends', () => {
+        expect(schedule()['v1.3_release']).toMatchObject({
+            date: new Date('2026-12-30T03:00:00Z'),
+            type: 'release',
+            portrait: false,
+            label: 'TG 1.3 Release',
+            imgFiles: [img.game('1.3'), img.fallback],
+            confirmed: true,
+        });
+    });
+
+    it('version-only release is estimated until the next duration is confirmed', () => {
+        expect(schedule({ next: { is_version_duration_confirmed: false } })['v1.3_release'].confirmed).toBe(false);
+        expect(schedule({ current: { is_version_duration_confirmed: false } })['v1.3_release'].confirmed).toBe(false);
+    });
+
+    it('version-only release hidden by show_patch', () => {
+        const events = schedule({ after: { show_patch: false } });
+
+        expect(events['v1.3_release']).toBeUndefined();
+        expect(Object.keys(pick(events, 'v1.3_'))).toEqual(['v1.3_drip_day1', 'v1.3_drip_day2', 'v1.3_livestream']);
+    });
+
+    it('version-only release uses characters when listed', () => {
+        const events = schedule({ after: { phase_characters: { 1: ['Dana'] } } });
+
+        expect(events['v1.3_release']).toMatchObject({
+            portrait: true,
+            label: 'TG 1.3 - Dana Release',
+            imgFiles: [img.character('dana'), img.game('1.3'), img.game('1.1'), img.fallback],
+        });
+        expect(Object.keys(pick(events, 'v1.3_secondPhase'))).toEqual([]);
     });
 });
 

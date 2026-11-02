@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.8] - 2026-11-02
+### Added
+- The schedule now shows the release after the next patch, unless the game has an unpredictable schedule
+### Changed
+- On days with several releases, horizontal artwork is replaced by a tile in the game's color with its icon. Hovering the event shows the full image
+### Fixed
+- Releases whose character art is missing now use the horizontal layout for the fallback image, in the calendar and in the event details
+- Characters that share a name across games, like collab characters, now show the right game's art
+
 ## [1.2.7] - 2026-11-01
 - UI improvements across the app, including a cleaner Settings window
 - Report button is now a flag icon next to the notification bell

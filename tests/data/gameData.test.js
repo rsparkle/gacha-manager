@@ -200,7 +200,21 @@ describe(`game data from ${source}`, () => {
                     expect(patch.version, key).toMatch(/^\d+\.\d+$/);
 
                     if (!isDated(patch)) {
-                        expect(Object.keys(patch), key).toEqual(['version']);
+                        expect(
+                            Object.keys(patch).filter((field) => !['phase_characters', 'show_patch'].includes(field)),
+                            key,
+                        ).toEqual(['version']);
+
+                        if ('show_patch' in patch) expect(patch.show_patch, key).toBe(false);
+
+                        if (patch.phase_characters) {
+                            expect(Object.keys(patch.phase_characters), key).toEqual(['1']);
+                            expect(
+                                patch.phase_characters[1].every((name) => typeof name === 'string'),
+                                key,
+                            ).toBe(true);
+                        }
+
                         continue;
                     }
 

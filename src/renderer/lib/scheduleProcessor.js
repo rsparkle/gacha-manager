@@ -25,8 +25,8 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
         return `games/${slugify(game)}_default.webp`;
     }
 
-    function characterImg(name) {
-        return `characters/${slugify(name)}.webp`;
+    function characterImg(game, name) {
+        return `characters/${slugify(game)}_${slugify(name)}.webp`;
     }
 
     function gameImg(game, version) {
@@ -100,7 +100,20 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
             });
         }
 
-        return { globalAt, secondPhaseAt, entries, imgsFor, now };
+        const last = entries.at(-1);
+        const following = last && patches[last.index + 1];
+        const upcoming =
+            following && !isDated(following)
+                ? {
+                      index: last.index + 1,
+                      patch: following,
+                      open: openAt(last.end),
+                      startConfirmed: last.startConfirmed && Boolean(last.patch.is_version_duration_confirmed),
+                      imgs: imgsFor(following.version, last.index + 1),
+                  }
+                : null;
+
+        return { globalAt, secondPhaseAt, entries, upcoming, imgsFor, now };
     }
 
     function getLivestreamDateKey(gameData, anchorDate, overrideDate = null) {
@@ -158,7 +171,7 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
                     portrait: !rumored,
                     label,
                     title: label,
-                    imgFiles: rumored ? entry.imgs : [characterImg(characters[0]), ...entry.imgs],
+                    imgFiles: rumored ? entry.imgs : [characterImg(game, characters[0]), ...entry.imgs],
                     confirmed: false,
                 };
             }
@@ -182,7 +195,7 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
                     portrait: true,
                     label: `${character} Release`,
                     title: `${character}`,
-                    imgFiles: [characterImg(character), ...entry.imgs],
+                    imgFiles: [characterImg(game, character), ...entry.imgs],
                     confirmed,
                 };
             }
@@ -196,7 +209,7 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
                     ? `${gameData.abbr} ${version} - ${character} Release`
                     : `${gameData.abbr} ${version} 2nd Phase - ${character} Release`,
                 title: isPhase1 ? `${gameData.abbr} ${version}` : `${gameData.abbr} ${version} 2nd Phase`,
-                imgFiles: [characterImg(character), ...entry.imgs],
+                imgFiles: [characterImg(game, character), ...entry.imgs],
                 confirmed,
             };
         } else {
@@ -243,6 +256,19 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
         return releaseEvents;
     }
 
+    function buildUpcomingRelease(game, gameData, timeline) {
+        const { upcoming } = timeline;
+
+        if (!upcoming || upcoming.patch.show_patch === false) return {};
+
+        return phaseReleaseEvents(game, gameData, upcoming, {
+            phaseDate: upcoming.open,
+            phaseNum: '1',
+            baseKey: `v${upcoming.patch.version}_release`,
+            confirmed: upcoming.startConfirmed || upcoming.open.getTime() <= timeline.now.getTime(),
+        });
+    }
+
     function buildSpecialPhaseEvents(game, gameData, timeline) {
         const specialEvents = {};
 
@@ -275,7 +301,7 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
                         portrait: true,
                         label: characters.length > 1 ? `${character} Release` : `${title} - ${character} Release`,
                         title: characters.length > 1 ? character : title,
-                        imgFiles: [characterImg(character), ...entry.imgs],
+                        imgFiles: [characterImg(game, character), ...entry.imgs],
                         confirmed,
                     };
                 }
@@ -401,6 +427,7 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
             ...buildCharacterTrailers(game, gameData, clock, timeline),
             ...buildPatchTrailers(game, gameData, clock, timeline),
             ...buildPhaseReleaseEvents(game, gameData, timeline),
+            ...buildUpcomingRelease(game, gameData, timeline),
             ...buildSpecialPhaseEvents(game, gameData, timeline),
             ...buildDripMarketing(game, gameData, clock, timeline),
             ...buildLivestreamEvents(game, gameData, clock, timeline),
