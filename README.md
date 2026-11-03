@@ -40,8 +40,7 @@ The web version has every feature except Game Detection, which is desktop-only. 
 - **Per-Game Task Tracking:** Track dailies, weeklies, events and more for each game.
 - **Multi-Account Support:** You can add as many accounts as you want, each with their own server, UID and label.
 - **Server-Aware Reset Timers:** Each task counts down to its real reset on the account's server, including games whose resets shift with daylight saving time, like NTE.
-- **Monthly Subscription Tracking:** Get an optional alert, per account, when your monthly subscription is about to run out.
-- **Notifications:** Optional Windows or browser alerts when unfinished tasks are about to reset.
+- **Notifications:** Optional Windows or browser alerts when unfinished tasks are about to reset or monthly subscriptions about to run out.
 - **Game Detection** *(desktop only)*: Optionally completes your dailies automatically while the game is running.
 
 ### Schedule
