@@ -32,7 +32,7 @@ The web version has every feature except Game Detection, which is desktop-only. 
 ### Setup
 <img width="900" alt="Setup screen with game and server selection" src="https://github.com/user-attachments/assets/ba06aed2-5dd9-45fc-9352-e04366fc8323" />
 
-- **Multi-Server Support:** Every server of every game is supported. This means that reset times will accurately match the account's region
+- **Multi-Server Support:** Every server of every game is supported. This means that reset times will accurately match the account's region.
 
 ### Tasks
 <img width="900" alt="Task list with dailies, weeklies and reset countdowns" src="https://github.com/user-attachments/assets/5e751ed2-4ac6-438a-9f3d-608c761aad20" />
