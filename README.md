@@ -39,14 +39,15 @@ The web version has every feature except Game Detection, which is desktop-only. 
 
 - **Per-Game Task Tracking:** Track dailies, weeklies, events and more for each game.
 - **Multi-Account Support:** Switch between main and alt accounts. Entering a UID picks the right server automatically.
-- **Server-Aware Reset Timers:** Each task counts down to its real reset on your server, daylight saving time included.
+- **Server-Aware Reset Timers:** Each task counts down to its real reset on your server, including games whose resets shift with daylight saving time, like NTE.
+- **Monthly Subscription Tracking:** Get an optional alert, per account, when your monthly subscription is about to run out.
 - **Notifications:** Optional Windows or browser alerts when unfinished tasks are about to reset.
 - **Game Detection** *(desktop only)*: Optionally completes your dailies automatically while the game is running.
 
 ### Schedule
 <img width="900" alt="Calendar showing patch releases, banners and livestreams" src="https://github.com/user-attachments/assets/80de01a5-74e5-47c6-b6c1-29a48236e964" />
 
-- **Patch Calendar:** Releases, banners and livestreams with countdowns, timed to your server.
+- **Patch Calendar:** Releases, drip marketing, character trailers and livestreams with countdowns. A server-selection is included for non-global events, such as certain 2nd Phase events.
 
 ### Character Themes
 <img width="900" alt="Theme picker with character themes from each game" src="https://github.com/user-attachments/assets/b6258195-689b-44a0-b81e-24c93fb25d1d" />
