@@ -47,7 +47,7 @@ The web version has every feature except Game Detection, which is desktop-only. 
 ### Schedule
 <img width="900" alt="Calendar showing patch releases, banners and livestreams" src="https://github.com/user-attachments/assets/80de01a5-74e5-47c6-b6c1-29a48236e964" />
 
-- **Patch Calendar:** Releases, drip marketing, character trailers and livestreams with countdowns. A server-selection is included for non-global events, such as certain 2nd Phase events.
+- **Patch Calendar:** Releases, drip marketing, character trailers and livestreams with countdowns. A server-selection is included for non-global events, like some 2nd phase events.
 
 ### Character Themes
 <img width="900" alt="Theme picker with character themes from each game" src="https://github.com/user-attachments/assets/b6258195-689b-44a0-b81e-24c93fb25d1d" />
