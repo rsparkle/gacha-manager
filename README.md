@@ -3,9 +3,11 @@
 
 A task manager built for gacha players. Tracks dailies, resets and deadlines across games and accounts so you never miss out on any limited rewards, with a calendar of upcoming new characters, patches and livestreams.
 
+**[Try it in your browser →](https://rsparkle.github.io/gacha-manager/)**
+
 **Built with:** Electron + Vue 3 + Vite
 
-**Platform:** Windows desktop app and a web version
+**Platform:** Windows desktop app, plus a web version for PC and mobile
 
 ---
 ## Download
@@ -13,54 +15,58 @@ Grab the latest installer from [Releases](https://github.com/rsparkle/gacha-mana
 
 Windows SmartScreen may warn about an unrecognized app since the installer isn't code-signed. Click **More info → Run anyway**.
 
-## Web version
-Try it in the browser at **https://rsparkle.github.io/gacha-manager/**.
+## Web Version
+**[Try it in your browser →](https://rsparkle.github.io/gacha-manager/)**
 
-The web version has the schedule and task tracking, with accounts saved in the browser. Notifications work in the browser too, but only while the tab is open. Game detection is desktop-only.
-Use **Settings → Accounts backup** to move them between browsers or to and from the desktop app.
+The web version has every feature except Game Detection, which is desktop-only. Use **Settings → Accounts backup** to move account data between browsers or devices, or to and from the desktop app.
 
-## Supported Games
+## Currently Supported Games
 - Genshin Impact
 - Honkai: Star Rail
 - Zenless Zone Zero
 - Neverness To Everness
 - Infinity Nikki
 
-## Preview
-**Setup**
+## Features
 
-https://github.com/user-attachments/assets/e99ae7bc-26b1-4c58-9c44-281b29654357
+### Setup
+<img width="900" alt="Setup screen with game and server selection" src="https://github.com/user-attachments/assets/ba06aed2-5dd9-45fc-9352-e04366fc8323" />
 
-**Tasks**
+- **Multi-Server Support:** Every server of every game is supported, so reset times always match your account's region.
 
-https://github.com/user-attachments/assets/2b24b5c2-60a3-44a7-8da3-32d8850590ef
+### Tasks
+<img width="900" alt="Task list with dailies, weeklies and reset countdowns" src="https://github.com/user-attachments/assets/5e751ed2-4ac6-438a-9f3d-608c761aad20" />
 
-**Schedule**
+- **Per-Game Task Tracking:** Track dailies, weeklies, events and more for each game.
+- **Multi-Account Support:** Switch between main and alt accounts. Entering a UID picks the right server automatically.
+- **Server-Aware Reset Timers:** Each task counts down to its real reset on your server, daylight saving time included.
+- **Notifications:** Optional Windows or browser alerts when unfinished tasks are about to reset.
+- **Game Detection** *(desktop only)*: Optionally completes your dailies automatically while the game is running.
 
-https://github.com/user-attachments/assets/b0336d16-2e27-4e57-b3bb-063e3235cb73
+### Schedule
+<img width="900" alt="Calendar showing patch releases, banners and livestreams" src="https://github.com/user-attachments/assets/80de01a5-74e5-47c6-b6c1-29a48236e964" />
 
-## Key Features
+- **Patch Calendar:** Releases, banners and livestreams with countdowns, timed to your server.
 
-- **Per-Game Task Tracking:** Track dailies, weeklies, events, etc. per game.
-- **Server-Aware Reset Timers:** Every task counts down to its real reset time on your account's server, including servers that follow daylight saving time.
-- **Multi-Account Support:** Seamlessly switch between main and alt accounts. Entering a UID picks the right server automatically.
-- **Notifications & Game Detection:** Optional Windows or browser alerts when unfinished tasks are about to reset, and optional automatic completion of your dailies when the game is running.
-- **Schedule Tracking:** Visual calendar of patch releases, banners and livestreams with countdown timers and server-aware timing.
-- **Character Themes:** A default dark mode plus character themes for a few characters.
+### Character Themes
+<img width="900" alt="Theme picker with character themes from each game" src="https://github.com/user-attachments/assets/b6258195-689b-44a0-b81e-24c93fb25d1d" />
+
+- Every game comes with at least one character theme, with more on the way.
 
 ## Building from source
 ```bash
 # Clone the repo
 git clone https://github.com/rsparkle/gacha-manager.git
+cd gacha-manager
 
 # Install dependencies
 npm install
 
-# Run or Build the desktop app
+# Run or build the desktop app
 npm start
 npm run make
 
-# Run or Build the web version
+# Run or build the web version
 npm run web:dev
 npm run web:build
 ```
