@@ -2,11 +2,12 @@ import { createAccountService } from '../../../shared/accounts/accountService.js
 import { backupFileName } from '../../../shared/accounts/accountsFile.js';
 import { createDeadlineNotifier } from '../../../shared/deadlineNotifier.js';
 import { createGameDataLoader } from '../../../shared/gameDataLoader.js';
-import { GAME_DATA_REFRESH_MS } from '../../../shared/remote.js';
+import { GAME_DATA_REFRESH_MS, USAGE_URL } from '../../../shared/remote.js';
+import { createUsagePing } from '../../../shared/usagePing.js';
 import { downloadTextFile, pickTextFile } from './files.js';
 import { createImageResolver } from './images.js';
 import { ensurePermission, showNotification } from './notifications.js';
-import { KEYS, createAccountsStorage, createSettingsStore, readJson, writeJson } from './storage.js';
+import { KEYS, createAccountsStorage, createSettingsStore, read, readJson, write, writeJson } from './storage.js';
 
 const settings = createSettingsStore();
 const gameDataListeners = new Set();
@@ -75,6 +76,10 @@ async function start() {
     accounts.setGameData(gameData.current);
     accounts.syncCalendarMonthlySubs();
 
+    const usage = createWebUsagePing();
+
+    usage.check();
+
     window.addEventListener('storage', reloadFromOtherTab);
 
     document.addEventListener('visibilitychange', () => {
@@ -82,6 +87,7 @@ async function start() {
 
         notifier.refresh();
         gameData.refresh();
+        usage.check();
     });
 
     setInterval(() => gameData.refresh(), GAME_DATA_REFRESH_MS);
@@ -89,6 +95,23 @@ async function start() {
     if (initial.fromCache) gameData.refresh();
 
     return accounts;
+}
+
+function createWebUsagePing() {
+    if (import.meta.env.DEV || !USAGE_URL) return { check: () => {} };
+
+    return createUsagePing({
+        version: __APP_VERSION__,
+        platform: () => (window.matchMedia?.('(pointer: coarse)').matches ? 'mobile' : 'web'),
+        read: () => read(KEYS.usagePing),
+        write: (date) => {
+            try {
+                write(KEYS.usagePing, date);
+            } catch (err) {
+                console.error('Failed to save usage ping date:', err);
+            }
+        },
+    });
 }
 
 const ready = () => (started ??= start());

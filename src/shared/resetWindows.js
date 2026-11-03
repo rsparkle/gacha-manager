@@ -72,6 +72,8 @@ export function applyResetWindow(task, { last, next, isDisabled }, now) {
 
     task.nextReset = task.isDisabled ? 0 : next ? next - now : null;
 
+    task.startsIn = task.isDisabled && last > now ? last - now : null;
+
     const completedAt = task.last_completed == null ? NaN : new Date(task.last_completed).getTime();
 
     task.isCompleted =

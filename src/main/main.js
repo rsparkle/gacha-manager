@@ -17,12 +17,14 @@ import { backupFileName } from '../shared/accounts/accountsFile.js';
 import { createDeadlineNotifier } from '../shared/deadlineNotifier.js';
 import { createGameDataLoader } from '../shared/gameDataLoader.js';
 import { DEFAULT_SETTINGS, migrateSettings } from '../shared/settings.js';
+import { createUsagePing } from '../shared/usagePing.js';
 import {
     GAME_DATA_REFRESH_MS,
     MISSING_ASSET_RETRY_MS,
     NETWORK_RETRY_MS,
     RELEASES_URL,
     STATUS_URL,
+    USAGE_URL,
     assetUrl,
     encodePath,
     fetchJson,
@@ -45,6 +47,7 @@ log.errorHandler.startCatching();
 const { autoUpdater } = require('electron-updater');
 
 const store = new Store();
+const usageStore = new Store({ name: 'usage' });
 
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 
@@ -62,6 +65,7 @@ const RENDERER_ROOT = path.join(__dirname, '../renderer/main_window');
 
 const CACHE_TOUCH_AFTER_MS = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_MS = 6 * 60 * 60 * 1000;
+const USAGE_CHECK_MS = 60 * 60 * 1000;
 const SNOOZE_OPTIONS = [
     [15, '15 minutes'],
     [30, '30 minutes'],
@@ -585,6 +589,21 @@ function showDeadlineNotification(payload) {
     deadlineNotification.show();
 }
 
+function startUsagePing() {
+    if (!app.isPackaged || !USAGE_URL) return;
+
+    const usage = createUsagePing({
+        version: app.getVersion(),
+        platform: () => 'desktop',
+        read: () => usageStore.get('lastPing', null),
+        write: (date) => usageStore.set('lastPing', date),
+    });
+
+    usage.check();
+    setInterval(usage.check, USAGE_CHECK_MS);
+    powerMonitor.on('resume', usage.check);
+}
+
 // --- Window Management ---
 
 const ICON_PATH = app.isPackaged
@@ -852,6 +871,8 @@ async function startApp() {
     syncMonitoring();
 
     checkAppStatus();
+
+    startUsagePing();
 
     if (initialData.fromCache) gameData.refresh();
 

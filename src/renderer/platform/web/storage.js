@@ -16,6 +16,7 @@ export const KEYS = {
     gameConfig: `${PREFIX}game-config`,
     gameTasks: `${PREFIX}game-tasks`,
     independentEvents: `${PREFIX}independent-events`,
+    usagePing: `${PREFIX}usage-ping`,
 };
 
 export function read(key) {

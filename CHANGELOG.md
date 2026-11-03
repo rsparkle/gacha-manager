@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.2] - 2026-11-03
+### Added
+- Added an anonymous daily usage count so I know how many people use the app. It only sends the app version and whether the user is on desktop, web or mobile.
+- Events and endgame modes that haven't opened yet now show "Starts in", like custom Endgame tasks already did
+
 ## [1.3.1] - 2026-11-03
 ### Fixed
 - Start Automatically in Settings now turns launching at startup on and off.

@@ -293,7 +293,6 @@ export function computeCustomTask(task, lastCompleted, now = new Date()) {
 
         computed.reset = structuredClone(task.reset);
         computed.ended = false;
-        computed.startsIn = window.isDisabled && window.last > now ? window.last - now : null;
         applyResetWindow(computed, window, now);
 
         return computed;

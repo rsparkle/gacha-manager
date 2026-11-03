@@ -82,6 +82,7 @@ describe('applyResetWindow', () => {
             isDisabled: false,
             duration: 24 * 3_600_000,
             nextReset: 12 * 3_600_000,
+            startsIn: null,
             isCompleted: false,
         });
     });
@@ -99,6 +100,13 @@ describe('applyResetWindow', () => {
             nextReset: 0,
             isCompleted: false,
         });
+    });
+
+    it('windows that have not opened yet say when they start', () => {
+        const later = { last: at('2026-11-12T04:00:00Z'), next: at('2026-11-13T04:00:00Z'), isDisabled: true };
+
+        expect(apply(null, later).startsIn).toBe(36 * 3_600_000);
+        expect(apply(null, { last, next, isDisabled: true }).startsIn).toBeNull();
     });
 
     it('open-ended windows have no countdown', () => {

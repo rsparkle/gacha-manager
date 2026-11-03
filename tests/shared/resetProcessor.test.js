@@ -23,6 +23,7 @@ function evaluate({ processor, gameTasks }, taskId, now, { server = 'Asia', comp
         isDisabled: task.isDisabled,
         isCompleted: task.isCompleted,
         duration: task.duration,
+        startsIn: task.startsIn,
         last: task.isDisabled || open ? null : new Date(nowMs + task.nextReset - task.duration).toISOString(),
         next: task.isDisabled || open ? null : new Date(nowMs + task.nextReset).toISOString(),
     };
@@ -316,6 +317,14 @@ describe('window', () => {
         expect(evaluate(ctx, 'task', '2026-10-21T02:00:00Z')).toMatchObject({ isDisabled: false });
         expect(evaluate(ctx, 'task', '2026-11-01T19:58:59Z')).toMatchObject({ isDisabled: false });
         expect(evaluate(ctx, 'task', '2026-11-01T19:59:00Z')).toMatchObject({ isDisabled: true, duration: 0 });
+    });
+
+    it('says when a window that has not opened yet starts', () => {
+        const ctx = single({ kind: 'window', startDate: '2026-10-21', endDate: '2026-11-02' });
+
+        expect(evaluate(ctx, 'task', '2026-10-20T02:00:00Z')).toMatchObject({ isDisabled: true, startsIn: 86_400_000 });
+        expect(evaluate(ctx, 'task', '2026-10-25T12:00:00Z')).toMatchObject({ isDisabled: false, startsIn: null });
+        expect(evaluate(ctx, 'task', '2026-11-01T19:59:00Z')).toMatchObject({ isDisabled: true, startsIn: null });
     });
 
     it.each([

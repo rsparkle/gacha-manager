@@ -7,6 +7,7 @@ export const STATUS_URL = `${ASSETS_BASE}/${STATUS_PATH}`;
 export const RELEASES_URL = 'https://github.com/rsparkle/gacha-manager/releases/latest';
 export const REPORT_URL =
     'https://script.google.com/macros/s/AKfycbwFgg5dGC6O2RB6Zef9LRSdF-IKkTPYTzPi2h9gTG3SXIq1X2u7GFV18qQayMv9nGEf/exec';
+export const USAGE_URL = 'https://script.google.com/macros/s/AKfycbwZnYhHRTL8z0Ea7MOwBpH6X_U4KBiHKTTqQ5lEm2aL-GcemtK11JIBisT3cAF_y8zC/exec';
 export const REPORT_ORIGINS = ['https://script.google.com', 'https://script.googleusercontent.com'];
 
 export const MISSING_ASSET_RETRY_MS = 6 * 60 * 60 * 1000;
@@ -21,12 +22,12 @@ export function assetUrl(relativePath) {
     return `${ASSETS_BASE}/${encodePath(relativePath)}`;
 }
 
-export async function fetchWithTimeout(url, ms, read) {
+export async function fetchWithTimeout(url, ms, read, init = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
 
     try {
-        return await read(await fetch(url, { signal: controller.signal }));
+        return await read(await fetch(url, { ...init, signal: controller.signal }));
     } finally {
         clearTimeout(timeout);
     }
@@ -39,5 +40,13 @@ export function fetchJson(url) {
         }
 
         return response.json();
+    });
+}
+
+export function postUsage(body) {
+    return fetchWithTimeout(USAGE_URL, 10000, (response) => (response.ok ? response.json() : null), {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(body),
     });
 }

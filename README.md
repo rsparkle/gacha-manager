@@ -65,6 +65,11 @@ npm run web:dev
 npm run web:build
 ```
 
+## Privacy
+Once a day, the desktop app and the web version send an anonymous count with only the app version and the platform (desktop, web or mobile). There's no ID, account data or anything else that could identify you. It's just how I know if people are using it.
+
+Everything else stays on your device. Reports are only sent when you submit one.
+
 ## Disclaimer
 GachaManager is an unofficial fan project and is not affiliated with or endorsed by any of the developers or publishers of the games it supports.
 

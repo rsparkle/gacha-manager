@@ -299,6 +299,7 @@ export function createResetProcessor(GAME_CONFIG, GAME_TASKS) {
         task.isDisabled = true;
         task.duration = 0;
         task.nextReset = 0;
+        task.startsIn = null;
         task.isCompleted = false;
     }
 
