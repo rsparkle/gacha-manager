@@ -29,7 +29,8 @@
 </template>
 
 <script setup>
-import { nextTick, ref, useId, watch } from 'vue';
+import { nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
+import { trackKeyboardInset } from '../lib/keyboardInset.js';
 
 const props = defineProps({
     open: { type: Boolean, default: false },
@@ -46,14 +47,23 @@ const emit = defineEmits(['close', 'submit', 'opened']);
 
 const dialog = ref(null);
 const titleId = useId();
+let stopKeyboardInset = null;
+
+const stopTrackingKeyboard = () => {
+    stopKeyboardInset?.();
+    stopKeyboardInset = null;
+};
 
 watch(
     () => props.open,
     async (open) => {
         if (!open) {
+            stopTrackingKeyboard();
             if (dialog.value?.open) dialog.value.close();
             return;
         }
+
+        stopKeyboardInset ??= trackKeyboardInset();
 
         await nextTick();
 
@@ -63,6 +73,8 @@ watch(
 );
 
 const close = () => emit('close');
+
+onBeforeUnmount(stopTrackingKeyboard);
 
 const submit = () => {
     if (props.canConfirm && !props.busy) emit('submit');
@@ -204,11 +216,31 @@ const onDialogClick = (event) => {
     opacity: 0.4;
 }
 
+@media (max-width: 640px) {
+    .base-dialog {
+        max-height: calc(100dvh - var(--keyboard-inset, 0px) - 24px);
+        overscroll-behavior: contain;
+    }
+
+    .base-dialog--center {
+        bottom: var(--keyboard-inset, 0px);
+    }
+
+    .base-dialog--corner {
+        bottom: calc(16px + var(--keyboard-inset, 0px));
+    }
+}
+
 @media (max-width: 480px) {
     .base-dialog--corner {
         width: 100%;
-        inset: auto 0 0 0;
+        max-height: calc(100dvh - var(--keyboard-inset, 0px) - 12px);
+        inset: auto 0 var(--keyboard-inset, 0px) 0;
         border-radius: 10px 10px 0 0;
+    }
+
+    .base-dialog--corner .base-dialog-inner {
+        padding-bottom: max(16px, env(safe-area-inset-bottom));
     }
 }
 </style>

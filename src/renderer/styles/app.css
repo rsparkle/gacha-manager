@@ -317,6 +317,64 @@ textarea {
     height: 0;
 }
 
+@media (max-width: 640px) {
+    .app-bar {
+        padding: 0 10px;
+        gap: 8px;
+    }
+
+    .app-bar-right {
+        gap: 6px;
+    }
+
+    .view-btn,
+    .theme-btn,
+    .settings-btn {
+        min-height: 34px;
+        font-size: 12px;
+    }
+
+    .view-btn {
+        padding: 4px 14px;
+    }
+
+    .app-bar-label,
+    .theme-picker-name,
+    .settings-btn-label {
+        display: none;
+    }
+
+    .theme-picker-toggle {
+        padding: 4px 10px;
+    }
+
+    .theme-swatch {
+        width: 10px;
+        height: 10px;
+    }
+
+    .theme-picker-toggle .theme-picker-caret {
+        margin-left: 0;
+    }
+
+    .settings-btn {
+        justify-content: center;
+        min-width: 36px;
+        font-size: 14px;
+    }
+
+    .theme-menu .theme-btn {
+        min-height: 40px;
+        padding: 4px 14px;
+    }
+
+    input:not([type='checkbox']):not([type='radio']):not([type='range']),
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

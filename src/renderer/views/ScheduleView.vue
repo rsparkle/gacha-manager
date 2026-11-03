@@ -1,6 +1,17 @@
 <template>
     <div id="scheduleApp">
-        <div class="schedule-header">
+        <button
+            v-if="isMobile"
+            type="button"
+            class="schedule-month-orb"
+            :class="{ 'schedule-month-orb--away': !isCurrentMonth }"
+            :aria-label="isCurrentMonth ? `${monthName} ${currentYear}` : `${monthName} ${currentYear}, back to today`"
+            @click="goToToday"
+        >
+            {{ monthShort }} <span class="year">{{ currentYear }}</span>
+        </button>
+
+        <div ref="filtersPanel" class="schedule-header" :class="{ 'schedule-header--open': filtersOpen }">
             <div class="schedule-month-nav">
                 <button
                     class="nav-btn"
@@ -59,7 +70,7 @@
         </div>
 
         <div class="schedule-body">
-            <div class="calendar-grid">
+            <div class="calendar-grid" @touchstart.passive="onSwipeStart" @touchend="onSwipeEnd">
                 <div class="week-header">
                     <div
                         v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']"
@@ -70,7 +81,7 @@
                     </div>
                 </div>
 
-                <div class="calendar-weeks">
+                <div ref="weeksEl" class="calendar-weeks">
                     <div v-for="(week, wi) in weeks" :key="wi" class="week">
                         <div
                             v-for="(day, di) in week"
@@ -80,7 +91,9 @@
                                 empty: !day,
                                 today: day && isToday(day.date),
                                 'cell--has-art': day && day.releases.length > 0,
+                                'cell--selected': isMobile && day && day.key === selectedDay?.key,
                             }"
+                            @click="day && selectDay(day)"
                         >
                             <template v-if="day">
                                 <span class="day-number">{{ day.date.getDate() }}</span>
@@ -153,7 +166,77 @@
                     Dates are estimated based on patch trends and may be subject to change
                 </div>
             </div>
+
+            <section v-if="isMobile && selectedDay" class="day-agenda">
+                <p class="day-agenda-title">
+                    {{ formatDayTitle(selectedDay.date) }}
+                    <span v-if="isToday(selectedDay.date)" class="day-agenda-today">Today</span>
+                </p>
+
+                <p v-if="!selectedDay.events.length" class="day-agenda-empty">Nothing scheduled</p>
+
+                <button
+                    v-for="(event, ei) in selectedDay.events"
+                    :key="`${event.game}-${event.label}-${event.date.getTime()}-${ei}`"
+                    type="button"
+                    class="day-agenda-event"
+                    :class="{ estimated: !event.confirmed }"
+                    :style="{ '--gc': event.color }"
+                    @click="togglePinnedEvent(event, $event)"
+                >
+                    <img v-if="gameIcons[event.game]" :src="gameIcons[event.game]" alt="" class="day-agenda-icon" />
+                    <span v-else class="day-agenda-icon day-agenda-icon--abbr">
+                        {{ event.source ?? gameAbbr(event.game) }}
+                    </span>
+                    <span class="day-agenda-label">{{ event.label }}</span>
+                    <span class="day-agenda-meta">
+                        <span class="day-agenda-time">{{ formatEventTime(event) }}</span>
+                        <span v-if="!event.confirmed" class="day-agenda-estimated">Estimated</span>
+                    </span>
+                </button>
+            </section>
         </div>
+
+        <button
+            v-if="isMobile"
+            ref="filtersOrb"
+            type="button"
+            class="schedule-filters-orb"
+            :class="{ 'schedule-filters-orb--open': filtersOpen }"
+            :aria-expanded="filtersOpen"
+            aria-label="Games and server"
+            @click="filtersOpen = !filtersOpen"
+        >
+            <svg
+                v-if="!filtersOpen"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+            >
+                <line x1="4" y1="7" x2="20" y2="7" />
+                <line x1="4" y1="17" x2="20" y2="17" />
+                <circle cx="9" cy="7" r="2.4" fill="var(--panel)" />
+                <circle cx="15" cy="17" r="2.4" fill="var(--panel)" />
+            </svg>
+            <svg
+                v-else
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.4"
+                stroke-linecap="round"
+            >
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+            </svg>
+        </button>
 
         <Teleport to="body">
             <Transition name="event-tooltip">
@@ -239,9 +322,11 @@ import { SCHEDULE_SERVERS } from '../../shared/gameData.js';
 import { earliestPatchStart } from '../../shared/patches.js';
 import { themeAsset } from '../themes.js';
 import ReportFlag from '../components/ReportFlag.vue';
+import { useIsMobile } from '../composables/useIsMobile.js';
 
 const { settings, saveSettings } = useSettings();
 const { gameConfig, independentEvents, gamesWithAccounts } = useAccounts();
+const { isMobile } = useIsMobile();
 const GAME_CONFIG = computed(() => gameConfig.value ?? {});
 
 const gameColor = (game) => (game === OTHERS ? OTHERS_COLOR : GAME_CONFIG.value[game]?.color);
@@ -252,6 +337,8 @@ let clockTimer;
 let scheduleBuiltAt = 0;
 
 const SCHEDULE_REBUILD_MS = 60 * 60 * 1000;
+const SWIPE_MIN_DISTANCE = 50;
+const SWIPE_MAX_MS = 600;
 
 const now = ref(new Date());
 const currentYear = ref(now.value.getFullYear());
@@ -270,6 +357,14 @@ const activeEvent = ref(null);
 const pinned = ref(false);
 const tooltipPosition = ref({ left: 0, top: 0, placement: 'above' });
 
+const filtersOpen = ref(false);
+const filtersPanel = ref(null);
+const filtersOrb = ref(null);
+const weeksEl = ref(null);
+const selectedDayKey = ref(null);
+let swipeStart = null;
+let dismissedAt = 0;
+
 const monthNames = [
     'January',
     'February',
@@ -286,6 +381,11 @@ const monthNames = [
 ];
 
 const monthName = computed(() => monthNames[currentMonth.value]);
+const monthShort = computed(() => monthName.value.slice(0, 3));
+
+const isCurrentMonth = computed(
+    () => currentYear.value === now.value.getFullYear() && currentMonth.value === now.value.getMonth(),
+);
 const gameList = computed(() => Object.keys(scheduleData.value));
 
 const minDate = computed(() => {
@@ -325,13 +425,21 @@ const isTile = (day, release) => day.releases.length > 1 && !isPortrait(release)
 
 const activeEventIsPortrait = computed(() => isPortrait(activeEvent.value));
 
-const tooltipStyle = computed(() => ({
-    '--gc': activeEvent.value?.color ?? 'var(--accent)',
-    left: `${tooltipPosition.value.left}px`,
-    top: `${tooltipPosition.value.top}px`,
-    transform:
-        tooltipPosition.value.placement === 'above' ? 'translate(-50%, calc(-100% - 10px))' : 'translate(-50%, 10px)',
-}));
+const tooltipStyle = computed(() => {
+    const color = { '--gc': activeEvent.value?.color ?? 'var(--accent)' };
+
+    if (isMobile.value) return color;
+
+    return {
+        ...color,
+        left: `${tooltipPosition.value.left}px`,
+        top: `${tooltipPosition.value.top}px`,
+        transform:
+            tooltipPosition.value.placement === 'above'
+                ? 'translate(-50%, calc(-100% - 10px))'
+                : 'translate(-50%, 10px)',
+    };
+});
 
 const activeCountdown = computed(() => {
     if (!activeEvent.value?.date || activeEvent.value.allDay) return null;
@@ -472,7 +580,7 @@ const weeks = computed(() => {
         const date = new Date(currentYear.value, currentMonth.value, d);
         const events = eventsByDay.value[date.toDateString()] ?? [];
         const releases = events.filter((event) => event.type === 'release' && event.imgFiles?.length);
-        days.push({ date, events, releases });
+        days.push({ key: date.toDateString(), date, events, releases });
     }
 
     const result = [];
@@ -486,7 +594,7 @@ const weeks = computed(() => {
 });
 
 const nextMonth = () => {
-    if (!canGoNext.value) return;
+    if (!canGoNext.value) return false;
 
     hideEventTooltip();
 
@@ -496,10 +604,12 @@ const nextMonth = () => {
     } else {
         currentMonth.value++;
     }
+
+    return true;
 };
 
 const prevMonth = () => {
-    if (!canGoPrev.value) return;
+    if (!canGoPrev.value) return false;
 
     hideEventTooltip();
 
@@ -509,7 +619,100 @@ const prevMonth = () => {
     } else {
         currentMonth.value--;
     }
+
+    return true;
 };
+
+const slideWeeks = (direction) => {
+    weeksEl.value?.animate(
+        [
+            { transform: `translateX(${direction * 36}px)`, opacity: 0.2 },
+            { transform: 'translateX(0)', opacity: 1 },
+        ],
+        { duration: 200, easing: 'ease-out' },
+    );
+};
+
+const nudgeWeeks = (direction) => {
+    weeksEl.value?.animate(
+        [
+            { transform: 'translateX(0)' },
+            { transform: `translateX(${direction * -14}px)` },
+            { transform: 'translateX(0)' },
+        ],
+        { duration: 220, easing: 'ease-out' },
+    );
+};
+
+const onSwipeStart = (domEvent) => {
+    if (domEvent.touches.length !== 1) {
+        swipeStart = null;
+        return;
+    }
+
+    const touch = domEvent.touches[0];
+    swipeStart = { x: touch.clientX, y: touch.clientY, time: Date.now() };
+};
+
+const onSwipeEnd = (domEvent) => {
+    if (!swipeStart) return;
+
+    const touch = domEvent.changedTouches[0];
+    const dx = touch.clientX - swipeStart.x;
+    const dy = touch.clientY - swipeStart.y;
+    const elapsed = Date.now() - swipeStart.time;
+
+    swipeStart = null;
+
+    if (elapsed > SWIPE_MAX_MS || Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+
+    const direction = dx < 0 ? 1 : -1;
+    const moved = direction === 1 ? nextMonth() : prevMonth();
+
+    if (moved) slideWeeks(direction);
+    else nudgeWeeks(direction);
+};
+
+const goToToday = () => {
+    if (isCurrentMonth.value) {
+        selectedDayKey.value = now.value.toDateString();
+        return;
+    }
+
+    const direction =
+        currentYear.value * 12 + currentMonth.value < now.value.getFullYear() * 12 + now.value.getMonth() ? 1 : -1;
+
+    hideEventTooltip();
+    currentYear.value = now.value.getFullYear();
+    currentMonth.value = now.value.getMonth();
+    slideWeeks(direction);
+};
+
+const monthDays = computed(() => weeks.value.flat().filter(Boolean));
+
+const defaultSelectedDay = () => {
+    const days = monthDays.value;
+
+    return days.find((day) => isToday(day.date)) ?? days.find((day) => day.events.length) ?? days[0];
+};
+
+const selectedDay = computed(
+    () => monthDays.value.find((day) => day.key === selectedDayKey.value) ?? defaultSelectedDay() ?? null,
+);
+
+const selectDay = (day) => {
+    if (!isMobile.value || Date.now() - dismissedAt < 400) return;
+
+    hideEventTooltip();
+    selectedDayKey.value = day.key;
+};
+
+const formatDayTitle = (date) =>
+    date.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric',
+    });
 
 const formatEventTime = (event) =>
     event.allDay
@@ -587,14 +790,27 @@ const togglePinnedEvent = (event, domEvent) => {
 };
 
 const onPinnedPointerDown = (domEvent) => {
+    if (
+        filtersOpen.value &&
+        !filtersPanel.value?.contains(domEvent.target) &&
+        !filtersOrb.value?.contains(domEvent.target)
+    ) {
+        filtersOpen.value = false;
+        dismissedAt = Date.now();
+    }
+
     if (!pinned.value) return;
-    if (domEvent.target.closest?.('.schedule-event-tooltip, .event')) return;
+    if (domEvent.target.closest?.('.schedule-event-tooltip, .event, .day-agenda-event')) return;
 
     hideEventTooltip();
+    dismissedAt = Date.now();
 };
 
 const onPinnedKeydown = (domEvent) => {
-    if (pinned.value && domEvent.key === 'Escape') hideEventTooltip();
+    if (domEvent.key !== 'Escape') return;
+
+    filtersOpen.value = false;
+    if (pinned.value) hideEventTooltip();
 };
 
 const reportContext = computed(() => ({
@@ -633,6 +849,15 @@ watch(
 );
 
 watch(visibleImageFiles, () => loadEventImages(), { immediate: true });
+
+watch([currentYear, currentMonth], () => {
+    selectedDayKey.value = null;
+});
+
+watch(isMobile, (mobile) => {
+    if (!mobile) filtersOpen.value = false;
+    hideEventTooltip();
+});
 
 watch(selectedServer, (server) => {
     settings.value.server = server;

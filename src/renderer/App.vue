@@ -44,10 +44,11 @@
                         <button
                             class="theme-btn theme-picker-toggle"
                             :aria-expanded="themeMenuOpen"
+                            :aria-label="`Theme: ${currentTheme.name}`"
                             @click="themeMenuOpen = !themeMenuOpen"
                         >
                             <span class="theme-swatch" :class="currentTheme.id || 'default'"></span>
-                            <span>{{ currentTheme.name }}</span>
+                            <span class="theme-picker-name">{{ currentTheme.name }}</span>
                             <span class="theme-picker-caret">▾</span>
                         </button>
                         <Transition name="theme-menu">
@@ -75,9 +76,9 @@
                     <span>Background</span>
                     <span>▾</span>
                 </button>
-                <button class="settings-btn" @click="showSettings = !showSettings">
+                <button class="settings-btn" aria-label="Settings" @click="showSettings = !showSettings">
                     <span>⚙</span>
-                    <span>Settings</span>
+                    <span class="settings-btn-label">Settings</span>
                 </button>
             </div>
         </div>
@@ -182,6 +183,8 @@ const onGameDataUpdated = async () => {
 };
 
 const reloadPage = () => window.location.reload();
+
+watch(currentView, () => window.scrollTo({ top: 0 }));
 
 watch(
     () => settings.value.theme,

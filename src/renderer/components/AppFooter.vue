@@ -2,8 +2,8 @@
     <footer class="app-footer">
         <div class="footer-inner">
             <p class="footer-main">
-                This is a non-commercial, unofficial, fan-made gacha companion app and is not affiliated with, endorsed
-                by, or associated with any of the game publishers listed below.
+                This is a non-commercial, unofficial, fan-made gacha companion app and is not affiliated with or endorsed
+                by with any of the game publishers listed below.
             </p>
             <p class="footer-owners">
                 All game assets, characters, names, and trademarks belong to their respective owners -

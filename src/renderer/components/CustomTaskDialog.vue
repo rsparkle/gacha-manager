@@ -1,5 +1,6 @@
 <template>
     <BaseDialog
+        class="custom-task-dialog"
         :open="open"
         :title="task ? 'Edit task' : `Add a task to ${gameName}`"
         :error="error"
@@ -258,6 +259,10 @@ const submit = async () => {
 </script>
 
 <style scoped>
+.custom-task-dialog {
+    min-height: min(364px, calc(100dvh - var(--keyboard-inset, 0px) - 24px));
+}
+
 .custom-task-duration {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

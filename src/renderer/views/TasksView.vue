@@ -8,6 +8,7 @@
                     :key="gameGroup.name"
                     class="game-item"
                     :class="{ active: selectedGame?.name === gameGroup.name }"
+                    :title="gameLabel(gameGroup)"
                     @click="selectGame(gameGroup)"
                 >
                     <div class="game-name-row">
@@ -26,7 +27,7 @@
                 </div>
             </div>
 
-            <div class="add-game-wrapper">
+            <div ref="gamePickerAnchor" class="add-game-wrapper">
                 <Transition name="popover">
                     <div v-if="showGamePicker" class="game-picker">
                         <div
@@ -42,11 +43,40 @@
                         </div>
                     </div>
                 </Transition>
-                <button class="add-game" @click="showGamePicker = !showGamePicker">+ Add Game</button>
+                <button
+                    class="add-game"
+                    aria-label="Add game"
+                    :aria-expanded="showGamePicker"
+                    @click="showGamePicker = !showGamePicker"
+                >
+                    <span aria-hidden="true">+</span>
+                    <span class="add-game-text">Add Game</span>
+                </button>
             </div>
 
             <div class="recent-codes-wrapper">
-                <button class="add-game" @click="showRecentCodes = true">Recent Codes</button>
+                <button class="add-game" aria-label="Recent codes" @click="showRecentCodes = true">
+                    <svg
+                        class="add-game-short"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        aria-hidden="true"
+                    >
+                        <path d="M15 12h-5" />
+                        <path d="M15 8h-5" />
+                        <path d="M19 17V5a2 2 0 0 0-2-2H4" />
+                        <path
+                            d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"
+                        />
+                    </svg>
+                    <span class="add-game-text">Recent Codes</span>
+                </button>
             </div>
         </div>
 
@@ -167,26 +197,93 @@
                                 "
                             >
                                 <span class="maintenance-dot" />
-                                {{ maintenanceLabel }}
+                                <span class="maintenance-label">{{ maintenanceLabel }}</span>
+                                <span class="maintenance-compact">
+                                    <span class="maintenance-compact-title">Maintenance</span>
+                                    <span class="maintenance-compact-time">{{ maintenanceShort }}</span>
+                                </span>
                             </div>
                             <button v-if="taskCategories.length > 0" class="btn-edit" @click="openCustomTaskDialog()">
-                                Add Task
+                                <svg
+                                    class="btn-glyph"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                <span class="btn-text">Add Task</span>
                             </button>
-                            <button v-if="!uidEdit.editing" class="btn-edit" @click="startUidEdit">Edit UID</button>
+                            <button v-if="!uidEdit.editing" class="btn-edit" @click="startUidEdit">
+                                <svg
+                                    class="btn-glyph"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <path d="M12 20h9" />
+                                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
+                                </svg>
+                                <span class="btn-text">Edit UID</span>
+                            </button>
                             <button
                                 v-else
                                 class="btn-edit"
                                 @mousedown.prevent="uidEdit.cancel()"
                                 @click="uidEdit.cancel()"
                             >
-                                Cancel
+                                <svg
+                                    class="btn-glyph"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <line x1="6" y1="6" x2="18" y2="18" />
+                                    <line x1="18" y1="6" x2="6" y2="18" />
+                                </svg>
+                                <span class="btn-text">Cancel</span>
                             </button>
                             <button
                                 v-if="!isCustomGame || selectedGame.accounts.length > 1"
                                 class="btn-delete"
                                 @click="deleteAccount"
                             >
-                                Delete Account
+                                <svg
+                                    class="btn-glyph"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2.2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    aria-hidden="true"
+                                >
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                    <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                                </svg>
+                                <span class="btn-text">Delete Account</span>
                             </button>
                             <button v-if="isCustomGame" class="btn-delete" @click="deleteGame">Delete Game</button>
                             <button
@@ -272,7 +369,7 @@
                                 v-model="labelEdit.value"
                                 class="account-label-input"
                                 type="text"
-                                :style="{ width: Math.max(labelEdit.value.length, 4) * 7 + 'px' }"
+                                :style="{ width: Math.max(labelEdit.value.length, 4) + 1 + 'ch' }"
                                 @keydown.enter.prevent="labelEdit.commit()"
                                 @keydown.esc.prevent="labelEdit.cancel()"
                                 @keydown.tab.prevent="commitAndMoveToNext(account)"
@@ -501,6 +598,7 @@ const failedImages = ref(new Set());
 
 const editingServer = ref(false);
 const serverAnchor = ref(null);
+const gamePickerAnchor = ref(null);
 
 const tasksScroll = ref(null);
 
@@ -661,6 +759,7 @@ watch([selectedGameName, selectedAccountId], () => {
     gameNameEdit.cancel();
     editingServer.value = false;
     tasksScroll.value?.scrollTo({ top: 0 });
+    window.scrollTo({ top: 0 });
 });
 
 const selectGame = (gameGroup) => {
@@ -678,15 +777,21 @@ const completionPercentage = computed(() => {
 
 const maintenanceOngoing = computed(() => selectedGame.value?.maintenance?.type === 'maintenance_ongoing');
 
-const maintenanceLabel = computed(() => {
+const maintenanceTime = computed(() => {
     const maintenance = selectedGame.value?.maintenance;
 
-    if (!maintenance) return '';
-
-    const time = formatCountdown(maintenance.time);
-
-    return maintenanceOngoing.value ? `Maintenance ends in ${time}` : `Maintenance starts in ${time}`;
+    return maintenance ? formatCountdown(maintenance.time) : '';
 });
+
+const maintenanceLabel = computed(() =>
+    maintenanceOngoing.value
+        ? `Maintenance ends in ${maintenanceTime.value}`
+        : `Maintenance starts in ${maintenanceTime.value}`,
+);
+
+const maintenanceShort = computed(() =>
+    maintenanceOngoing.value ? `${maintenanceTime.value} left` : `in ${maintenanceTime.value}`,
+);
 
 const run = async (action, successMessage, duration = 1000) => {
     try {
@@ -830,6 +935,10 @@ const handleClickOutside = (e) => {
     if (serverAnchor.value && !serverAnchor.value.contains(e.target)) {
         editingServer.value = false;
     }
+
+    if (gamePickerAnchor.value && !gamePickerAnchor.value.contains(e.target)) {
+        showGamePicker.value = false;
+    }
 };
 
 const toggleAndSaveSetting = (map, gameName, accountId) => {
@@ -954,10 +1063,10 @@ watch(
 );
 
 onMounted(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('pointerdown', handleClickOutside);
 });
 
 onUnmounted(() => {
-    document.removeEventListener('mousedown', handleClickOutside);
+    document.removeEventListener('pointerdown', handleClickOutside);
 });
 </script>

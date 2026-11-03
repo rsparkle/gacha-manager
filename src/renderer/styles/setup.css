@@ -297,3 +297,33 @@
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
+
+@media (max-width: 640px) {
+    #setupApp {
+        padding: calc(68px + var(--titlebar-h)) 14px 0;
+        overflow: clip;
+    }
+
+    .setup-title {
+        font-size: 26px;
+    }
+
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .setup-footer {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        margin: 0 -14px;
+        padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+        background: linear-gradient(to top, var(--bg) 60%, transparent);
+    }
+
+    .btn-confirm {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 13px;
+    }
+}

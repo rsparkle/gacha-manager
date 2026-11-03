@@ -153,6 +153,10 @@
 
 .add-game {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     padding: 10px 10px;
     border: 1px solid var(--border-hover);
     border-radius: 6px;
@@ -171,6 +175,10 @@
     background: var(--panel-hover);
     border-color: var(--accent);
     color: var(--text);
+}
+
+.add-game-short {
+    display: none;
 }
 
 .main,
@@ -244,6 +252,10 @@
 .maintenance-warning--ongoing {
     --mw: var(--danger);
     background: color-mix(in srgb, var(--mw) 24%, var(--panel));
+}
+
+.maintenance-compact {
+    display: none;
 }
 
 .maintenance-dot {
@@ -448,7 +460,15 @@
 
 .btn-edit,
 .btn-delete {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 6px 12px;
+}
+
+.btn-glyph {
+    display: none;
+    flex-shrink: 0;
 }
 
 .btn-icon:hover,
@@ -882,6 +902,14 @@
         padding-right: 56px;
     }
 
+    .task:hover {
+        background: transparent;
+    }
+
+    .task:active {
+        background: var(--panel-hover);
+    }
+
     .task-actions {
         opacity: 1;
         visibility: visible;
@@ -961,5 +989,343 @@
 
     .tasks-area {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    #tasksApp {
+        flex-direction: column;
+        height: auto;
+        min-height: 100dvh;
+    }
+
+    .main,
+    .main-inner {
+        flex: none;
+        overflow: visible;
+    }
+
+    .main-inner {
+        min-height: calc(100dvh - 96px - var(--titlebar-h));
+    }
+
+    .tasks-scroll {
+        flex: 1;
+        overflow: visible;
+        background-size: auto 100dvh;
+    }
+
+    .sidebar {
+        position: relative;
+        z-index: 20;
+        width: auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-title {
+        display: none;
+    }
+
+    .game-list {
+        min-width: 0;
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+    }
+
+    .game-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .game-item {
+        display: flex;
+        flex-shrink: 0;
+        min-height: 0;
+        margin: 0;
+        padding: 5px;
+    }
+
+    .game-item.active {
+        background: var(--panel-selected);
+    }
+
+    .game-item.active::before {
+        display: none;
+    }
+
+    .game-item-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+    }
+
+    .game-name {
+        display: none;
+    }
+
+    .urgent-orb {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        box-shadow:
+            0 0 0 2px var(--panel),
+            0 0 6px var(--orb, var(--urgent));
+    }
+
+    .urgent-orb::before {
+        display: none;
+    }
+
+    .add-game-wrapper,
+    .recent-codes-wrapper,
+    .recent-codes-wrapper + .add-game-wrapper {
+        flex-shrink: 0;
+        margin: 0;
+    }
+
+    .add-game-wrapper {
+        margin-left: auto;
+        padding-left: 6px;
+        border-left: 1px solid var(--border);
+    }
+
+    .add-game {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        border-radius: 8px;
+        font-family: var(--font-mono);
+        font-size: 18px;
+    }
+
+    .add-game-text {
+        display: none;
+    }
+
+    .add-game-short {
+        display: block;
+    }
+
+    .game-picker {
+        top: calc(100% + 8px);
+        right: -48px;
+        bottom: auto;
+        left: auto;
+        width: max-content;
+        min-width: 200px;
+        max-width: calc(100vw - 16px);
+        max-height: 60dvh;
+        overflow-y: auto;
+    }
+
+    .game-picker-item {
+        padding: 13px 14px;
+        font-size: 13px;
+    }
+
+    .hero {
+        gap: 10px;
+        min-height: 0;
+        padding: 12px 14px 10px;
+    }
+
+    .hero-img {
+        max-width: 55%;
+        opacity: 0.7;
+    }
+
+    .hero-title-row {
+        padding-right: 96px;
+        margin-left: -5px;
+    }
+
+    .btn-favorite {
+        width: 26px;
+        height: 26px;
+    }
+
+    .btn-favorite svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .hero-title {
+        min-width: 0;
+        overflow: hidden;
+        font-size: 18px;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .hero-title-input {
+        width: 100%;
+    }
+
+    .hero-bottom {
+        grid-template-columns: auto minmax(0, 1fr);
+        grid-auto-columns: auto;
+        grid-auto-flow: column;
+        align-items: end;
+        gap: 4px;
+    }
+
+    .hero-account-info {
+        gap: 0;
+        min-width: 0;
+        margin-right: 4px;
+    }
+
+    .account-uid,
+    .account-uid-input {
+        font-size: 14px;
+    }
+
+    .hero-progress {
+        position: absolute;
+        right: 0;
+        bottom: calc(100% + 16px);
+        min-width: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+    }
+
+    .complete-sticker {
+        order: 0;
+        height: 26px;
+        margin: -8px 0;
+    }
+
+    .hero-bottom > .hero-actions {
+        display: contents;
+    }
+
+    .hero-actions > :first-child:not(.maintenance-warning) {
+        justify-self: end;
+    }
+
+    .maintenance-warning {
+        justify-self: center;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 34px;
+        margin: 0;
+        padding: 0 7px;
+        overflow: hidden;
+    }
+
+    .maintenance-dot {
+        display: none;
+    }
+
+    .maintenance-label {
+        display: none;
+    }
+
+    .maintenance-compact {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        line-height: 1.15;
+    }
+
+    .maintenance-compact-title {
+        overflow: hidden;
+        font-size: 9px;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        opacity: 0.8;
+    }
+
+    .maintenance-compact-time {
+        overflow: hidden;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        text-overflow: ellipsis;
+    }
+
+    .btn-icon,
+    .btn-edit,
+    .btn-delete {
+        width: 32px;
+        min-height: 34px;
+        padding: 0;
+        font-size: 12px;
+    }
+
+    .btn-glyph {
+        display: block;
+    }
+
+    .btn-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+
+    .btn-delete:not(:has(.btn-glyph)) {
+        width: auto;
+        padding: 0 10px;
+    }
+
+    .server-clickable {
+        padding: 6px 4px;
+    }
+
+    .server-picker-item {
+        padding: 11px 12px;
+        font-size: 12px;
+    }
+
+    .account-nav {
+        padding: 0 8px;
+    }
+
+    .account-nav-list {
+        scrollbar-width: none;
+    }
+
+    .account-nav-list::-webkit-scrollbar {
+        display: none;
+    }
+
+    .account-tab {
+        padding: 12px 14px;
+    }
+
+    .monthly-sub {
+        gap: 6px;
+        padding-left: 10px;
+        margin-left: 8px;
+    }
+
+    .monthly-sub input {
+        width: 64px;
+    }
+
+    .tasks-area {
+        min-height: 0;
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .task-card {
+        gap: 8px;
+        padding: 12px;
+    }
+
+    .task {
+        padding: 10px 6px;
     }
 }

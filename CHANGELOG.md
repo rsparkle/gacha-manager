@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0] - 2026-11-03
+### Added
+- Mobile support for the web version
+- Tasks on mobile: the game list turns into icons and the header scrolls away with your tasks
+- Schedule on mobile: swipe to change month, tap a day to see its events, server and game filters are behind the button at the bottom
+- Popups stay above the keyboard
+### Changed
+- The Add Game picker now closes when you click outside it
+### Fixed
+- The Others filter no longer shows up empty in narrow windows
+- Picking a category for a Daily task no longer shows a second scrollbar
+
 ## [1.2.8] - 2026-11-02
 ### Added
 - The schedule now shows the release after the next patch, unless the game has an unpredictable schedule
