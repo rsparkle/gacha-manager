@@ -32,14 +32,14 @@ The web version has every feature except Game Detection, which is desktop-only. 
 ### Setup
 <img width="900" alt="Setup screen with game and server selection" src="https://github.com/user-attachments/assets/ba06aed2-5dd9-45fc-9352-e04366fc8323" />
 
-- **Multi-Server Support:** Every server of every game is supported, so reset times always match your account's region.
+- **Multi-Server Support:** Every server of every game is supported. This means that reset times will accurately match the account's region
 
 ### Tasks
 <img width="900" alt="Task list with dailies, weeklies and reset countdowns" src="https://github.com/user-attachments/assets/5e751ed2-4ac6-438a-9f3d-608c761aad20" />
 
 - **Per-Game Task Tracking:** Track dailies, weeklies, events and more for each game.
-- **Multi-Account Support:** Switch between main and alt accounts. Entering a UID picks the right server automatically.
-- **Server-Aware Reset Timers:** Each task counts down to its real reset on your server, including games whose resets shift with daylight saving time, like NTE.
+- **Multi-Account Support:** You can add as many accounts as you want, each with their own server, UID and label.
+- **Server-Aware Reset Timers:** Each task counts down to its real reset on the account's server, including games whose resets shift with daylight saving time, like NTE.
 - **Monthly Subscription Tracking:** Get an optional alert, per account, when your monthly subscription is about to run out.
 - **Notifications:** Optional Windows or browser alerts when unfinished tasks are about to reset.
 - **Game Detection** *(desktop only)*: Optionally completes your dailies automatically while the game is running.
