@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.4] - 2026-11-03
+### Added
+- Schedule on mobile layout: arrows next to the month let you change month with a mouse, in a narrow browser window. Touch screens still swipe
+### Fixed
+- The Nikki theme's paw on today's date no longer gets too big for the day in the mobile layout or in short windows
+
 ## [1.3.3] - 2026-11-03
 ### Fixed
 - In narrower windows, the account buttons (report, notifications, automatic dailies and others) no longer get cut off when a game has maintenance. 

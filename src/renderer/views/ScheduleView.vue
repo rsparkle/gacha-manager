@@ -1,15 +1,60 @@
 <template>
     <div id="scheduleApp">
-        <button
-            v-if="isMobile"
-            type="button"
-            class="schedule-month-orb"
-            :class="{ 'schedule-month-orb--away': !isCurrentMonth }"
-            :aria-label="isCurrentMonth ? `${monthName} ${currentYear}` : `${monthName} ${currentYear}, back to today`"
-            @click="goToToday"
-        >
-            {{ monthShort }} <span class="year">{{ currentYear }}</span>
-        </button>
+        <div v-if="isMobile" class="schedule-month-bar">
+            <button
+                type="button"
+                class="schedule-month-step"
+                aria-label="Previous month"
+                :style="{ visibility: canGoPrev ? 'visible' : 'hidden' }"
+                @click="stepMonth(-1)"
+            >
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+            </button>
+
+            <button
+                type="button"
+                class="schedule-month-orb"
+                :class="{ 'schedule-month-orb--away': !isCurrentMonth }"
+                :aria-label="
+                    isCurrentMonth ? `${monthName} ${currentYear}` : `${monthName} ${currentYear}, back to today`
+                "
+                @click="goToToday"
+            >
+                {{ monthShort }} <span class="year">{{ currentYear }}</span>
+            </button>
+
+            <button
+                type="button"
+                class="schedule-month-step"
+                aria-label="Next month"
+                :style="{ visibility: canGoNext ? 'visible' : 'hidden' }"
+                @click="stepMonth(1)"
+            >
+                <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                >
+                    <polyline points="9 18 15 12 9 6" />
+                </svg>
+            </button>
+        </div>
 
         <div ref="filtersPanel" class="schedule-header" :class="{ 'schedule-header--open': filtersOpen }">
             <div class="schedule-month-nav">
@@ -644,6 +689,13 @@ const nudgeWeeks = (direction) => {
     );
 };
 
+const stepMonth = (direction) => {
+    const moved = direction === 1 ? nextMonth() : prevMonth();
+
+    if (moved) slideWeeks(direction);
+    else nudgeWeeks(direction);
+};
+
 const onSwipeStart = (domEvent) => {
     if (domEvent.touches.length !== 1) {
         swipeStart = null;
@@ -666,11 +718,7 @@ const onSwipeEnd = (domEvent) => {
 
     if (elapsed > SWIPE_MAX_MS || Math.abs(dx) < SWIPE_MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.5) return;
 
-    const direction = dx < 0 ? 1 : -1;
-    const moved = direction === 1 ? nextMonth() : prevMonth();
-
-    if (moved) slideWeeks(direction);
-    else nudgeWeeks(direction);
+    stepMonth(dx < 0 ? 1 : -1);
 };
 
 const goToToday = () => {

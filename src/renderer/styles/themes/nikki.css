@@ -199,7 +199,7 @@
     position: absolute;
     z-index: 1;
     inset: 0;
-    background: url('../../../assets/themes/nikki/paw.webp') no-repeat center / auto 65px;
+    background: url('../../../assets/themes/nikki/paw.webp') no-repeat center / auto min(65px, 65%);
     opacity: 0.45;
     pointer-events: none;
 }

@@ -638,11 +638,48 @@
     }
 }
 
-.schedule-month-orb {
+.schedule-month-bar {
     position: fixed;
     top: calc(52px + var(--titlebar-h));
     left: 50%;
     z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transform: translateX(-50%);
+}
+
+.schedule-month-step {
+    display: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 1px solid var(--border-hover);
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--panel) 90%, transparent);
+    box-shadow: var(--shadow-popover);
+    color: var(--muted2);
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition:
+        border-color 120ms ease,
+        color 120ms ease;
+}
+
+.schedule-month-step:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .schedule-month-step {
+        display: grid;
+    }
+}
+
+.schedule-month-orb {
     display: flex;
     align-items: baseline;
     gap: 6px;
@@ -657,7 +694,6 @@
     font-size: 13px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    transform: translateX(-50%);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     transition: border-color 120ms ease;
@@ -701,6 +737,7 @@
 }
 
 .schedule-month-orb:focus-visible,
+.schedule-month-step:focus-visible,
 .schedule-filters-orb:focus-visible,
 .day-agenda-event:focus-visible {
     outline: 2px solid var(--accent);
