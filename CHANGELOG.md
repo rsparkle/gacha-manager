@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.3] - 2026-11-03
+### Fixed
+- In narrower windows, the account buttons (report, notifications, automatic dailies and others) no longer get cut off when a game has maintenance. 
+
 ## [1.3.2] - 2026-11-03
 ### Added
 - Added an anonymous daily usage count so I know how many people use the app. It only sends the app version and whether the user is on desktop, web or mobile.

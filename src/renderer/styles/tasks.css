@@ -992,6 +992,114 @@
     }
 }
 
+@media (min-width: 641px) and (max-width: 1100px) {
+    .hero-actions:has(.maintenance-warning) .maintenance-warning {
+        margin-right: 2px;
+        padding: 0 9px;
+    }
+
+    .hero-actions:has(.maintenance-warning) .maintenance-dot,
+    .hero-actions:has(.maintenance-warning) .maintenance-label {
+        display: none;
+    }
+
+    .hero-actions:has(.maintenance-warning) .maintenance-compact {
+        display: flex;
+        flex-direction: column;
+        line-height: 1.15;
+    }
+
+    .hero-actions:has(.maintenance-warning) .maintenance-compact-title {
+        font-size: 9px;
+        font-weight: 700;
+        opacity: 0.8;
+    }
+
+    .hero-actions:has(.maintenance-warning) .maintenance-compact-time {
+        font-family: var(--font-mono);
+        font-size: 10px;
+    }
+
+    .hero-actions:has(.maintenance-warning) .btn-edit,
+    .hero-actions:has(.maintenance-warning) .btn-delete {
+        width: 32px;
+        padding: 0;
+    }
+
+    .hero-actions:has(.maintenance-warning) .btn-glyph {
+        display: block;
+    }
+
+    .hero-actions:has(.maintenance-warning) .btn-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
+@media (min-width: 641px) and (max-width: 800px) {
+    .hero-title-row {
+        padding-right: 120px;
+    }
+
+    .hero-bottom {
+        position: static;
+        display: flex;
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+
+    .hero-account-info,
+    .hero-bottom > .hero-actions {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-bottom > .hero-actions {
+        margin-left: auto;
+    }
+
+    .hero-progress {
+        position: absolute;
+        z-index: 2;
+        top: 26px;
+        right: 28px;
+        min-width: 0;
+        min-height: 31px;
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .complete-sticker {
+        order: 0;
+        height: 26px;
+        margin: -8px 0;
+    }
+
+    .btn-edit,
+    .btn-delete {
+        width: 32px;
+        padding: 0;
+    }
+
+    .btn-glyph {
+        display: block;
+    }
+
+    .btn-text {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
 @media (max-width: 640px) {
     #tasksApp {
         flex-direction: column;
