@@ -21,23 +21,23 @@ export function assetUrl(relativePath) {
     return `${ASSETS_BASE}/${encodePath(relativePath)}`;
 }
 
-export async function fetchWithTimeout(url, ms = 5000) {
+export async function fetchWithTimeout(url, ms, read) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), ms);
 
     try {
-        return await fetch(url, { signal: controller.signal });
+        return await read(await fetch(url, { signal: controller.signal }));
     } finally {
         clearTimeout(timeout);
     }
 }
 
-export async function fetchJson(url) {
-    const response = await fetchWithTimeout(url);
+export function fetchJson(url) {
+    return fetchWithTimeout(url, 5000, (response) => {
+        if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+        }
 
-    if (!response.ok) {
-        throw new Error(`Request failed with status ${response.status}`);
-    }
-
-    return response.json();
+        return response.json();
+    });
 }

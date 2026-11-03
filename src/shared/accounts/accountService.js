@@ -16,7 +16,7 @@ import {
     normalizeCustomReset,
 } from './customData.js';
 import { getLiveVersion } from '../liveVersion.js';
-import { DAY } from '../serverTime.js';
+import { DAY, MINUTE } from '../serverTime.js';
 
 const EDITABLE_ACCOUNT_FIELDS = ['server', 'uid', 'label', 'monthlySubRemaining'];
 const PER_ACCOUNT_SETTINGS = ['automaticDailies', 'deadlineNotifications', 'monthlySubNotifications'];
@@ -593,6 +593,12 @@ export function createAccountService({ storage, settings }) {
         }
 
         const task = buildCustomTask(taskId, input, existing.reset?.zone ?? currentTimeZone());
+
+        if (task.createdAt && existing.createdAt) {
+            task.createdAt = existing.createdAt;
+
+            if (Math.abs(Date.parse(task.endsAt) - Date.parse(existing.endsAt)) < MINUTE) task.endsAt = existing.endsAt;
+        }
 
         save(accounts, {
             ...custom,

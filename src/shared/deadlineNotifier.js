@@ -76,6 +76,7 @@ export function createDeadlineNotifier({ computeGroups, enabledAccountIds, notif
                 if (!taskIds.includes(account.id)) continue;
 
                 for (const task of Object.values(account.tasks).flat()) {
+                    if (task.isDisabled && task.startsIn > 0) nextWake = Math.min(nextWake, nowMs + task.startsIn);
                     if (task.isDisabled || !task.duration) continue;
 
                     const end = nowMs + task.nextReset;

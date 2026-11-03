@@ -39,7 +39,7 @@
                                 <small>Launch when your computer starts</small>
                             </div>
                             <label class="toggle">
-                                <input v-model="draft.openAtLogin" type="checkbox" />
+                                <input v-model="draft.launchAtStartup" type="checkbox" />
                                 <span class="toggle-box">
                                     <svg class="toggle-check" viewBox="0 0 16 16" width="10" height="10">
                                         <path

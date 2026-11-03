@@ -257,7 +257,7 @@ function syncMonitoring() {
 }
 
 function isLaunchAtStartup() {
-    if (!app.isPackaged) return store.get('launchAtStartup', DEFAULT_SETTINGS.launchAtStartup);
+    if (!app.isPackaged) return store.get('launchAtStartup', false);
 
     const settings = app.getLoginItemSettings({ args: [STARTUP_ARG] });
 
@@ -321,9 +321,11 @@ async function downloadAsset(filename, localPath) {
     if (retryAt && Date.now() < retryAt) return;
 
     try {
-        const response = await fetchWithTimeout(assetUrl(filename), 10000);
+        const body = await fetchWithTimeout(assetUrl(filename), 10000, (response) =>
+            response.ok ? response.arrayBuffer() : null,
+        );
 
-        if (!response.ok) {
+        if (!body) {
             missingAssets.set(filename, Date.now() + MISSING_ASSET_RETRY_MS);
             return;
         }
@@ -332,7 +334,7 @@ async function downloadAsset(filename, localPath) {
 
         const tempPath = `${localPath}.tmp`;
 
-        await fs.writeFile(tempPath, Buffer.from(await response.arrayBuffer()));
+        await fs.writeFile(tempPath, Buffer.from(body));
         await fs.rename(tempPath, localPath);
 
         missingAssets.delete(filename);

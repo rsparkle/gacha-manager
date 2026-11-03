@@ -226,6 +226,21 @@ describe('custom games and tasks', () => {
         expect(notify.mock.calls[0][0].body).toBe('There is 1 task approaching its deadline in My Game');
     });
 
+    it('wakes up when a cycle starts so it can warn before it ends', async () => {
+        const { service, notify, key } = startCustom();
+
+        service.addCustomTask(key, {
+            label: 'Abyss',
+            category: 'Endgame',
+            reset: { kind: 'cycle', startsAt: '2026-11-01T00:00:00Z', endsAt: '2026-11-02T00:00:00Z' },
+        });
+
+        await vi.advanceTimersByTimeAsync((11 * 24 + 12 + 21) * 60 * 60 * 1000);
+
+        expect(notify).toHaveBeenCalledTimes(1);
+        expect(notify.mock.calls[0][0].body).toBe('There is 1 task approaching its deadline in My Game');
+    });
+
     it('ended tasks do not keep the timer busy', async () => {
         const { service, notifier, key, accountId } = startCustom();
         const task = service.addCustomTask(key, { label: 'Event', category: 'Events', minutes: 10 });

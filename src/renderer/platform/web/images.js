@@ -7,14 +7,18 @@ export function createImageResolver() {
 
     async function check(file) {
         try {
-            const response = await fetchWithTimeout(assetUrl(file), 10000);
+            const exists = await fetchWithTimeout(assetUrl(file), 10000, async (response) => {
+                if (!response.ok) return false;
 
-            if (!response.ok) {
+                await response.blob();
+
+                return true;
+            });
+
+            if (!exists) {
                 retryAt.set(file, Date.now() + MISSING_ASSET_RETRY_MS);
                 return null;
             }
-
-            await response.blob();
         } catch {
             retryAt.set(file, Date.now() + NETWORK_RETRY_MS);
             return null;

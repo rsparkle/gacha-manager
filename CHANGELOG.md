@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1] - 2026-11-03
+### Fixed
+- Start Automatically in Settings now turns launching at startup on and off.
+- Editing a custom task with a deadline no longer resets its progress bar or moves its deadline by a few seconds
+- Deadline notifications now also cover custom Endgame tasks that haven't started yet
+- Game data and images can no longer get stuck loading on a slow connection, which stopped game data from refreshing until a restart
+
 ## [1.3.0] - 2026-11-03
 ### Added
 - Mobile support for the web version

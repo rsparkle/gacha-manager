@@ -810,6 +810,24 @@ describe('custom tasks', () => {
         });
     });
 
+    it("edit keeps a one-off task's progress and deadline", () => {
+        vi.setSystemTime(new Date('2026-11-10T12:00:00Z'));
+        const { service } = load({ accounts: { [GAME]: [account()] } });
+        const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 7 * 24 * 60 });
+
+        vi.setSystemTime(new Date('2026-11-17T11:59:30Z'));
+        const edited = service.updateCustomTask(GAME, task.id, { label: 'Web event', category: 'Events', minutes: 1 });
+
+        expect(edited).toMatchObject({ createdAt: task.createdAt, endsAt: task.endsAt });
+        expect(tasksOf(service, GAME).Events[0]).toMatchObject({ label: 'Web event', isCompleted: false });
+        expect(
+            service.updateCustomTask(GAME, task.id, { label: 'Web event', category: 'Events', minutes: 60 }),
+        ).toMatchObject({
+            createdAt: task.createdAt,
+            endsAt: '2026-11-17T12:59:30.000Z',
+        });
+    });
+
     it('edit rejects bad input and unknown tasks without saving', () => {
         const { service, storage } = load({ accounts: { [GAME]: [account()] } });
         const task = service.addCustomTask(GAME, { label: 'Event', category: 'Events', minutes: 60 });
