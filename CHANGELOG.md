@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.3.5] - 2026-11-04
+### Fixed
+- "Starts in" no longer stretches wider than the other countdowns in the task list
+
 ## [1.3.4] - 2026-11-03
 ### Added
 - Schedule on mobile layout: arrows next to the month let you change month with a mouse, in a narrow browser window. Touch screens still swipe

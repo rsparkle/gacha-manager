@@ -489,10 +489,9 @@
                                             ></div>
                                         </div>
                                     </div>
-                                    <div v-else-if="task.startsIn" class="task-completion">
-                                        <span class="task-countdown"
-                                            >Starts in {{ formatCountdown(task.startsIn) }}</span
-                                        >
+                                    <div v-else-if="task.startsIn" class="task-completion task-completion--starts">
+                                        <span class="task-countdown task-countdown-label">Starts in</span>
+                                        <span class="task-countdown">{{ formatCountdown(task.startsIn) }}</span>
                                     </div>
                                     <div v-else-if="task.ended" class="task-completion">
                                         <span class="task-countdown">Ended</span>
