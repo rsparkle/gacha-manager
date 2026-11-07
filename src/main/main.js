@@ -32,17 +32,35 @@ import {
 } from '../shared/remote.js';
 import { createAccountsFileStorage } from './accountsStorage.js';
 import { isOlderVersion } from './appVersion.js';
+import { STARTUP_ARG, parseLaunchOptions } from './launchOptions.js';
 import { resolveInside } from './safePath.js';
 
 import path from 'node:path';
-import { promises as fs } from 'node:fs';
+import { promises as fs, rmSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { execFile } from 'node:child_process';
 import Store from 'electron-store';
 import log from 'electron-log/main';
 
+const LAUNCH_OPTIONS = parseLaunchOptions(process.argv);
+
+if (LAUNCH_OPTIONS.clean) {
+    const cleanUserData = path.join(app.getPath('temp'), 'gacha-manager-clean');
+
+    try {
+        rmSync(cleanUserData, { recursive: true, force: true });
+    } catch (err) {
+        console.error('Could not reset the clean profile:', err.message);
+    }
+
+    app.setPath('userData', cleanUserData);
+}
+
 Object.assign(console, log.functions);
 log.errorHandler.startCatching();
+
+if (LAUNCH_OPTIONS.clean) console.log(`Clean start using ${app.getPath('userData')}`);
+if (LAUNCH_OPTIONS.localDataDir) console.log(`Using local game data from ${LAUNCH_OPTIONS.localDataDir}`);
 
 const { autoUpdater } = require('electron-updater');
 
@@ -52,6 +70,8 @@ const usageStore = new Store({ name: 'usage' });
 const PRELOAD_PATH = path.join(__dirname, 'preload.js');
 
 const ASSETS_CACHE = path.join(app.getPath('userData'), 'assets');
+
+const IMAGES_DIR = LAUNCH_OPTIONS.localDataDir ?? ASSETS_CACHE;
 
 const CONFIG_CACHE = path.join(app.getPath('userData'), 'game-config.json');
 
@@ -73,9 +93,6 @@ const SNOOZE_OPTIONS = [
     [120, '2 hours'],
     [240, '4 hours'],
 ];
-
-const STARTUP_ARG = '--startup';
-const LAUNCHED_AT_STARTUP = process.argv.includes(STARTUP_ARG);
 
 const migratedSettings = migrateSettings(store.store);
 if (migratedSettings !== store.store) store.store = migratedSettings;
@@ -177,6 +194,11 @@ const gameData = createGameDataLoader({
             body: 'The latest game data was invalid, so the last working version is being used.',
         }).show();
     },
+    ...(LAUNCH_OPTIONS.localDataDir && {
+        readCache: () => Promise.reject(new Error('Skipped, using local game data')),
+        writeCache: async () => {},
+        readSource: (relativePath) => readJson(path.join(LAUNCH_OPTIONS.localDataDir, relativePath)),
+    }),
 });
 
 function handleGameDetected(gameName) {
@@ -352,7 +374,7 @@ async function getImageUrl(filename) {
         throw new Error('Invalid filename');
     }
 
-    const localPath = resolveInside(ASSETS_CACHE, filename);
+    const localPath = resolveInside(IMAGES_DIR, filename);
 
     if (!localPath) {
         throw new Error('Invalid filename');
@@ -361,12 +383,14 @@ async function getImageUrl(filename) {
     try {
         const stats = await fs.stat(localPath);
 
-        if (Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
+        if (!LAUNCH_OPTIONS.localDataDir && Date.now() - stats.mtimeMs > CACHE_TOUCH_AFTER_MS) {
             const now = new Date();
 
             fs.utimes(localPath, now, now).catch(() => {});
         }
     } catch {
+        if (LAUNCH_OPTIONS.localDataDir) return null;
+
         if (!pendingDownloads.has(filename)) {
             const download = downloadAsset(filename, localPath).finally(() => pendingDownloads.delete(filename));
 
@@ -382,7 +406,7 @@ async function getImageUrl(filename) {
         }
     }
 
-    const relativePath = path.relative(ASSETS_CACHE, localPath).split(path.sep).join('/');
+    const relativePath = path.relative(IMAGES_DIR, localPath).split(path.sep).join('/');
 
     return `asset://cache/${encodePath(relativePath)}`;
 }
@@ -415,7 +439,7 @@ function registerProtocols() {
             return new Response(null, { status: 400 });
         }
 
-        const filePath = resolveInside(ASSETS_CACHE, relativePath);
+        const filePath = resolveInside(IMAGES_DIR, relativePath);
 
         if (!filePath) {
             return new Response(null, { status: 403 });
@@ -860,7 +884,7 @@ async function startApp() {
 
     registerProtocols();
 
-    createMainWindow({ minimized: LAUNCHED_AT_STARTUP });
+    createMainWindow({ minimized: LAUNCH_OPTIONS.startup });
 
     appStarted = true;
 

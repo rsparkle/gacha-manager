@@ -1,5 +1,6 @@
 import { createResetProcessor } from './resetProcessor.js';
-import { CONFIG_URL, INDEPENDENT_EVENTS_URL, TASKS_URL, fetchJson } from './remote.js';
+import { ASSETS_BASE, GAME_CONFIG_PATH, GAME_TASKS_PATH, INDEPENDENT_EVENTS_PATH } from './gameData.js';
+import { fetchJson } from './remote.js';
 
 export function validateGameData({ config, tasks }) {
     createResetProcessor(config, tasks);
@@ -7,16 +8,24 @@ export function validateGameData({ config, tasks }) {
 
 const sameData = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-export function createGameDataLoader({ readCache, writeCache, onUpdate, onRejected = () => {} }) {
+const fetchAssetsFile = (relativePath) => fetchJson(`${ASSETS_BASE}/${relativePath}`);
+
+export function createGameDataLoader({
+    readCache,
+    writeCache,
+    onUpdate,
+    onRejected = () => {},
+    readSource = fetchAssetsFile,
+}) {
     let current = null;
     let rejected = null;
     let refreshing = null;
 
     async function fetchRemote() {
         const [config, tasks, independentEvents] = await Promise.all([
-            fetchJson(CONFIG_URL),
-            fetchJson(TASKS_URL),
-            fetchJson(INDEPENDENT_EVENTS_URL).catch(() => current?.independentEvents ?? []),
+            readSource(GAME_CONFIG_PATH),
+            readSource(GAME_TASKS_PATH),
+            readSource(INDEPENDENT_EVENTS_PATH).catch(() => current?.independentEvents ?? []),
         ]);
 
         return { config, tasks, independentEvents };

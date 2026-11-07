@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
                 'src/shared/**',
                 'src/main/accountsStorage.js',
                 'src/main/appVersion.js',
+                'src/main/launchOptions.js',
                 'src/main/safePath.js',
                 'src/renderer/lib/**',
                 'src/renderer/platform/web/storage.js',

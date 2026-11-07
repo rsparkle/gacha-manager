@@ -10,22 +10,14 @@
             <span>Gacha Manager</span>
         </div>
         <div class="app-bar">
-            <div v-if="currentView !== 'setup'" class="view-toggle">
+            <div v-if="currentView === 'setup'" class="app-bar-logo">Setup</div>
+            <div v-else class="view-toggle">
                 <button
-                    v-if="hideSetup"
                     class="view-btn"
                     :class="{ active: currentView === 'tasks' }"
                     @click="currentView = 'tasks'"
                 >
                     <span>Tasks</span>
-                </button>
-                <button
-                    v-else
-                    class="view-btn"
-                    :class="{ active: currentView === 'setup' }"
-                    @click="currentView = 'setup'"
-                >
-                    <span>Setup</span>
                 </button>
                 <button
                     class="view-btn"
@@ -35,7 +27,6 @@
                     <span>Schedule</span>
                 </button>
             </div>
-            <div v-else class="app-bar-logo">Setup</div>
 
             <div class="app-bar-right">
                 <div class="theme-group">
@@ -119,18 +110,17 @@ const { settings, showSettings, saveSettings } = useSettings();
 const { gamesWithAccounts, loadGameData, loadAccounts, reloadAccountsAndSettings, syncMonthlySubs } = useAccounts();
 
 const desktop = platform.desktop;
-const hideSetup = ref(false);
 const currentView = ref(null);
 const themeMenuOpen = ref(false);
 const themePicker = ref(null);
 const startupError = ref(null);
-let taskTimer = null;
-let stopExternalChangeListener = null;
+let minuteTickTimer = null;
+let stopAccountsChangeListener = null;
 let stopGameDataListener = null;
 
-const selectTheme = (theme) => {
+const selectTheme = (themeId) => {
     themeMenuOpen.value = false;
-    settings.value.theme = theme;
+    settings.value.theme = themeId;
     saveSettings(true);
 };
 
@@ -146,24 +136,23 @@ const closeThemeMenuOnEscape = (event) => {
 
 const onSetupDone = () => {
     currentView.value = 'tasks';
-    hideSetup.value = true;
 };
 
-const scheduleUpdate = () => {
+const scheduleMinuteTick = () => {
     const now = new Date();
     const msUntilNextMinute = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 
-    taskTimer = setTimeout(async () => {
+    minuteTickTimer = setTimeout(async () => {
         try {
             await syncMonthlySubs();
         } catch (err) {
             console.error('Minute tick failed:', err);
         }
-        scheduleUpdate();
+        scheduleMinuteTick();
     }, msUntilNextMinute);
 };
 
-const onExternalChange = async (reason) => {
+const onAccountsChangedExternally = async (reason) => {
     if (reason === 'dailiesCompleted') createNotification('success', 'Daily completed!', 1000);
 
     try {
@@ -224,19 +213,18 @@ onMounted(async () => {
         return;
     }
 
-    hideSetup.value = gamesWithAccounts.value.length > 0;
-    currentView.value = hideSetup.value ? 'tasks' : 'setup';
-    scheduleUpdate();
+    currentView.value = gamesWithAccounts.value.length > 0 ? 'tasks' : 'setup';
+    scheduleMinuteTick();
 
-    stopExternalChangeListener = platform.accounts.onExternalChange(onExternalChange);
+    stopAccountsChangeListener = platform.accounts.onExternalChange(onAccountsChangedExternally);
 });
 
 onUnmounted(() => {
     document.removeEventListener('mousedown', closeThemeMenuOnOutsideClick);
     document.removeEventListener('keydown', closeThemeMenuOnEscape);
-    clearTimeout(taskTimer);
+    clearTimeout(minuteTickTimer);
     if (settings.value.theme) document.documentElement.classList.remove(settings.value.theme);
-    if (stopExternalChangeListener) stopExternalChangeListener();
+    if (stopAccountsChangeListener) stopAccountsChangeListener();
     if (stopGameDataListener) stopGameDataListener();
 });
 </script>

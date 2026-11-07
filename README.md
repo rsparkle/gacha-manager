@@ -66,6 +66,17 @@ npm install
 npm start
 npm run make
 
+# Run the desktop app with a fresh temporary profile (your accounts and settings aren't touched)
+npm run start:clean
+
+# Run the desktop app with game data and images from a local gacha-manager-assets clone
+# (defaults to ../gacha-manager-assets, or set GAME_DATA_DIR, or pass --local-data=<path>)
+npm run start:local
+npm run start:local -- --local-data=D:/path/to/gacha-manager-assets
+
+# Both together
+npm run start:clean -- --local-data
+
 # Run or build the web version
 npm run web:dev
 npm run web:build
