@@ -626,6 +626,11 @@ const saveUid = async (uid, accountId) => {
         return false;
     }
 
+    if (selectedGame.value.accounts.some((account) => account.id !== accountId && account.uid === uid)) {
+        createNotification('error', 'Another account in this game already uses this UID!', 2000);
+        return false;
+    }
+
     if (isCustomGame.value) {
         return run(() => updateAccount(selectedGame.value.name, accountId, { uid }), 'Account updated!');
     }

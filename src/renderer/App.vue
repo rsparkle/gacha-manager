@@ -12,11 +12,7 @@
         <div class="app-bar">
             <div v-if="currentView === 'setup'" class="app-bar-logo">Setup</div>
             <div v-else class="view-toggle">
-                <button
-                    class="view-btn"
-                    :class="{ active: currentView === 'tasks' }"
-                    @click="currentView = 'tasks'"
-                >
+                <button class="view-btn" :class="{ active: currentView === 'tasks' }" @click="currentView = 'tasks'">
                     <span>Tasks</span>
                 </button>
                 <button

@@ -414,6 +414,14 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
         return livestreamEvents;
     }
 
+    function currentOnward(events, timeline) {
+        const cutoff = timeline.entries.find((entry) => entry.relation === 0)?.open;
+
+        if (!cutoff) return events;
+
+        return Object.fromEntries(Object.entries(events).filter(([, event]) => event.date >= cutoff));
+    }
+
     function buildGameSchedule(game, gameData, server, now) {
         const clock = CLOCKS[game];
 
@@ -424,12 +432,12 @@ export function createScheduleProcessor(GAME_CONFIG, INDEPENDENT_EVENTS = []) {
         const timeline = buildTimeline(game, gameData, clock, server, now);
 
         return {
-            ...buildCharacterTrailers(game, gameData, clock, timeline),
-            ...buildPatchTrailers(game, gameData, clock, timeline),
+            ...currentOnward(buildCharacterTrailers(game, gameData, clock, timeline), timeline),
+            ...currentOnward(buildPatchTrailers(game, gameData, clock, timeline), timeline),
             ...buildPhaseReleaseEvents(game, gameData, timeline),
             ...buildUpcomingRelease(game, gameData, timeline),
             ...buildSpecialPhaseEvents(game, gameData, timeline),
-            ...buildDripMarketing(game, gameData, clock, timeline),
+            ...currentOnward(buildDripMarketing(game, gameData, clock, timeline), timeline),
             ...buildLivestreamEvents(game, gameData, clock, timeline),
         };
     }

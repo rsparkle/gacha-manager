@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.6] - 2026-11-14
+### Fixed
+- Two accounts of the same game can no longer share a UID when you edit it
+- The schedule no longer shows trailers and drip marketing from past versions
+
 ## [1.3.5] - 2026-11-04
 ### Fixed
 - "Starts in" no longer stretches wider than the other countdowns in the task list

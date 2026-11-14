@@ -239,6 +239,14 @@ export function createAccountService({ storage, settings }) {
             if (!/^\d*$/.test(sanitized.uid)) {
                 throw new Error('UID can only contain digits');
             }
+
+            const taken = gameAccounts.some(
+                (account) => account.id !== accountId && sanitized.uid !== '' && account.uid === sanitized.uid,
+            );
+
+            if (taken) {
+                throw new Error('Another account in this game already uses this UID');
+            }
         }
 
         const serverValid = isCustomKey(gameName)
