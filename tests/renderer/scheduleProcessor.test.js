@@ -43,8 +43,6 @@ describe('timeline', () => {
             'v1.2_release': '2026-11-18T03:00:00.000Z',
             'v1.2_secondPhase': '2026-12-08T10:00:00.000Z',
             'v1.3_release': '2026-12-30T03:00:00.000Z',
-            'v1.1_drip_day1': '2026-08-31T04:00:00.000Z',
-            'v1.1_drip_day2': '2026-09-01T04:00:00.000Z',
             'v1.2_drip_day1': '2026-10-12T04:00:00.000Z',
             'v1.2_drip_day2': '2026-10-13T04:00:00.000Z',
             'v1.3_drip_day1': '2026-11-23T04:00:00.000Z',
@@ -205,7 +203,9 @@ describe('release events', () => {
     it('confirmed once the date passes', () => {
         vi.setSystemTime(new Date('2026-10-27T10:00:00Z'));
 
-        expect(schedule({ current: { is_version_duration_confirmed: false } })['v1.1_secondPhase'].confirmed).toBe(true);
+        expect(schedule({ current: { is_version_duration_confirmed: false } })['v1.1_secondPhase'].confirmed).toBe(
+            true,
+        );
     });
 
     it('next 2nd phase needs both confirmed', () => {
@@ -287,16 +287,16 @@ describe('character trailers', () => {
             },
         });
 
-        expect(events['v1.1_trailer_phase1']).toEqual({
-            date: new Date('2026-10-04T04:00:00Z'),
+        expect(events['v1.1_trailer_phase1']).toBeUndefined();
+        expect(events['v1.1_trailer_phase2']).toEqual({
+            date: new Date('2026-10-24T04:00:00Z'),
             type: 'trailer',
             portrait: true,
-            label: 'Alice & Bob Trailer',
-            title: 'Alice & Bob Trailer',
-            imgFiles: [img.character('alice'), img.game('1.1'), img.fallback],
+            label: 'Carol Trailer',
+            title: 'Carol Trailer',
+            imgFiles: [img.character('carol'), img.game('1.1'), img.fallback],
             confirmed: false,
         });
-        expect(events['v1.1_trailer_phase2'].date.toISOString()).toBe('2026-10-24T04:00:00.000Z');
         expect(events['v1.1_trailer_special1'].date.toISOString()).toBe('2026-10-13T04:00:00.000Z');
         expect(pick(events, 'v1.0_trailer')).toEqual({});
     });
@@ -333,24 +333,22 @@ describe('patch trailers', () => {
     it('patches without a livestream', () => {
         const events = schedule(noLivestream);
 
-        expect(events['v1.1_patchTrailer']).toEqual({
-            date: new Date('2026-10-02T04:00:00Z'),
+        expect(events['v1.1_patchTrailer']).toBeUndefined();
+        expect(events['v1.2_patchTrailer']).toEqual({
+            date: new Date('2026-11-13T04:00:00Z'),
             type: 'trailer',
             portrait: false,
-            label: 'TG 1.1 Trailer',
-            title: 'TG 1.1 Trailer',
-            imgFiles: [img.game('1.1'), img.fallback],
+            label: 'TG 1.2 Trailer',
+            title: 'TG 1.2 Trailer',
+            imgFiles: [img.game('1.2'), img.game('1.1'), img.fallback],
             confirmed: true,
         });
-        expect(events['v1.2_patchTrailer'].imgFiles).toEqual([img.game('1.2'), img.game('1.1'), img.fallback]);
-        expect(events['v1.2_patchTrailer'].label).toBe('TG 1.2 Trailer');
         expect(pick(events, '_livestream')).toEqual({});
     });
 
     it('livestream_date drops that trailer', () => {
         const events = schedule({ ...noLivestream, current: { livestream_date: '2026-11-08' } });
 
-        expect(events['v1.1_patchTrailer']).toBeDefined();
         expect(events['v1.2_patchTrailer']).toBeUndefined();
         expect(events['v1.2_livestream'].date.toISOString()).toBe('2026-11-08T12:00:00.000Z');
     });
@@ -459,18 +457,15 @@ describe('drip marketing', () => {
     it('labels and images', () => {
         const events = schedule();
 
-        expect(events['v1.1_drip_day1']).toEqual({
-            date: new Date('2026-08-31T04:00:00Z'),
+        expect(events['v1.1_drip_day1']).toBeUndefined();
+        expect(events['v1.2_drip_day1']).toEqual({
+            date: new Date('2026-10-12T04:00:00Z'),
             type: 'drip',
             portrait: false,
-            label: 'TG 1.1 5★ Drip Marketing',
-            title: 'TG 1.1 Drip',
-            imgFiles: [img.game('1.1'), img.fallback],
-            confirmed: true,
-        });
-        expect(events['v1.2_drip_day1']).toMatchObject({
             label: 'TG 1.2 5★ Drip Marketing',
+            title: 'TG 1.2 Drip',
             imgFiles: [img.game('1.2'), img.game('1.1'), img.fallback],
+            confirmed: true,
         });
         expect(events['v1.3_drip_day1']).toMatchObject({
             label: 'TG 1.3 5★ Drip Marketing',
@@ -491,13 +486,13 @@ describe('drip marketing', () => {
     });
 
     it('week_start_rule moves to Monday', () => {
-        expect(dates(pick(schedule({ drip: { distance: 5 } }), 'v1.2_drip'))).toEqual({
-            'v1.2_drip_day1': '2026-10-12T04:00:00.000Z',
-            'v1.2_drip_day2': '2026-10-13T04:00:00.000Z',
+        expect(dates(pick(schedule({ drip: { distance: 5 } }), 'v1.3_drip'))).toEqual({
+            'v1.3_drip_day1': '2026-11-23T04:00:00.000Z',
+            'v1.3_drip_day2': '2026-11-24T04:00:00.000Z',
         });
-        expect(dates(pick(schedule({ drip: { distance: 4 } }), 'v1.2_drip'))).toEqual({
-            'v1.2_drip_day1': '2026-10-05T04:00:00.000Z',
-            'v1.2_drip_day2': '2026-10-06T04:00:00.000Z',
+        expect(dates(pick(schedule({ drip: { distance: 4 } }), 'v1.3_drip'))).toEqual({
+            'v1.3_drip_day1': '2026-11-16T04:00:00.000Z',
+            'v1.3_drip_day2': '2026-11-17T04:00:00.000Z',
         });
     });
 
@@ -515,10 +510,7 @@ describe('drip marketing', () => {
     it('livestream anchor', () => {
         const events = schedule({ drip: { anchor: 'livestream', distance: -4 } });
 
-        expect(dates(pick(events, 'v1.1_drip'))).toEqual({
-            'v1.1_drip_day1': '2026-09-21T04:00:00.000Z',
-            'v1.1_drip_day2': '2026-09-22T04:00:00.000Z',
-        });
+        expect(pick(events, 'v1.1_drip')).toEqual({});
         expect(events['v1.2_drip_day1'].date.toISOString()).toBe('2026-11-02T04:00:00.000Z');
         expect(events['v1.3_drip_day1'].date.toISOString()).toBe('2026-12-14T04:00:00.000Z');
     });
@@ -561,8 +553,29 @@ describe('patch history', () => {
             confirmed: true,
         });
         expect(events['v1.0_livestream'].label).toBe('TG 1.0 Livestream');
-        expect(events['v1.0_drip_day1'].label).toBe('TG 1.0 5★ Drip Marketing');
+        expect(events['v1.0_drip_day1']).toBeUndefined();
         expect(events['v1.3_livestream']).toBeDefined();
+    });
+
+    it('trailers and drips before the current patch are dropped', () => {
+        const events = schedule(withArchive);
+        const cutoff = new Date('2026-10-07T03:00:00Z');
+        const early = Object.values(events).filter(
+            (event) => ['trailer', 'drip'].includes(event.type) && event.date < cutoff,
+        );
+
+        expect(early).toEqual([]);
+        expect(events['v0.9_trailer_phase1']).toBeUndefined();
+        expect(events['v1.2_drip_day1']).toBeDefined();
+    });
+
+    it('the cutoff moves with the current patch', () => {
+        vi.setSystemTime(new Date('2026-11-20T00:00:00Z'));
+
+        const events = schedule();
+
+        expect(pick(events, 'v1.2_drip')).toEqual({});
+        expect(events['v1.3_drip_day1']).toBeDefined();
     });
 
     it('current patch follows the date', () => {
@@ -632,7 +645,7 @@ describe('patch history', () => {
 
 describe('several games', () => {
     it('one broken game does not break others', () => {
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
         const result = createScheduleProcessor({
             Broken: makeGame({ patches: [patch('1.1', 'not a date'), { version: '1.2' }] }),
             Working: makeGame({ abbr: 'OK' }),
